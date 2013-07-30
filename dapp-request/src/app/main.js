@@ -11,9 +11,6 @@ define([
     'dojox/app/main',
     'dojox/json/ref',
     'dojo/text!app/config.json',
-    //TODO: add all html templates being use in config.json to force them to be included in layer
-    // when doing custom dojo build, the build process will recognize them as dependencies for the package
-    'dojo/text!app/views/home/home.html',
     'dojo/domReady!'
 ], function (win, has, Application, json, config) {
     'use strict';

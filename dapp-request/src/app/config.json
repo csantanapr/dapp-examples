@@ -44,6 +44,11 @@
             //Mandatory for defaultViews
             "template": "app/views/home/home.html",
             "controller" : "app/views/home/home.js",
+        },
+        "list":{
+            "template": "app/views/list/list.html",
+            "controller" : "app/views/list/list.js",
+            "nls": "app/views/list/nls/list-strings"
         }
     },
     "has": {

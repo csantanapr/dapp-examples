@@ -8,8 +8,12 @@ define([
     // most of the function have same syntax as jquery see bellow this file for summary
     'dojo/on',
     'dojox/mobile/ListItem',
-    'dojo/NodeList-manipulate'
+    'dojo/NodeList-manipulate',
     // Load dojo/NodeList-manipulate to get JQuery syntax: see below this file for function syntax
+    'dojo/text!app/views/home/home.html',
+    'dojox/mobile/Heading',
+    'dojox/mobile/EdgeToEdgeList',
+    'dojox/mobile/ListItem'
 ], function ($, on) {
     'use strict';
 
