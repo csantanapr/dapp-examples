@@ -1,0 +1,47 @@
+{
+  "name": "dapp-boilerplate",
+  "version": "0.1.0",
+  "description": "Boilerplate for Single Page App using Dojo App Framework",
+  "private": true,
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "open http://localhost:4000 && node server",
+    "build": "bash build.sh",
+    "mongodb": "mongodb",
+    "service": "node server",
+    "cordova": "bash build.sh && bash cordova.sh"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/csantanapr/dapp-boilerplate.git"
+  },
+  "keywords": [
+    "JavaScript",
+    "Dojo",
+    "Dojox",
+    "Toolkit",
+    "Boilerplate",
+    "MVC",
+    "JS"
+  ],
+  "author": "Carlos Santana",
+  "licenses": [
+    {
+      "type": "BSD",
+      "url": "https://github.com/dojo/dojo/blob/master/LICENSE#L13"
+    },
+    {
+      "type": "AFLv2.1",
+      "url": "https://github.com/dojo/dojo/blob/master/LICENSE#L43"
+    }
+  ],
+  "readmeFilename": "README.md",
+  "devDependencies": {
+    "cordova": "~3.x.x"
+  },
+  "dependencies": {
+    "express": "3.x",
+    "mongodb": "1.3.x"
+  }
+}
