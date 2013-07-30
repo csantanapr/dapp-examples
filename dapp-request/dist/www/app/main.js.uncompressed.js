@@ -3412,7 +3412,11 @@ function(dojo, aspect, dom, domClass, lang, on, has, mouse, domReady, win){
 
 						// Unlike a listener on "touchmove", on(node, "dojotouchmove", listener) fires when the finger
 						// drags over the specified node, regardless of which node the touch started on.
-						on.emit(newNode, "dojotouchmove", copyEventProps(evt));
+						if(!on.emit(newNode, "dojotouchmove", copyEventProps(evt))){
+							// emit returns false when synthetic event "dojotouchmove" is cancelled, so we prevent the
+							// default behavior of the underlying native event "touchmove".
+							evt.preventDefault();
+						}
 					}
 				});
 
@@ -3571,10 +3575,9 @@ function(dojo, aspect, dom, domClass, lang, on, has, mouse, domReady, win){
 'dijit/registry':function(){
 define([
 	"dojo/_base/array", // array.forEach array.map
-	"dojo/sniff", // has("ie")
 	"dojo/_base/window", // win.body
 	"./main"	// dijit._scopeName
-], function(array, has, win, dijit){
+], function(array, win, dijit){
 
 	// module:
 	//		dijit/registry
@@ -5279,13 +5282,19 @@ define(["require", "dojo/_base/lang", "dojo/_base/declare", "dojo/has", "dojo/on
 					this.app.log("> in Transition._doTransition calling next.beforeActivate next name=[",next.name,"], parent.name=[",next.parent.name,"], next!==current path");
 					next.beforeActivate(current, data);
 				}
+
+				// Moved subIds processing before emit of app-layoutView avoid early or double transition problem.
+				if(subIds){
+					this._doTransition(subIds, opts, params, data, next || parent, removeView, doResize, true);
+				}
+
 				this.app.log("> in Transition._doTransition calling app.emit layoutView view next");
 				if(!removeView){
 					// if we are removing the view we must delay the layout to _after_ the animation
 					this.app.emit("app-layoutView", {"parent": parent, "view": next });
 				}
-				if(doResize && !subIds){
-					this.app.emit("app-resize"); // after last layoutView fire app-resize			
+				if(doResize){
+					this.app.emit("app-resize"); // after last layoutView fire app-resize
 				}
 				
 				var result = true;
@@ -5330,10 +5339,6 @@ define(["require", "dojo/_base/lang", "dojo/_base/declare", "dojo/has", "dojo/on
 						this.app.log("  > in Transition._doTransition calling next.afterActivate next name=[",next.name,"], parent.name=[",next.parent.name,"], next!==current path");
 						next.afterActivate(current, data);
 					}
-
-					if(subIds){
-						this._doTransition(subIds, opts, params, data, next || parent, removeView, doResize, true);
-					}
 				}));
 				return result; // dojo/promise/all
 			}
@@ -5347,19 +5352,21 @@ define(["require", "dojo/_base/lang", "dojo/_base/declare", "dojo/has", "dojo/on
 			// activate next view
 			this.app.log("> in Transition._doTransition calling next.beforeActivate next name=[",next.name,"], parent.name=[",next.parent.name,"], next==current path");
 			next.beforeActivate(current, data);
+
+			// do sub transition like transition from "tabScene,tab1" to "tabScene,tab2"
+			// Moved subIds processing before emit of app-layoutView avoid early or double transition problem,
+			if(subIds){
+				return this._doTransition(subIds, opts, params, data, next, removeView, doResize, true); //dojo.DeferredList
+			}
+
 			// layout current view, or remove it
 			this.app.log("> in Transition._doTransition calling app.triggger layoutView view next name=[",next.name,"], removeView = [",removeView,"], parent.name=[",next.parent.name,"], next==current path");
 			this.app.emit("app-layoutView", {"parent":parent, "view": next, "removeView": removeView});
-			if(doResize && !subIds){
+			if(doResize){
 				this.app.emit("app-resize"); // after last layoutView fire app-resize
 			}
 			this.app.log("  > in Transition._doTransition calling next.afterActivate next name=[",next.name,"], parent.name=[",next.parent.name,"], next==current path");
 			next.afterActivate(current, data);
-
-			// do sub transition like transition from "tabScene,tab1" to "tabScene,tab2"
-			if(subIds){
-				return this._doTransition(subIds, opts, params, data, next, removeView); //dojo.DeferredList
-			}
 		}
 	});
 });
@@ -6281,7 +6288,7 @@ define(["dojo/_base/lang",
 				on.once(args[args.length-1].node, transitionEndEventName, function(){
 					var timeout;
 					for(var i=0; i<args.length-1; i++){
-						if(args[i].deferred.fired !== 0){
+						if(args[i].deferred.fired !== 0 && !args[i]._cleared){
 							timeout = new Date().getTime() - args[i]._startTime;
 							if(timeout >= args[i].duration){
 								args[i].clear();
@@ -6289,8 +6296,19 @@ define(["dojo/_base/lang",
 						}
 					}
 				});
+				setTimeout(function(){
+					var timeout;
+					for(var i=0; i<args.length; i++){
+						if(args[i].deferred.fired !== 0 && !args[i]._cleared){
+							timeout = new Date().getTime() - args[i]._startTime;
+							if(timeout >= args[i].duration){
+								args[i].clear();
+							}
+						}
+					}
+				}, args[0].duration+50);
 			}, 33);
-		});		   
+		});
 	};
 	
 	transition.chainedPlay = function(/*Array*/args){
@@ -6616,11 +6634,27 @@ define([
 
 				// Substitution keys beginning with ! will skip the transform step,
 				// in case a user wishes to insert unescaped markup, e.g. ${!foo}
-				return key.charAt(0) == "!" ? value :
-					// Safer substitution, see heading "Attribute values" in
-					// http://www.w3.org/TR/REC-html40/appendix/notes.html#h-B.3.2
-					value.toString().replace(/"/g,"&quot;"); //TODO: add &amp? use encodeXML method?
+				return key.charAt(0) == "!" ? value : this._escapeValue("" + value);
 			}, this);
+		},
+
+		_escapeValue: function(/*String*/ val){
+			// summary:
+			//		Escape a value to be inserted into the template, either into an attribute value
+			//		(ex: foo="${bar}") or as inner text of an element (ex: <span>${foo}</span>)
+
+			// Safer substitution, see heading "Attribute values" in
+			// http://www.w3.org/TR/REC-html40/appendix/notes.html#h-B.3.2
+			// and also https://www.owasp.org/index.php/XSS_%28Cross_Site_Scripting%29_Prevention_Cheat_Sheet#RULE_.231_-_HTML_Escape_Before_Inserting_Untrusted_Data_into_HTML_Element_Content
+			return val.replace(/["'<>&]/g, function(val){
+				return {
+					"&": "&amp;",
+					"<": "&lt;",
+					">": "&gt;",
+					"\"": "&quot;",
+					"'": "&#x27;"
+				}[val];
+			});
 		},
 
 		buildRendering: function(){
@@ -7305,6 +7339,10 @@ define([
 		//		HTML class attribute
 		"class": "",
 		_setClassAttr: { node: "domNode", type: "class" },
+
+		// Override automatic assigning type --> focusNode, it causes exception on IE6-8.
+		// Instead, type must be specified as ${type} in the template, as part of the original DOM.
+		_setTypeAttr: null,
 
 		// style: String||Object
 		//		HTML style attributes as cssText string or name/value hash
@@ -8313,10 +8351,13 @@ define([
 			//		Wrapper to setTimeout to avoid deferred functions executing
 			//		after the originating widget has been destroyed.
 			//		Returns an object handle with a remove method (that returns null) (replaces clearTimeout).
-			// fcn: function reference
-			// delay: Optional number (defaults to 0)
+			// fcn: Function
+			//		Function reference.
+			// delay: Number?
+			//		Delay, defaults to 0.
 			// tags:
-			//		protected.
+			//		protected
+
 			var timer = setTimeout(lang.hitch(this,
 				function(){
 					if(!timer){
@@ -11881,18 +11922,18 @@ define([
 	"dojo/_base/array",
 	"dojo/has"
 ], function(win, arr, has){
-	
+
 	// caches for capitalized names and hypen names
 	var cnames = [], hnames = [];
-	
+
 	// element style used for feature testing
 	var style = win.doc.createElement("div").style;
-	
+
 	// We just test webkit prefix for now since our themes only have standard and webkit
 	// (see dojox/mobile/themes/common/css3.less)
 	// More prefixes can be added if/when we add them to css3.less.
 	var prefixes = ["webkit"];
-	
+
 	// Does the browser support CSS3 animations?
 	has.add("css3-animations", function(global, document, element){
 		var style = element.style;
@@ -11901,11 +11942,18 @@ define([
 				return style[p+"Animation"] !== undefined && style[p+"Transition"] !== undefined;
 			});
 	});
-	
+
+	// Indicates whether style 'transition' returns empty string instead of
+	// undefined, although TransitionEvent is not supported.
+	// Reported on Android 4.1.x on some devices: https://bugs.dojotoolkit.org/ticket/17164
+	has.add("t17164", function(global, document, element){
+		return (element.style["transition"] !== undefined) && !('TransitionEvent' in window);
+	});
+
 	var css3 = {
 		// summary:
 		//		This module provide some cross-browser support for CSS3 properties.
-	
+
 		name: function(/*String*/p, /*Boolean?*/hyphen){
 			// summary:
 			//		Returns the name of a CSS3 property with the correct prefix depending on the browser.
@@ -11917,10 +11965,10 @@ define([
 			// hyphen:
 			//		Optional, true if hyphen notation should be used (for example "transition-property" or "-webkit-transition-property"),
 			//		false for camel-case notation (for example "transitionProperty" or "webkitTransitionProperty").
-			
+
 			var n = (hyphen?hnames:cnames)[p];
 			if(!n){
-				
+
 				if(/End|Start/.test(p)){
 					// event names: no good way to feature-detect, so we
 					// assume they have the same prefix as the corresponding style property
@@ -11949,8 +11997,7 @@ define([
 					var cn = hyphen ? p.replace(/-(.)/g, function(match, p1){
     					return p1.toUpperCase();
 					}) : p;
-					
-					if(style[cn] !== undefined){
+					if(style[cn] !== undefined && !has('t17164')){
 						// standard non-prefixed property is supported
 						n = p;
 					}else{
@@ -11967,7 +12014,7 @@ define([
 						});
 					}
 				}
-				
+
 				if(!n){
 					// The property is not supported, just return it unchanged, it will be ignored.
 					n = p;
@@ -11977,7 +12024,7 @@ define([
 			}
 			return n;
 		},
-		
+
 		add: function(/*Object*/styles, /*Object*/css3Styles){
 			// summary:
 			//		Prefixes all property names in "css3Styles" and adds the prefixed properties in "styles".
@@ -11993,7 +12040,7 @@ define([
 			//		}));
 			// returns:
 			//		The "styles" argument where the CSS3 styles have been added.
-			
+
 			for(var p in css3Styles){
 				if(css3Styles.hasOwnProperty(p)){
 					styles[css3.name(p)] = css3Styles[p];
@@ -12001,8 +12048,8 @@ define([
 			}
 			return styles;
 		}
-	}
-	
+	};
+
 	return css3;
 });
 
@@ -13593,6 +13640,8 @@ define([
 	// module:
 	//		dijit/a11y
 
+	var undefined;
+
 	var a11y = {
 		// summary:
 		//		Accessibility utility functions (keyboard, tab stops, etc.)
@@ -13649,20 +13698,33 @@ define([
 			}
 		},
 
+		effectiveTabIndex: function(/*Element*/ elem){
+			// summary:
+			//		Returns effective tabIndex of an element, either a number, or undefined if element isn't focusable.
+
+			if(domAttr.get(elem, "disabled")){
+				return undefined;
+			}else if(domAttr.has(elem, "tabIndex")){
+				// Explicit tab index setting
+				return +domAttr.get(elem, "tabIndex");// + to convert string --> number
+			}else{
+				// No explicit tabIndex setting, so depends on node type
+				return a11y.hasDefaultTabStop(elem) ? 0 : undefined;
+			}
+		},
+
 		isTabNavigable: function(/*Element*/ elem){
 			// summary:
 			//		Tests if an element is tab-navigable
 
-			// TODO: convert (and rename method) to return effective tabIndex; will save time in _getTabNavigable()
-			if(domAttr.get(elem, "disabled")){
-				return false;
-			}else if(domAttr.has(elem, "tabIndex")){
-				// Explicit tab index setting
-				return domAttr.get(elem, "tabIndex") >= 0; // boolean
-			}else{
-				// No explicit tabIndex setting, so depends on node type
-				return a11y.hasDefaultTabStop(elem);
-			}
+			return a11y.effectiveTabIndex(elem) >= 0;
+		},
+
+		isFocusable: function(/*Element*/ elem){
+			// summary:
+			//		Tests if an element is focusable by tabbing to it, or clicking it with the mouse.
+
+			return a11y.effectiveTabIndex(elem) >= -1;
 		},
 
 		_getTabNavigable: function(/*DOMNode*/ root){
@@ -13688,7 +13750,7 @@ define([
 					node.name && node.name.toLowerCase();
 			}
 
-			var shown = a11y._isElementShown, isTabNavigable = a11y.isTabNavigable;
+			var shown = a11y._isElementShown, effectiveTabIndex = a11y.effectiveTabIndex;
 			var walkTree = function(/*DOMNode*/ parent){
 				for(var child = parent.firstChild; child; child = child.nextSibling){
 					// Skip text elements, hidden elements, and also non-HTML elements (those in custom namespaces) in IE,
@@ -13697,9 +13759,9 @@ define([
 						continue;
 					}
 
-					if(isTabNavigable(child)){
-						var tabindex = +domAttr.get(child, "tabIndex");	// + to convert string --> number
-						if(!domAttr.has(child, "tabIndex") || tabindex == 0){
+					var tabindex = effectiveTabIndex(child);
+					if(tabindex >= 0){
+						if(tabindex == 0){
 							if(!first){
 								first = child;
 							}
@@ -14116,9 +14178,8 @@ define([
 	"dojo/keys", // keys.ESCAPE
 	"dojo/_base/lang",
 	"dojo/on",
-	"dojo/sniff", // has("ie"), has("quirks")
 	"./_FormWidgetMixin"
-], function(declare, domAttr, keys, lang, on, has, _FormWidgetMixin){
+], function(declare, domAttr, keys, lang, on, _FormWidgetMixin){
 
 	// module:
 	//		dijit/form/_FormValueMixin
