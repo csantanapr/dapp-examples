@@ -1,8 +1,15 @@
-# dApp Example: Hello
+# dApp Example: Request App
+Shows a simple App of 3 views for work orders requests using the dApp Framework
 
 
 ## App Requirements
+The client provided wireframes and some documentation for the desire functionality of the App.
 
+- Requirement documentation: [docs/ReferenceImplementationRequirementsandDocumentation.pdf](docs/ReferenceImplementationRequirementsandDocumentation.pdf "ReferenceImplementationRequirementsandDocumentation").
+- Request Phone Wireframes
+    - ![Request Phone Wireframes](docs/Request Phone Wireframes.png "Request Phone Wireframes")
+- Request Tablet and Desktop Wireframes
+    - ![Request Tablet and Desktop Wireframes.png](docs/Request Tablet and Desktop Wireframes.png "Request Tablet and Desktop Wireframes.png")
 
 
 
