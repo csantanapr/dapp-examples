@@ -42,7 +42,8 @@
     "views": {
         "home":{
             //Mandatory for defaultViews
-            "template": "app/views/home/home.html"
+            "template": "app/views/home/home.html",
+            "controller" : "app/views/home/home.js",
         }
     },
     "has": {
