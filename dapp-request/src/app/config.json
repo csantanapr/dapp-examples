@@ -33,6 +33,76 @@
         //listens to "app-initLayout,app-layoutVIew,app-resize"
         "dojox/app/controllers/Layout"
     ],
+    //Optional, App levels stores shared with views
+    "stores": {
+        "requests":{
+            "type": "dojo/store/Memory",
+            "observable": true,
+            "params": { // parameters used to initialize the data store
+                "data": [{
+                            "id": 100,
+                            "requestType": "software",
+                            "description": "Description text for id=100",
+                            "status": "open",
+                            "priority": "1-high",
+                            "requestedBy": "jsmith@gmail.com",
+                            "requestedFinishDate": "2013-06-20",
+                            "assignedTo": "jsmith@gmail.com",
+                            "actualFinishDate": null,
+                            "estimatedUnits": 3,
+                            "unitType": "hours",
+                            "createdDate": "2013-01-20T19:20:30",
+                            "updatedDate": "2013-01-21T15:21:30"
+                        },
+                        {
+                            "id": 101,
+                            "requestType": "service",
+                            "description": "Zippy Description text for id=101",
+                            "status": "open",
+                            "priority": "2-medium",
+                            "requestedBy": "jsmith@gmail.com",
+                            "requestedFinishDate": "2013-07-20",
+                            "assignedTo": "suestatler@gmail.com",
+                            "actualFinishDate": null,
+                            "estimatedUnits": 0,
+                            "unitType": "days",
+                            "createdDate": "2013-02-20T19:20:30",
+                            "updatedDate": "2013-03-21T15:21:30",
+                        },
+                        {
+                            "id": 102,
+                            "requestType": "consulting",
+                            "description": "A Description text for id=102",
+                            "status": "close",
+                            "priority": "2-medium",
+                            "requestedBy": "sdoe@gmail.com",
+                            "requestedFinishDate": "2013-03-20",
+                            "assignedTo": "jsmith@gmail.com",
+                            "actualFinishDate": "2013-02-21T15:21:30",
+                            "estimatedUnits": 10,
+                            "unitType": "days",
+                            "createdDate": "2013-01-20T19:20:30",
+                            "updatedDate": "2013-02-21T15:21:30",
+                        }],
+                "idProperty":"id"
+            }
+        }/*,"requests":{
+            "type": "dojo/store/JsonRest",
+            "observable": true,
+            "params": {
+                "target": "app/resources/data/rest/requests.json"
+            }
+        },"requests":{
+            "type": "dojo/store/JsonRest",
+            "observable": true,
+            "params": {
+                "target": "http://localhost:3000/items"
+            }
+        }*/
+
+    },
+
+
     //Mandatory, one or a set of views view1+view2+view3
     "defaultView": "home",
 

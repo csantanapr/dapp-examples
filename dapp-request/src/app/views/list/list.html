@@ -1,5 +1,10 @@
 <div class="view mblView">
-<h1 data-dojo-type="dojox/mobile/Heading" data-dojo-props="back: '${nls.back}'">
+  <h1 data-dojo-type="dojox/mobile/Heading" data-dojo-props="back: '${nls.back}'">
     ${nls.my_requests}
-</h1>
+  </h1>
+  <ul data-dojo-type="dojox/mobile/EdgeToEdgeStoreList"
+  data-dojo-props="store: this.loadedStores.requests,
+  itemMap:{description:'label'}">
+  </ul>
+
 </div>

@@ -1,4 +1,4 @@
-Build started: Tue Jul 30 2013 08:39:44 GMT-0400 (EDT)
+Build started: Tue Jul 30 2013 17:19:17 GMT-0400 (EDT)
 Build application version: 1.7.0dev (23930)
 Messages:
 info(100) Assumed module uses legacy loader API.
@@ -1369,6 +1369,9 @@ app/main:
 	dojox/mobile/RoundRectList
 	app/views/list/list
 	app/views/list/list.html
+	dojox/mobile/EdgeToEdgeStoreList
+	dojox/mobile/_StoreListMixin
+	dojox/mobile/_StoreMixin
 	app/views/list/nls/list-strings
 	dojo/i18n
 
@@ -1377,4 +1380,4 @@ app/main:
 Process finished normally
 	errors: 0
 	warnings: 55
-	build time: 8.628 seconds
+	build time: 9.806 seconds

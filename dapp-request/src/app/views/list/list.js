@@ -7,10 +7,13 @@ define([
     // the return is NodeList that has full set of functions
     // most of the function have same syntax as jquery see bellow this file for summary
     'dojo/on',
-    'dojox/mobile/ListItem',
     'dojo/NodeList-manipulate',
     // Load dojo/NodeList-manipulate to get JQuery syntax: see below this file for function syntax
-    'dojo/text!app/views/list/list.html'
+    'dojo/text!app/views/list/list.html',
+    'dojox/mobile/Heading',
+    'dojox/mobile/EdgeToEdgeStoreList',
+    'dojox/mobile/EdgeToEdgeList',
+    'dojox/mobile/ListItem'
 ], function ($, on) {
     'use strict';
 

@@ -9731,8 +9731,12 @@ define([
     // most of the function have same syntax as jquery see bellow this file for summary
     'dojo/on',
     'dojox/mobile/ListItem',
-    'dojo/NodeList-manipulate'
+    'dojo/NodeList-manipulate',
     // Load dojo/NodeList-manipulate to get JQuery syntax: see below this file for function syntax
+    'dojo/text!app/views/home/home.html',
+    'dojox/mobile/Heading',
+    'dojox/mobile/EdgeToEdgeList',
+    'dojox/mobile/ListItem'
 ], function ($, on) {
     'use strict';
 
@@ -12455,6 +12459,2201 @@ define(["./query", "./_base/lang", "./_base/array", "./dom-construct", "./NodeLi
 });
 
 },
+'dojox/mobile/Heading':function(){
+define([
+	"dojo/_base/array",
+	"dojo/_base/connect",
+	"dojo/_base/declare",
+	"dojo/_base/lang",
+	"dojo/_base/window",
+	"dojo/dom",
+	"dojo/dom-class",
+	"dojo/dom-construct",
+	"dojo/dom-style",
+	"dojo/dom-attr",
+	"dijit/registry",
+	"dijit/_Contained",
+	"dijit/_Container",
+	"dijit/_WidgetBase",
+	"./ProgressIndicator",
+	"./ToolBarButton",
+	"./View",
+	"dojo/has",
+	"dojo/has!dojo-bidi?dojox/mobile/bidi/Heading"
+], function(array, connect, declare, lang, win, dom, domClass, domConstruct, domStyle, domAttr, registry, Contained, Container, WidgetBase, ProgressIndicator, ToolBarButton, View, has, BidiHeading){
+
+	// module:
+	//		dojox/mobile/Heading
+
+	var dm = lang.getObject("dojox.mobile", true);
+
+	var Heading = declare(has("dojo-bidi") ? "dojox.mobile.NonBidiHeading" : "dojox.mobile.Heading", [WidgetBase, Container, Contained],{
+		// summary:
+		//		A widget that represents a navigation bar.
+		// description:
+		//		Heading is a widget that represents a navigation bar, which
+		//		usually appears at the top of an application. It usually
+		//		displays the title of the current view and can contain a
+		//		navigational control. If you use it with
+		//		dojox/mobile/ScrollableView, it can also be used as a fixed
+		//		header bar or a fixed footer bar. In such cases, specify the
+		//		fixed="top" attribute to be a fixed header bar or the
+		//		fixed="bottom" attribute to be a fixed footer bar. Heading can
+		//		have one or more ToolBarButton widgets as its children.
+
+		// back: String
+		//		A label for the navigational control to return to the previous View.
+		back: "",
+
+		// href: String
+		//		A URL to open when the navigational control is pressed.
+		href: "",
+
+		// moveTo: String
+		//		The id of the transition destination of the navigation control.
+		//		If the value has a hash sign ('#') before the id (e.g. #view1)
+		//		and the dojox/mobile/bookmarkable module is loaded by the user application,
+		//		the view transition updates the hash in the browser URL so that the
+		//		user can bookmark the destination view. In this case, the user
+		//		can also use the browser's back/forward button to navigate
+		//		through the views in the browser history.
+		//
+		//		If null, transitions to a blank view.
+		//		If '#', returns immediately without transition.
+		moveTo: "",
+
+		// transition: String
+		//		A type of animated transition effect. You can choose from the
+		//		standard transition types, "slide", "fade", "flip", or from the
+		//		extended transition types, "cover", "coverv", "dissolve",
+		//		"reveal", "revealv", "scaleIn", "scaleOut", "slidev",
+		//		"swirl", "zoomIn", "zoomOut", "cube", and "swap". If "none" is
+		//		specified, transition occurs immediately without animation.
+		transition: "slide",
+
+		// label: String
+		//		A title text of the heading. If the label is not specified, the
+		//		innerHTML of the node is used as a label.
+		label: "",
+
+		// iconBase: String
+		//		The default icon path for child items.
+		iconBase: "",
+
+		// tag: String
+		//		A name of HTML tag to create as domNode.
+		tag: "h1",
+
+		// busy: Boolean
+		//		If true, a progress indicator spins on this widget.
+		busy: false,
+
+		// progStyle: String
+		//		A css class name to add to the progress indicator.
+		progStyle: "mblProgWhite",
+
+		/* internal properties */
+		
+		// baseClass: String
+		//		The name of the CSS class of this widget.	
+		baseClass: "mblHeading",
+
+		buildRendering: function(){
+			if(!this.templateString){ // true if this widget is not templated
+				// Create root node if it wasn't created by _TemplatedMixin
+				this.domNode = this.containerNode = this.srcNodeRef || win.doc.createElement(this.tag);
+			}
+			this.inherited(arguments);
+			
+			if(!this.templateString){ // true if this widget is not templated
+				if(!this.label){
+					array.forEach(this.domNode.childNodes, function(n){
+						if(n.nodeType == 3){
+							var v = lang.trim(n.nodeValue);
+							if(v){
+								this.label = v;
+								this.labelNode = domConstruct.create("span", {innerHTML:v}, n, "replace");
+							}
+						}
+					}, this);
+				}
+				if(!this.labelNode){
+					this.labelNode = domConstruct.create("span", null, this.domNode);
+				}
+				this.labelNode.className = "mblHeadingSpanTitle";
+				this.labelDivNode = domConstruct.create("div", {
+					className: "mblHeadingDivTitle",
+					innerHTML: this.labelNode.innerHTML
+				}, this.domNode);
+			}
+
+			if(this.labelDivNode){
+				domAttr.set(this.labelDivNode, "role", "heading"); //a11y
+				domAttr.set(this.labelDivNode, "aria-level", "1");
+			}
+
+			dom.setSelectable(this.domNode, false);
+		},
+
+		startup: function(){
+			if(this._started){ return; }
+			var parent = this.getParent && this.getParent();
+			if(!parent || !parent.resize){ // top level widget
+				var _this = this;
+				_this.defer(function(){ // necessary to render correctly
+					_this.resize();
+				});
+			}
+			this.inherited(arguments);
+		},
+
+		resize: function(){
+			if(this.labelNode){
+				// find the rightmost left button (B), and leftmost right button (C)
+				// +-----------------------------+
+				// | |A| |B|             |C| |D| |
+				// +-----------------------------+
+				var leftBtn, rightBtn;
+				var children = this.containerNode.childNodes;
+				for(var i = children.length - 1; i >= 0; i--){
+					var c = children[i];
+					if(c.nodeType === 1 && domStyle.get(c, "display") !== "none"){
+						if(!rightBtn && domStyle.get(c, "float") === "right"){
+							rightBtn = c;
+						}
+						if(!leftBtn && domStyle.get(c, "float") === "left"){
+							leftBtn = c;
+						}
+					}
+				}
+
+				if(!this.labelNodeLen && this.label){
+					this.labelNode.style.display = "inline";
+					this.labelNodeLen = this.labelNode.offsetWidth;
+					this.labelNode.style.display = "";
+				}
+
+				var bw = this.domNode.offsetWidth; // bar width
+				var rw = rightBtn ? bw - rightBtn.offsetLeft + 5 : 0; // rightBtn width
+				var lw = leftBtn ? leftBtn.offsetLeft + leftBtn.offsetWidth + 5 : 0; // leftBtn width
+				var tw = this.labelNodeLen || 0; // title width
+				domClass[bw - Math.max(rw,lw)*2 > tw ? "add" : "remove"](this.domNode, "mblHeadingCenterTitle");
+			}
+			array.forEach(this.getChildren(), function(child){
+				if(child.resize){ child.resize(); }
+			});
+		},
+
+		_setBackAttr: function(/*String*/back){
+			// tags:
+			//		private
+			this._set("back", back);
+			if(!this.backButton){
+				this.backButton = new ToolBarButton({
+					arrow: "left",
+					label: back,
+					moveTo: this.moveTo,
+					back: !this.moveTo && !this.href, // use browser history unless moveTo or href
+					href: this.href,
+					transition: this.transition,
+					transitionDir: -1,
+					dir: this.isLeftToRight() ? "ltr" : "rtl"
+				});
+				this.backButton.placeAt(this.domNode, "first");
+			}else{
+				this.backButton.set("label", back);
+			}
+			this.resize();
+		},
+		
+		_setMoveToAttr: function(/*String*/moveTo){
+			// tags:
+			//		private
+			this._set("moveTo", moveTo);
+			if(this.backButton){
+				this.backButton.set("moveTo", moveTo);
+				this.backButton.set("back", !moveTo && !this.href);
+			}
+		},
+		
+		_setHrefAttr: function(/*String*/href){
+			// tags:
+			//		private
+			this._set("href", href);
+			if(this.backButton){
+				this.backButton.set("href", href);
+				this.backButton.set("back", !this.moveTo && !href);
+			}
+		},
+		
+		_setTransitionAttr: function(/*String*/transition){
+			// tags:
+			//		private
+			this._set("transition", transition);
+			if(this.backButton){
+				this.backButton.set("transition", transition);
+			}
+		},
+		
+		_setLabelAttr: function(/*String*/label){
+			// tags:
+			//		private
+			this._set("label", label);
+			this.labelNode.innerHTML = this.labelDivNode.innerHTML = this._cv ? this._cv(label) : label;
+		},
+
+		_setBusyAttr: function(/*Boolean*/busy){
+			// tags:
+			//		private
+			var prog = this._prog;
+			if(busy){
+				if(!prog){
+					prog = this._prog = new ProgressIndicator({size:30, center:false});
+					domClass.add(prog.domNode, this.progStyle);
+				}
+				domConstruct.place(prog.domNode, this.domNode, "first");
+				prog.start();
+			}else if(prog){
+				prog.stop();
+			}
+			this._set("busy", busy);
+		}	
+	});
+
+	return has("dojo-bidi") ? declare("dojox.mobile.Heading", [Heading, BidiHeading]) : Heading;
+});
+
+},
+'dojox/mobile/ToolBarButton':function(){
+define([
+	"dojo/_base/declare",
+	"dojo/_base/lang",
+	"dojo/_base/window",
+	"dojo/dom-class",
+	"dojo/dom-construct",
+	"dojo/dom-style",
+	"dojo/dom-attr",
+	"./sniff",
+	"./_ItemBase",
+	"dojo/has!dojo-bidi?dojox/mobile/bidi/ToolBarButton"
+], function(declare, lang, win, domClass, domConstruct, domStyle, domAttr, has, ItemBase, BidiToolBarButton){
+
+	// module:
+	//		dojox/mobile/ToolBarButton
+
+	var ToolBarButton = declare(has("dojo-bidi") ? "dojox.mobile.NonBidiToolBarButton" : "dojox.mobile.ToolBarButton", ItemBase, {
+		// summary:
+		//		A button widget which is placed in the Heading widget.
+		// description:
+		//		ToolBarButton is a button which is typically placed in the
+		//		Heading widget. It is a subclass of dojox/mobile/_ItemBase just
+		//		like ListItem or IconItem. So, unlike Button, it has basically
+		//		the same capability as ListItem or IconItem, such as icon
+		//		support, transition, etc.
+
+		// selected: Boolean
+		//		If true, the button is in the selected state.
+		selected: false,
+
+		// arrow: [const] String
+		//		Specifies "right" or "left" to be an arrow button.
+		//		Note that changing the value of the property after the widget 
+		//		creation has no effect.
+		arrow: "",
+
+		// light: [const] Boolean
+		//		If true, this widget produces only a single `<span>` node when it
+		//		has only an icon or only a label, and has no arrow. In that
+		//		case, you cannot have both icon and label, or arrow even if you
+		//		try to set them.
+		//		Note that changing the value of the property after the widget 
+		//		creation has no effect.
+		light: true,
+
+		// defaultColor: String
+		//		CSS class for the default color.
+		//		Note: If this button has an arrow (typically back buttons on iOS),
+		//		the class selector used for it is the value of defaultColor + "45".
+		//		For example, by default the arrow selector is "mblColorDefault45".
+		defaultColor: "mblColorDefault",
+
+		// selColor: String
+		//		CSS class for the selected color.
+		//		Note: If this button has an arrow (typically back buttons on iOS),
+		//		the class selector used for it is the value of selColor + "45".
+		//		For example, by default the selected arrow selector is "mblColorDefaultSel45".
+		selColor: "mblColorDefaultSel",
+
+		/* internal properties */
+		baseClass: "mblToolBarButton",
+
+		_selStartMethod: "touch",
+		_selEndMethod: "touch",
+
+		buildRendering: function(){
+			if(!this.label && this.srcNodeRef){
+				this.label = this.srcNodeRef.innerHTML;
+			}
+			this.label = lang.trim(this.label);
+			this.domNode = (this.srcNodeRef && this.srcNodeRef.tagName === "SPAN") ?
+				this.srcNodeRef : domConstruct.create("span");
+			domAttr.set(this.domNode, "role", "button");
+			this.inherited(arguments);
+
+			if(this.light && !this.arrow && (!this.icon || !this.label)){
+				this.labelNode = this.tableNode = this.bodyNode = this.iconParentNode = this.domNode;
+				domClass.add(this.domNode, this.defaultColor + " mblToolBarButtonBody" +
+							 (this.icon ? " mblToolBarButtonLightIcon" : " mblToolBarButtonLightText"));
+				return;
+			}
+
+			this.domNode.innerHTML = "";
+			if(this.arrow === "left" || this.arrow === "right"){
+				this.arrowNode = domConstruct.create("span", {
+					className: "mblToolBarButtonArrow mblToolBarButton" +
+					(this.arrow === "left" ? "Left" : "Right") + "Arrow " +
+					(has("ie") < 10 ? "" : (this.defaultColor + " " + this.defaultColor + "45"))
+				}, this.domNode);
+				domClass.add(this.domNode, "mblToolBarButtonHas" +
+					(this.arrow === "left" ? "Left" : "Right") + "Arrow");
+			}
+			this.bodyNode = domConstruct.create("span", {className:"mblToolBarButtonBody"}, this.domNode);
+			this.tableNode = domConstruct.create("table", {cellPadding:"0",cellSpacing:"0",border:"0"}, this.bodyNode);
+			if(!this.label && this.arrow){
+				// The class mblToolBarButtonText is needed for arrow shape too.
+				// If the button has a label, the class is set by _setLabelAttr. If no label, do it here.
+				this.tableNode.className = "mblToolBarButtonText";
+			}
+
+			var row = this.tableNode.insertRow(-1);
+			this.iconParentNode = row.insertCell(-1);
+			this.labelNode = row.insertCell(-1);
+			this.iconParentNode.className = "mblToolBarButtonIcon";
+			this.labelNode.className = "mblToolBarButtonLabel";
+
+			if(this.icon && this.icon !== "none" && this.label){
+				domClass.add(this.domNode, "mblToolBarButtonHasIcon");
+				domClass.add(this.bodyNode, "mblToolBarButtonLabeledIcon");
+			}
+
+			domClass.add(this.bodyNode, this.defaultColor);
+		},
+
+		startup: function(){
+			if(this._started){ return; }
+
+			this.connect(this.domNode, "onkeydown", "_onClick"); // for desktop browsers
+
+			this.inherited(arguments);
+			if(!this._isOnLine){
+				this._isOnLine = true;
+				// retry applying the attribute for which the custom setter delays the actual 
+				// work until _isOnLine is true. 
+				this.set("icon", this._pendingIcon !== undefined ? this._pendingIcon : this.icon);
+				// Not needed anymore (this code executes only once per life cycle):
+				delete this._pendingIcon; 
+			}
+		},
+
+		_onClick: function(e){
+			// summary:
+			//		Internal handler for click events.
+			// tags:
+			//		private
+			if(e && e.type === "keydown" && e.keyCode !== 13){ return; }
+			if(this.onClick(e) === false){ return; } // user's click action
+			this.defaultClickAction(e);
+		},
+
+		onClick: function(/*Event*/ /*===== e =====*/){
+			// summary:
+			//		User defined function to handle clicks
+			// tags:
+			//		callback
+		},
+
+		_setLabelAttr: function(/*String*/text){
+			// summary:
+			//		Sets the button label text.
+			this.inherited(arguments);
+			domClass.toggle(this.tableNode, "mblToolBarButtonText", text || this.arrow); // also needed if only arrow
+		},
+
+		_setSelectedAttr: function(/*Boolean*/selected){
+			// summary:
+			//		Makes this widget in the selected or unselected state.
+			var replace = function(node, a, b){
+				domClass.replace(node, a + " " + a + "45", b + " " + b + "45");
+			}
+			this.inherited(arguments);
+			if(selected){
+				domClass.replace(this.bodyNode, this.selColor, this.defaultColor);
+				if(!(has("ie") < 10) && this.arrowNode){
+					replace(this.arrowNode, this.selColor, this.defaultColor);
+				}
+			}else{
+				domClass.replace(this.bodyNode, this.defaultColor, this.selColor);
+				if(!(has("ie") < 10) && this.arrowNode){
+					replace(this.arrowNode, this.defaultColor, this.selColor);
+				}
+			}
+			domClass.toggle(this.domNode, "mblToolBarButtonSelected", selected);
+			domClass.toggle(this.bodyNode, "mblToolBarButtonBodySelected", selected);
+		}
+	});
+	return has("dojo-bidi") ? declare("dojox.mobile.ToolBarButton", [ToolBarButton, BidiToolBarButton]) : ToolBarButton;
+});
+
+},
+'dojox/mobile/View':function(){
+define([
+	"dojo/_base/array",
+	"dojo/_base/config",
+	"dojo/_base/connect",
+	"dojo/_base/declare",
+	"dojo/_base/lang",
+	"dojo/sniff",
+	"dojo/_base/window",
+	"dojo/_base/Deferred",
+	"dojo/dom",
+	"dojo/dom-class",
+	"dojo/dom-construct",
+	"dojo/dom-geometry",
+	"dojo/dom-style",
+	"dijit/registry",
+	"dijit/_Contained",
+	"dijit/_Container",
+	"dijit/_WidgetBase",
+	"./ViewController", // to load ViewController for you (no direct references)
+	"./common",
+	"./transition",
+	"./viewRegistry",
+	"./_css3"
+], function(array, config, connect, declare, lang, has, win, Deferred, dom, domClass, domConstruct, domGeometry, domStyle, registry, Contained, Container, WidgetBase, ViewController, common, transitDeferred, viewRegistry, css3){
+
+	// module:
+	//		dojox/mobile/View
+
+	var dm = lang.getObject("dojox.mobile", true);
+
+	return declare("dojox.mobile.View", [WidgetBase, Container, Contained], {
+		// summary:
+		//		A container widget for any HTML element and/or Dojo widgets
+		// description:
+		//		View is a container widget for any HTML element and/or Dojo widgets.
+		//		As a Dojo widget container it can itself contain View widgets
+		//		forming a set of nested views. A Dojo Mobile application is usually
+		//		made of multiple View widgets and the user can navigate through
+		//		the views back and forth with animated transition effects.
+		//		
+		//		When using several sibling views (direct children of the same
+		//		element), you can use the 'selected' attribute to define whether
+		//		the view should be displayed when the application is launched.
+		//		If no view has selected=true, the first sibling view is displayed
+		//		at startup time.
+
+		// selected: Boolean
+		//		If true, the view is displayed at startup time.
+		selected: false,
+
+		// keepScrollPos: Boolean
+		//		If true, the scroll position is kept when transition occurs between views.
+		keepScrollPos: true,
+
+		// tag: String
+		//		The name of the HTML tag to create as domNode. The default value is "div".
+		tag: "div",
+
+		/* internal properties */
+		baseClass: "mblView",
+
+		constructor: function(/*Object*/params, /*DomNode?*/node){
+			// summary:
+			//		Creates a new instance of the class.
+			// params:
+			//		Contains the parameters.
+			// node:
+			//		The DOM node. If none is specified, it is automatically created. 
+			if(node){
+				dom.byId(node).style.visibility = "hidden";
+			}
+		},
+
+		destroy: function(){
+			viewRegistry.remove(this.id);
+			this.inherited(arguments);
+		},
+
+		buildRendering: function(){
+			if(!this.templateString){
+				// Create root node if it wasn't created by _TemplatedMixin
+				this.domNode = this.containerNode = this.srcNodeRef || domConstruct.create(this.tag);
+			}
+
+			this._animEndHandle = this.connect(this.domNode, css3.name("animationEnd"), "onAnimationEnd");
+			this._animStartHandle = this.connect(this.domNode, css3.name("animationStart"), "onAnimationStart");
+			if(!config['mblCSS3Transition']){
+				this._transEndHandle = this.connect(this.domNode, css3.name("transitionEnd"), "onAnimationEnd");
+			}
+			if(has('mblAndroid3Workaround')){
+				// workaround for the screen flicker issue on Android 3.x/4.0
+				// applying "-webkit-transform-style:preserve-3d" to domNode can avoid
+				// transition animation flicker
+				domStyle.set(this.domNode, css3.name("transformStyle"), "preserve-3d");
+			}
+
+			viewRegistry.add(this);
+			this.inherited(arguments);
+		},
+
+		startup: function(){
+			if(this._started){ return; }
+
+			// Determine which view among the siblings should be visible.
+			// Priority:
+			//	 1. fragment id in the url (ex. #view1,view2)
+			//	 2. this.selected
+			//	 3. the first view
+			if(this._visible === undefined){
+				var views = this.getSiblingViews();
+				var ids = location.hash && location.hash.substring(1).split(/,/);
+				var fragView, selectedView, firstView;
+				array.forEach(views, function(v, i){
+					if(array.indexOf(ids, v.id) !== -1){ fragView = v; }
+					if(i == 0){ firstView = v; }
+					if(v.selected){ selectedView = v; }
+					v._visible = false;
+				}, this);
+				(fragView || selectedView || firstView)._visible = true;
+			}
+			if(this._visible){
+				// The 2nd arg is not to hide its sibling views so that they can be
+				// correctly initialized.
+				this.show(true, true);
+
+				// Defer firing events to let user connect to events just after creation
+				// TODO: revisit this for 2.0
+				this.defer(function(){
+					this.onStartView();
+					connect.publish("/dojox/mobile/startView", [this]);
+				});
+			}
+
+			if(this.domNode.style.visibility != "visible"){ // this check is to avoid screen flickers
+				this.domNode.style.visibility = "visible";
+			}
+
+			// Need to call inherited first - so that child widgets get started
+			// up correctly
+			this.inherited(arguments);
+
+			var parent = this.getParent();
+			if(!parent || !parent.resize){ // top level widget
+				this.resize();
+			}
+
+			if(!this._visible){
+				// hide() should be called last so that child widgets can be
+				// initialized while they are visible.
+				this.hide();
+			}
+		},
+
+		resize: function(){
+			// summary:
+			//		Calls resize() of each child widget.
+			array.forEach(this.getChildren(), function(child){
+				if(child.resize){ child.resize(); }
+			});
+		},
+
+		onStartView: function(){
+			// summary:
+			//		Stub function to connect to from your application.
+			// description:
+			//		Called only when this view is shown at startup time.
+		},
+
+		onBeforeTransitionIn: function(moveTo, dir, transition, context, method){
+			// summary:
+			//		Stub function to connect to from your application.
+			// description:
+			//		Called before the arriving transition occurs.
+		},
+
+		onAfterTransitionIn: function(moveTo, dir, transition, context, method){
+			// summary:
+			//		Stub function to connect to from your application.
+			// description:
+			//		Called after the arriving transition occurs.
+		},
+
+		onBeforeTransitionOut: function(moveTo, dir, transition, context, method){
+			// summary:
+			//		Stub function to connect to from your application.
+			// description:
+			//		Called before the leaving transition occurs.
+		},
+
+		onAfterTransitionOut: function(moveTo, dir, transition, context, method){
+			// summary:
+			//		Stub function to connect to from your application.
+			// description:
+			//		Called after the leaving transition occurs.
+		},
+
+		_clearClasses: function(/*DomNode*/node){
+			// summary:
+			//		Clean up the domNode classes that were added while making a transition.
+			// description:
+			//		Remove all the "mbl" prefixed classes except mbl*View.
+			if(!node){ return; }
+			var classes = [];
+			array.forEach(lang.trim(node.className||"").split(/\s+/), function(c){
+				if(c.match(/^mbl\w*View$/) || c.indexOf("mbl") === -1){
+					classes.push(c);
+				}
+			}, this);
+			node.className = classes.join(' ');
+		},
+
+		_fixViewState: function(/*DomNode*/toNode){
+			// summary:
+			//		Sanity check for view transition states.
+			// description:
+			//		Sometimes uninitialization of Views fails after making view transition,
+			//		and that results in failure of subsequent view transitions.
+			//		This function does the uninitialization for all the sibling views.
+			var nodes = this.domNode.parentNode.childNodes;
+			for(var i = 0; i < nodes.length; i++){
+				var n = nodes[i];
+				if(n.nodeType === 1 && domClass.contains(n, "mblView")){
+					this._clearClasses(n);
+				}
+			}
+			this._clearClasses(toNode); // just in case toNode is a sibling of an ancestor.
+			
+			// #16337
+			// Uninitialization may fail to clear _inProgress when multiple
+			// performTransition calls occur in a short duration of time.
+			var toWidget = registry.byNode(toNode);
+			if(toWidget){
+				toWidget._inProgress = false;
+			}
+		},
+
+		convertToId: function(moveTo){
+			if(typeof(moveTo) == "string"){
+				// removes a leading hash mark (#) and params if exists
+				// ex. "#bar&myParam=0003" -> "bar"
+				return moveTo.replace(/^#?([^&?]+).*/, "$1");
+			}
+			return moveTo;
+		},
+
+		_isBookmarkable: function(detail){
+			return detail.moveTo && (config['mblForceBookmarkable'] || detail.moveTo.charAt(0) === '#') && !detail.hashchange;
+		},
+
+		performTransition: function(/*String*/moveTo, /*Number*/transitionDir, /*String*/transition,
+									/*Object|null*/context, /*String|Function*/method /*...*/){
+			// summary:
+			//		Function to perform the various types of view transitions, such as fade, slide, and flip.
+			// moveTo: String
+			//		The id of the transition destination view which resides in
+			//		the current page.
+			//		If the value has a hash sign ('#') before the id
+			//		(e.g. #view1) and the dojo/hash module is loaded by the user
+			//		application, the view transition updates the hash in the
+			//		browser URL so that the user can bookmark the destination
+			//		view. In this case, the user can also use the browser's
+			//		back/forward button to navigate through the views in the
+			//		browser history.
+			//		If null, transitions to a blank view.
+			//		If '#', returns immediately without transition.
+			// transitionDir: Number
+			//		The transition direction. If 1, transition forward. If -1, transition backward.
+			//		For example, the slide transition slides the view from right to left when transitionDir == 1,
+			//		and from left to right when transitionDir == -1.
+			// transition: String
+			//		A type of animated transition effect. You can choose from
+			//		the standard transition types, "slide", "fade", "flip", or
+			//		from the extended transition types, "cover", "coverv",
+			//		"dissolve", "reveal", "revealv", "scaleIn", "scaleOut",
+			//		"slidev", "swirl", "zoomIn", "zoomOut", "cube", and
+			//		"swap". If "none" is specified, transition occurs
+			//		immediately without animation.
+			// context: Object
+			//		The object that the callback function will receive as "this".
+			// method: String|Function
+			//		A callback function that is called when the transition has finished.
+			//		A function reference, or name of a function in context.
+			// tags:
+			//		public
+			//
+			// example:
+			//		Transition backward to a view whose id is "foo" with the slide animation.
+			//	|	performTransition("foo", -1, "slide");
+			//
+			// example:
+			//		Transition forward to a blank view, and then open another page.
+			//	|	performTransition(null, 1, "slide", null, function(){location.href = href;});
+
+			if(this._inProgress){ return; } // transition is in progress
+			this._inProgress = true;
+			
+			// normalize the arg
+			var detail, optArgs;
+			if(moveTo && typeof(moveTo) === "object"){
+				detail = moveTo;
+				optArgs = transitionDir; // array
+			}else{
+				detail = {
+					moveTo: moveTo,
+					transitionDir: transitionDir,
+					transition: transition,
+					context: context,
+					method: method
+				};
+				optArgs = [];
+				for(var i = 5; i < arguments.length; i++){
+					optArgs.push(arguments[i]);
+				}
+			}
+
+			// save the parameters
+			this._detail = detail;
+			this._optArgs = optArgs;
+			this._arguments = [
+				detail.moveTo,
+				detail.transitionDir,
+				detail.transition,
+				detail.context,
+				detail.method
+			];
+
+			if(detail.moveTo === "#"){ return; }
+			var toNode;
+			if(detail.moveTo){
+				toNode = this.convertToId(detail.moveTo);
+			}else{
+				if(!this._dummyNode){
+					this._dummyNode = win.doc.createElement("div");
+					win.body().appendChild(this._dummyNode);
+				}
+				toNode = this._dummyNode;
+			}
+
+			if(this.addTransitionInfo && typeof(detail.moveTo) == "string" && this._isBookmarkable(detail)){
+				this.addTransitionInfo(this.id, detail.moveTo, {transitionDir:detail.transitionDir, transition:detail.transition});
+			}
+
+			var fromNode = this.domNode;
+			var fromTop = fromNode.offsetTop;
+			toNode = this.toNode = dom.byId(toNode);
+			if(!toNode){ console.log("dojox/mobile/View.performTransition: destination view not found: "+detail.moveTo); return; }
+			toNode.style.visibility = "hidden";
+			toNode.style.display = "";
+			this._fixViewState(toNode);
+			var toWidget = registry.byNode(toNode);
+			if(toWidget){
+				// Now that the target view became visible, it's time to run resize()
+				if(config["mblAlwaysResizeOnTransition"] || !toWidget._resized){
+					common.resizeAll(null, toWidget);
+					toWidget._resized = true;
+				}
+
+				if(detail.transition && detail.transition != "none"){
+					// Temporarily add padding to align with the fromNode while transition
+					toWidget._addTransitionPaddingTop(fromTop);
+				}
+
+				toWidget.load && toWidget.load(); // for ContentView
+
+				toWidget.movedFrom = fromNode.id;
+			}
+			if(has('mblAndroidWorkaround') && !config['mblCSS3Transition']
+					&& detail.transition && detail.transition != "none"){
+				// workaround for the screen flicker issue on Android 2.2/2.3
+				// apply "-webkit-transform-style:preserve-3d" to both toNode and fromNode
+				// to make them 3d-transition-ready state just before transition animation
+				domStyle.set(toNode, css3.name("transformStyle"), "preserve-3d");
+				domStyle.set(fromNode, css3.name("transformStyle"), "preserve-3d");
+				// show toNode offscreen to avoid flicker when switching "display" and "visibility" styles
+				domClass.add(toNode, "mblAndroidWorkaround");
+			}
+
+			this.onBeforeTransitionOut.apply(this, this._arguments);
+			connect.publish("/dojox/mobile/beforeTransitionOut", [this].concat(lang._toArray(this._arguments)));
+			if(toWidget){
+				// perform view transition keeping the scroll position
+				if(this.keepScrollPos && !this.getParent()){
+					var scrollTop = win.body().scrollTop || win.doc.documentElement.scrollTop || win.global.pageYOffset || 0;
+					fromNode._scrollTop = scrollTop;
+					var toTop = (detail.transitionDir == 1) ? 0 : (toNode._scrollTop || 0);
+					toNode.style.top = "0px";
+					if(scrollTop > 1 || toTop !== 0){
+						fromNode.style.top = toTop - scrollTop + "px";
+						if(config["mblHideAddressBar"] !== false){
+							this.defer(function(){ // iPhone needs setTimeout (via defer)
+								win.global.scrollTo(0, (toTop || 1));
+							});
+						}
+					}
+				}else{
+					toNode.style.top = "0px";
+				}
+				toWidget.onBeforeTransitionIn.apply(toWidget, this._arguments);
+				connect.publish("/dojox/mobile/beforeTransitionIn", [toWidget].concat(lang._toArray(this._arguments)));
+			}
+			toNode.style.display = "none";
+			toNode.style.visibility = "visible";
+
+			common.fromView = this;
+			common.toView = toWidget;
+
+			this._doTransition(fromNode, toNode, detail.transition, detail.transitionDir);
+		},
+
+		_addTransitionPaddingTop: function(/*String|Integer*/ value){
+			// add padding top to the view in order to get alignment during the transition
+			this.containerNode.style.paddingTop = value + "px";
+		},
+
+		_removeTransitionPaddingTop: function(){
+			// remove padding top from the view after the transition
+			this.containerNode.style.paddingTop = "";
+		},
+
+		_toCls: function(s){
+			// convert from transition name to corresponding class name
+			// ex. "slide" -> "mblSlide"
+			return "mbl"+s.charAt(0).toUpperCase() + s.substring(1);
+		},
+
+		_doTransition: function(fromNode, toNode, transition, transitionDir){
+			var rev = (transitionDir == -1) ? " mblReverse" : "";
+			toNode.style.display = "";
+			if(!transition || transition == "none"){
+				this.domNode.style.display = "none";
+				this.invokeCallback();
+			}else if(config['mblCSS3Transition']){
+				//get dojox/css3/transit first
+				Deferred.when(transitDeferred, lang.hitch(this, function(transit){
+					//follow the style of .mblView.mblIn in View.css
+					//need to set the toNode to absolute position
+					var toPosition = domStyle.get(toNode, "position");
+					domStyle.set(toNode, "position", "absolute");
+					Deferred.when(transit(fromNode, toNode, {transition: transition, reverse: (transitionDir===-1)?true:false}),lang.hitch(this,function(){
+						domStyle.set(toNode, "position", toPosition);
+						// Reset the temporary padding on toNode
+						toNode.style.paddingTop = "";
+						this.invokeCallback();
+					}));
+				}));
+			}else{
+				if(transition.indexOf("cube") != -1){
+					if(has('ipad')){
+						domStyle.set(toNode.parentNode, {webkitPerspective:1600});
+					}else if(has("ios")){
+						domStyle.set(toNode.parentNode, {webkitPerspective:800});
+					}
+				}
+				var s = this._toCls(transition);
+				if(has('mblAndroidWorkaround')){
+					// workaround for the screen flicker issue on Android 2.2
+					// applying transition css classes just after setting toNode.style.display = ""
+					// causes flicker, so wait for a while using setTimeout (via defer)
+					var _this = this;
+					_this.defer(function(){
+						domClass.add(fromNode, s + " mblOut" + rev);
+						domClass.add(toNode, s + " mblIn" + rev);
+						domClass.remove(toNode, "mblAndroidWorkaround"); // remove offscreen style
+						_this.defer(function(){
+							domClass.add(fromNode, "mblTransition");
+							domClass.add(toNode, "mblTransition");
+						}, 30); // 30 = 100 - 70, to make total delay equal to 100ms
+					}, 70); // 70ms is experiential value
+				}else{
+					domClass.add(fromNode, s + " mblOut" + rev);
+					domClass.add(toNode, s + " mblIn" + rev);
+					this.defer(function(){
+						domClass.add(fromNode, "mblTransition");
+						domClass.add(toNode, "mblTransition");
+					}, 100);
+				}
+				// set transform origin
+				var fromOrigin = "50% 50%";
+				var toOrigin = "50% 50%";
+				var scrollTop, posX, posY;
+				if(transition.indexOf("swirl") != -1 || transition.indexOf("zoom") != -1){
+					if(this.keepScrollPos && !this.getParent()){
+						scrollTop = win.body().scrollTop || win.doc.documentElement.scrollTop || win.global.pageYOffset || 0;
+					}else{
+						scrollTop = -domGeometry.position(fromNode, true).y;
+					}
+					posY = win.global.innerHeight / 2 + scrollTop;
+					fromOrigin = "50% " + posY + "px";
+					toOrigin = "50% " + posY + "px";
+				}else if(transition.indexOf("scale") != -1){
+					var viewPos = domGeometry.position(fromNode, true);
+					posX = ((this.clickedPosX !== undefined) ? this.clickedPosX : win.global.innerWidth / 2) - viewPos.x;
+					if(this.keepScrollPos && !this.getParent()){
+						scrollTop = win.body().scrollTop || win.doc.documentElement.scrollTop || win.global.pageYOffset || 0;
+					}else{
+						scrollTop = -viewPos.y;
+					}
+					posY = ((this.clickedPosY !== undefined) ? this.clickedPosY : win.global.innerHeight / 2) + scrollTop;
+					fromOrigin = posX + "px " + posY + "px";
+					toOrigin = posX + "px " + posY + "px";
+				}
+				domStyle.set(fromNode, css3.add({}, {transformOrigin:fromOrigin}));
+				domStyle.set(toNode, css3.add({}, {transformOrigin:toOrigin}));
+			}
+		},
+
+		onAnimationStart: function(e){
+			// summary:
+			//		A handler that is called when transition animation starts.
+		},
+
+		onAnimationEnd: function(e){
+			// summary:
+			//		A handler that is called after transition animation ends.
+			var name = e.animationName || e.target.className;
+			if(name.indexOf("Out") === -1 &&
+				name.indexOf("In") === -1 &&
+				name.indexOf("Shrink") === -1){ return; }
+			var isOut = false;
+			if(domClass.contains(this.domNode, "mblOut")){
+				isOut = true;
+				this.domNode.style.display = "none";
+				domClass.remove(this.domNode, [this._toCls(this._detail.transition), "mblIn", "mblOut", "mblReverse"]);
+			}else{
+				// Reset the temporary padding
+				this._removeTransitionPaddingTop();
+			}
+			domStyle.set(this.domNode, css3.add({}, {transformOrigin:""}));
+			if(name.indexOf("Shrink") !== -1){
+				var li = e.target;
+				li.style.display = "none";
+				domClass.remove(li, "mblCloseContent");
+
+				// If target is placed inside scrollable, need to call onTouchEnd
+				// to adjust scroll position
+				var p = viewRegistry.getEnclosingScrollable(this.domNode);
+				p && p.onTouchEnd();
+			}
+			if(isOut){
+				this.invokeCallback();
+			}
+			this._clearClasses(this.domNode);
+
+			// clear the clicked position
+			this.clickedPosX = this.clickedPosY = undefined;
+
+			if(name.indexOf("Cube") !== -1 &&
+				name.indexOf("In") !== -1 && has("ios")){
+				this.domNode.parentNode.style[css3.name("perspective")] = "";
+			}
+		},
+
+		invokeCallback: function(){
+			// summary:
+			//		A function to be called after performing a transition to
+			//		call a specified callback.
+			this.onAfterTransitionOut.apply(this, this._arguments);
+			connect.publish("/dojox/mobile/afterTransitionOut", [this].concat(this._arguments));
+			var toWidget = registry.byNode(this.toNode);
+			if(toWidget){
+				toWidget.onAfterTransitionIn.apply(toWidget, this._arguments);
+				connect.publish("/dojox/mobile/afterTransitionIn", [toWidget].concat(this._arguments));
+				toWidget.movedFrom = undefined;
+				if(this.setFragIds && this._isBookmarkable(this._detail)){
+					this.setFragIds(toWidget); // setFragIds is defined in bookmarkable.js
+				}
+			}
+			if(has('mblAndroidWorkaround')){
+				// workaround for the screen flicker issue on Android 2.2/2.3
+				// remove "-webkit-transform-style" style after transition finished
+				// to avoid side effects such as input field auto-scrolling issue
+				// use setTimeout (via defer) to avoid flicker in case of ScrollableView
+				this.defer(function(){
+					if(toWidget){ domStyle.set(this.toNode, css3.name("transformStyle"), ""); }
+					domStyle.set(this.domNode, css3.name("transformStyle"), "");
+				});
+			}
+
+			var c = this._detail.context, m = this._detail.method;
+			if(c || m){
+				if(!m){
+					m = c;
+					c = null;
+				}
+				c = c || win.global;
+				if(typeof(m) == "string"){
+					c[m].apply(c, this._optArgs);
+				}else if(typeof(m) == "function"){
+					m.apply(c, this._optArgs);
+				}
+			}
+			this._detail = this._optArgs = this._arguments = undefined;
+			this._inProgress = false;
+		},
+
+		isVisible: function(/*Boolean?*/checkAncestors){
+			// summary:
+			//		Return true if this view is visible
+			// checkAncestors:
+			//		If true, in addition to its own visibility, also checks the
+			//		ancestors visibility to see if the view is actually being
+			//		shown or not.
+			var visible = function(node){
+				return domStyle.get(node, "display") !== "none";
+			};
+			if(checkAncestors){
+				for(var n = this.domNode; n.tagName !== "BODY"; n = n.parentNode){
+					if(!visible(n)){ return false; }
+				}
+				return true;
+			}else{
+				return visible(this.domNode);
+			}
+		},
+
+		getShowingView: function(){
+			// summary:
+			//		Find the currently showing view from my sibling views.
+			// description:
+			//		Note that depending on the ancestor views' visibility,
+			//		the found view may not be actually shown.
+			var nodes = this.domNode.parentNode.childNodes;
+			for(var i = 0; i < nodes.length; i++){
+				var n = nodes[i];
+				if(n.nodeType === 1 && domClass.contains(n, "mblView") && n.style.display !== "none"){
+					return registry.byNode(n);
+				}
+			}
+			return null;
+		},
+
+		getSiblingViews: function(){
+			// summary:
+			//		Returns an array of the sibling views.
+			if(!this.domNode.parentNode){ return [this]; }
+			return array.map(array.filter(this.domNode.parentNode.childNodes,
+				function(n){ return n.nodeType === 1 && domClass.contains(n, "mblView"); }),
+				function(n){ return registry.byNode(n); });
+		},
+
+		show: function(/*Boolean?*/noEvent, /*Boolean?*/doNotHideOthers){
+			// summary:
+			//		Shows this view without a transition animation.
+			var out = this.getShowingView();
+			if(!noEvent){
+				if(out){
+					out.onBeforeTransitionOut(out.id);
+					connect.publish("/dojox/mobile/beforeTransitionOut", [out, out.id]);
+				}
+				this.onBeforeTransitionIn(this.id);
+				connect.publish("/dojox/mobile/beforeTransitionIn", [this, this.id]);
+			}
+
+			if(doNotHideOthers){
+				this.domNode.style.display = "";
+			}else{
+				array.forEach(this.getSiblingViews(), function(v){
+					v.domNode.style.display = (v === this) ? "" : "none";
+				}, this);
+			}
+			this.load && this.load(); // for ContentView
+
+			if(!noEvent){
+				if(out){
+					out.onAfterTransitionOut(out.id);
+					connect.publish("/dojox/mobile/afterTransitionOut", [out, out.id]);
+				}
+				this.onAfterTransitionIn(this.id);
+				connect.publish("/dojox/mobile/afterTransitionIn", [this, this.id]);
+			}
+		},
+
+		hide: function(){
+			// summary:
+			//		Hides this view without a transition animation.
+			this.domNode.style.display = "none";
+		}
+	});
+});
+
+},
+'dojox/mobile/ViewController':function(){
+define([
+	"dojo/_base/kernel",
+	"dojo/_base/array",
+	"dojo/_base/connect",
+	"dojo/_base/declare",
+	"dojo/_base/lang",
+	"dojo/_base/window",
+	"dojo/_base/Deferred",
+	"dojo/dom",
+	"dojo/dom-class",
+	"dojo/dom-construct",
+	"dojo/on",
+	"dojo/ready",
+	"dijit/registry",
+	"./ProgressIndicator",
+	"./TransitionEvent",
+	"./viewRegistry"
+], function(dojo, array, connect, declare, lang, win, Deferred, dom, domClass, domConstruct, on, ready, registry, ProgressIndicator, TransitionEvent, viewRegistry){
+
+	// module:
+	//		dojox/mobile/ViewController
+
+	var Controller = declare("dojox.mobile.ViewController", null, {
+		// summary:
+		//		A singleton class that controls view transition.
+		// description:
+		//		This class listens to the "startTransition" events and performs
+		//		view transitions. If the transition destination is an external
+		//		view specified with the url parameter, the view content is
+		//		retrieved and parsed to create a new target view.
+
+		// dataHandlerClass: Object
+		//		The data handler class used to load external views,
+		//		by default "dojox/mobile/dh/DataHandler"
+		//		(see the Data Handlers page in the reference documentation).
+		dataHandlerClass: "dojox/mobile/dh/DataHandler",
+		// dataSourceClass: Object
+		//		The data source class used to load external views,
+		//		by default "dojox/mobile/dh/UrlDataSource"
+		//		(see the Data Handlers page in the reference documentation).
+		dataSourceClass: "dojox/mobile/dh/UrlDataSource",
+		// fileTypeMapClass: Object
+		//		The file type map class used to load external views,
+		//		by default "dojox/mobile/dh/SuffixFileTypeMap"
+		//		(see the Data Handlers page in the reference documentation).
+		fileTypeMapClass: "dojox/mobile/dh/SuffixFileTypeMap",
+
+		constructor: function(){
+			// summary:
+			//		Creates a new instance of the class.
+			// tags:
+			//		private
+			this.viewMap = {};
+			ready(lang.hitch(this, function(){
+				on(win.body(), "startTransition", lang.hitch(this, "onStartTransition"));
+			}));
+		},
+
+		findTransitionViews: function(/*String*/moveTo){
+			// summary:
+			//		Parses the moveTo argument and determines a starting view and a destination view.
+			// returns: Array
+			//		An array containing the currently showing view, the destination view
+			//		and the transition parameters, or an empty array if the moveTo argument
+			//		could not be parsed. 
+			if(!moveTo){ return []; }
+			// removes a leading hash mark (#) and params if exists
+			// ex. "#bar&myParam=0003" -> "bar"
+			moveTo.match(/^#?([^&?]+)(.*)/);
+			var params = RegExp.$2;
+			var view = registry.byId(RegExp.$1);
+			if(!view){ return []; }
+			for(var v = view.getParent(); v; v = v.getParent()){ // search for the topmost invisible parent node
+				if(v.isVisible && !v.isVisible()){
+					var sv = view.getShowingView();
+					if(sv && sv.id !== view.id){
+						view.show();
+					}
+					view = v;
+				}
+			}
+			return [view.getShowingView(), view, params]; // fromView, toView, params
+		},
+
+		openExternalView: function(/*Object*/ transOpts, /*DomNode*/ target){
+			// summary:
+			//		Loads an external view and performs a transition to it.
+			// returns: dojo/_base/Deferred
+			//		Deferred object that resolves when the external view is
+			//		ready and a transition starts. Note that it resolves before
+			//		the transition is complete.
+			// description:
+			//		This method loads external view content through the
+			//		dojox/mobile data handlers, creates a new View instance with
+			//		the loaded content, and performs a view transition to the
+			//		new view. The external view content can be specified with
+			//		the url property of transOpts. The new view is created under
+			//		a DOM node specified by target.
+			//
+			// example:
+			//		This example loads view1.html, creates a new view under
+			//		`<body>`, and performs a transition to the new view with the
+			//		slide animation.
+			//		
+			//	|	var vc = ViewController.getInstance();
+			//	|	vc.openExternalView({
+			//	|	    url: "view1.html", 
+			//	|	    transition: "slide"
+			//	|	}, win.body());
+			//
+			//
+			// example:
+			//		If you want to perform a view transition without animation,
+			//		you can give transition:"none" to transOpts.
+			//
+			//	|	var vc = ViewController.getInstance();
+			//	|	vc.openExternalView({
+			//	|	    url: "view1.html", 
+			//	|	    transition: "none"
+			//	|	}, win.body());
+			//
+			// example:
+			//		If you want to dynamically create an external view, but do
+			//		not want to perform a view transition to it, you can give noTransition:true to transOpts.
+			//		This may be useful when you want to preload external views before the user starts using them.
+			//
+			//	|	var vc = ViewController.getInstance();
+			//	|	vc.openExternalView({
+			//	|	    url: "view1.html", 
+			//	|	    noTransition: true
+			//	|	}, win.body());
+			//
+			// example:
+			//		To do something when the external view is ready:
+			//
+			//	|	var vc = ViewController.getInstance();
+			//	|	Deferred.when(vc.openExternalView({...}, win.body()), function(){
+			//	|	    doSomething();
+			//	|	});
+
+			var d = new Deferred();
+			var id = this.viewMap[transOpts.url];
+			if(id){
+				transOpts.moveTo = id;
+				if(transOpts.noTransition){
+					registry.byId(id).hide();
+				}else{
+					new TransitionEvent(win.body(), transOpts).dispatch();
+				}
+				d.resolve(true);
+				return d;
+			}
+
+			// if a fixed bottom bar exists, a new view should be placed before it.
+			var refNode = null;
+			for(var i = target.childNodes.length - 1; i >= 0; i--){
+				var c = target.childNodes[i];
+				if(c.nodeType === 1){
+					var fixed = c.getAttribute("fixed") // TODO: Remove the non-HTML5-compliant attribute in 2.0
+						|| c.getAttribute("data-mobile-fixed")
+						|| (registry.byNode(c) && registry.byNode(c).fixed);
+					if(fixed === "bottom"){
+						refNode = c;
+						break;
+					}
+				}
+			}
+
+			var dh = transOpts.dataHandlerClass || this.dataHandlerClass;
+			var ds = transOpts.dataSourceClass || this.dataSourceClass;
+			var ft = transOpts.fileTypeMapClass || this.fileTypeMapClass;
+			require([dh, ds, ft], lang.hitch(this, function(DataHandler, DataSource, FileTypeMap){
+				var handler = new DataHandler(new DataSource(transOpts.data || transOpts.url), target, refNode);
+				var contentType = transOpts.contentType || FileTypeMap.getContentType(transOpts.url) || "html";
+				handler.processData(contentType, lang.hitch(this, function(id){
+					if(id){
+						this.viewMap[transOpts.url] = transOpts.moveTo = id;
+						if(transOpts.noTransition){
+							registry.byId(id).hide();
+						}else{
+							new TransitionEvent(win.body(), transOpts).dispatch();
+						}
+						d.resolve(true);
+					}else{
+						d.reject("Failed to load "+transOpts.url);
+					}
+				}));
+			}));
+			return d;
+		},
+
+		onStartTransition: function(evt){
+			// summary:
+			//		A handler that performs view transition.
+			evt.preventDefault();
+			if(!evt.detail){ return; }
+			var detail = evt.detail;
+			if(!detail.moveTo && !detail.href && !detail.url && !detail.scene){ return; }
+
+			if(detail.url && !detail.moveTo){
+				var urlTarget = detail.urlTarget;
+				var w = registry.byId(urlTarget);
+				var target = w && w.containerNode || dom.byId(urlTarget);
+				if(!target){
+					w = viewRegistry.getEnclosingView(evt.target);
+					target = w && w.domNode.parentNode || win.body();
+				}
+				this.openExternalView(detail, target);
+				return;
+			}else if(detail.href){
+				if(detail.hrefTarget && detail.hrefTarget != "_self"){
+					win.global.open(detail.href, detail.hrefTarget);
+				}else{
+					var view; // find top level visible view
+					for(var v = viewRegistry.getEnclosingView(evt.target); v; v = viewRegistry.getParentView(v)){
+						view = v;
+					}
+					if(view){
+						view.performTransition(null, detail.transitionDir, detail.transition, evt.target, function(){location.href = detail.href;});
+					}
+				}
+				return;
+			}else if(detail.scene){
+				connect.publish("/dojox/mobile/app/pushScene", [detail.scene]);
+				return;
+			}
+
+			var arr = this.findTransitionViews(detail.moveTo),
+				fromView = arr[0],
+				toView = arr[1],
+				params = arr[2];
+			if(!location.hash && !detail.hashchange){
+				viewRegistry.initialView = fromView;
+			}
+			if(detail.moveTo && toView){
+				detail.moveTo = (detail.moveTo.charAt(0) === '#' ? '#' + toView.id : toView.id) + params;
+			}
+			if(!fromView || (detail.moveTo && fromView === registry.byId(detail.moveTo.replace(/^#?([^&?]+).*/, "$1")))){ return; }
+			var src = registry.getEnclosingWidget(evt.target);
+			if(src && src.callback){
+				detail.context = src;
+				detail.method = src.callback;
+			}
+			fromView.performTransition(detail);
+		}
+	});
+	Controller._instance = new Controller(); // singleton
+	Controller.getInstance = function(){
+		return Controller._instance;
+	};
+	return Controller;
+});
+
+
+},
+'dojox/mobile/viewRegistry':function(){
+define([
+	"dojo/_base/array",
+	"dojo/dom-class",
+	"dijit/registry"
+], function(array, domClass, registry){
+
+	// module:
+	//		dojox/mobile/viewRegistry
+
+	var viewRegistry = {
+		// summary:
+		//		A registry of existing views.
+
+		// length: Number
+		//		The number of registered views.
+		length: 0,
+		
+		// hash: [private] Object
+		//		The object used to register views.
+		hash: {},
+		
+		// initialView: [private] dojox/mobile/View
+		//		The initial view.
+		initialView: null,
+
+		add: function(/*dojox/mobile/View*/ view){
+			// summary:
+			//		Adds a view to the registry.
+			this.hash[view.id] = view;
+			this.length++;
+		},
+
+		remove: function(/*String*/ id){
+			// summary:
+			//		Removes a view from the registry.
+			if(this.hash[id]){
+				delete this.hash[id];
+				this.length--;
+			}
+		},
+
+		getViews: function(){
+			// summary:
+			//		Gets all registered views.
+			// returns: Array
+			var arr = [];
+			for(var i in this.hash){
+				arr.push(this.hash[i]);
+			}
+			return arr;
+		},
+
+		getParentView: function(/*dojox/mobile/View*/ view){
+			// summary:
+			//		Gets the parent view of the specified view.
+			// returns: dojox/mobile/View
+			for(var v = view.getParent(); v; v = v.getParent()){
+				if(domClass.contains(v.domNode, "mblView")){ return v; }
+			}
+			return null;
+		},
+
+		getChildViews: function(/*dojox/mobile/View*/ parent){
+			// summary:
+			//		Gets the children views of the specified view.
+			// returns: Array
+			return array.filter(this.getViews(), function(v){ return this.getParentView(v) === parent; }, this);
+		},
+
+		getEnclosingView: function(/*DomNode*/ node){
+			// summary:
+			//		Gets the view containing the specified DOM node.
+			// returns: dojox/mobile/View
+			for(var n = node; n && n.tagName !== "BODY"; n = n.parentNode){
+				if(n.nodeType === 1 && domClass.contains(n, "mblView")){
+					return registry.byNode(n);
+				}
+			}
+			return null;
+		},
+
+		getEnclosingScrollable: function(/*DomNode*/ node){
+			// summary:
+			//		Gets the dojox/mobile/scrollable object containing the specified DOM node.
+			// returns: dojox/mobile/scrollable
+			for(var w = registry.getEnclosingWidget(node); w; w = w.getParent()){
+				if(w.scrollableParams && w._v){ return w; }
+			}
+			return null;
+		}
+	};
+
+	return viewRegistry;
+});
+
+},
+'dojox/mobile/transition':function(){
+define([
+	"dojo/_base/Deferred",
+	"dojo/_base/config"
+], function(Deferred, config){
+	/*=====
+	return {
+		// summary:
+		//		This is the wrapper module which loads
+		//		dojox/css3/transit conditionally. If mblCSS3Transition
+		//		is set to 'dojox/css3/transit', it will be loaded as
+		//		the module to conduct view transitions, otherwise this module returns null.
+	};
+	=====*/
+	if(config['mblCSS3Transition']){
+		//require dojox/css3/transit and resolve it as the result of transitDeferred.
+		var transitDeferred = new Deferred();
+		require([config['mblCSS3Transition']], function(transit){
+			transitDeferred.resolve(transit);
+		});
+		return transitDeferred;
+	}
+	return null;
+});
+
+},
+'dojox/mobile/EdgeToEdgeList':function(){
+define([
+	"dojo/_base/declare",
+	"./RoundRectList"
+], function(declare, RoundRectList){
+
+	// module:
+	//		dojox/mobile/EdgeToEdgeCategory
+
+	return declare("dojox.mobile.EdgeToEdgeList", RoundRectList, {
+		// summary:
+		//		An edge-to-edge layout list.
+		// description:
+		//		EdgeToEdgeList is an edge-to-edge layout list, which displays
+		//		all items in equally-sized rows. Each item must be a
+		//		dojox/mobile/ListItem.
+		
+		// filterBoxClass: String
+		//		The name of the CSS class added to the DOM node inside which is placed the 
+		//		dojox/mobile/SearchBox created when mixing dojox/mobile/FilteredListMixin.
+		//		The default value is "mblFilteredEdgeToEdgeListSearchBox". 
+		filterBoxClass: "mblFilteredEdgeToEdgeListSearchBox",
+
+		buildRendering: function(){
+			this.inherited(arguments);
+			this.domNode.className = "mblEdgeToEdgeList";
+		}
+	});
+});
+
+},
+'dojox/mobile/RoundRectList':function(){
+define([
+	"dojo/_base/array",
+	"dojo/_base/declare",
+	"dojo/_base/event",
+	"dojo/_base/lang",
+	"dojo/_base/window",
+	"dojo/dom-construct",
+	"dojo/dom-attr",
+	"dijit/_Contained",
+	"dijit/_Container",
+	"dijit/_WidgetBase"
+], function(array, declare, event, lang, win, domConstruct, domAttr, Contained, Container, WidgetBase){
+
+	// module:
+	//		dojox/mobile/RoundRectList
+
+	return declare("dojox.mobile.RoundRectList", [WidgetBase, Container, Contained], {
+		// summary:
+		//		A rounded rectangle list.
+		// description:
+		//		RoundRectList is a rounded rectangle list, which can be used to
+		//		display a group of items. Each item must be a dojox/mobile/ListItem.
+
+		// transition: String
+		//		The default animated transition effect for child items.
+		transition: "slide",
+
+		// iconBase: String
+		//		The default icon path for child items.
+		iconBase: "",
+
+		// iconPos: String
+		//		The default icon position for child items.
+		iconPos: "",
+
+		// select: String
+		//		Selection mode of the list. The check mark is shown for the
+		//		selected list item(s). The value can be "single", "multiple", or "".
+		//		If "single", there can be only one selected item at a time.
+		//		If "multiple", there can be multiple selected items at a time.
+		//		If "", the check mark is not shown.
+		select: "",
+
+		// stateful: Boolean
+		//		If true, the last selected item remains highlighted.
+		stateful: false,
+
+		// syncWithViews: [const] Boolean
+		//		If true, this widget listens to view transition events to be
+		//		synchronized with view's visibility.
+		//		Note that changing the value of the property after the widget
+		//		creation has no effect.
+		syncWithViews: false,
+
+		// editable: [const] Boolean
+		//		If true, the list can be reordered.
+		//		Note that changing the value of the property after the widget
+		//		creation has no effect.
+		editable: false,
+
+		// tag: String
+		//		A name of html tag to create as domNode.
+		tag: "ul",
+
+		/* internal properties */
+		// editableMixinClass: String
+		//		The name of the mixin class.
+		editableMixinClass: "dojox/mobile/_EditableListMixin",
+		
+		// baseClass: String
+		//		The name of the CSS class of this widget.
+		baseClass: "mblRoundRectList",
+		
+		// filterBoxClass: String
+		//		The name of the CSS class added to the DOM node inside which is placed the 
+		//		dojox/mobile/SearchBox created when mixing dojox/mobile/FilteredListMixin.
+		//		The default value is "mblFilteredRoundRectListSearchBox".  
+		filterBoxClass: "mblFilteredRoundRectListSearchBox",
+
+		buildRendering: function(){
+			this.domNode = this.srcNodeRef || domConstruct.create(this.tag);
+			if(this.select){
+				domAttr.set(this.domNode, "role", "listbox");
+				if(this.select === "multiple"){
+					domAttr.set(this.domNode, "aria-multiselectable", "true");
+				}
+			}
+			this.inherited(arguments);
+		},
+
+		postCreate: function(){
+			if(this.editable){
+				require([this.editableMixinClass], lang.hitch(this, function(module){
+					declare.safeMixin(this, new module());
+				}));
+			}
+			this.connect(this.domNode, "onselectstart", event.stop);
+
+			if(this.syncWithViews){ // see also TabBar#postCreate
+				var f = function(view, moveTo, dir, transition, context, method){
+					var child = array.filter(this.getChildren(), function(w){
+						return w.moveTo === "#" + view.id || w.moveTo === view.id; })[0];
+					if(child){ child.set("selected", true); }
+				};
+				this.subscribe("/dojox/mobile/afterTransitionIn", f);
+				this.subscribe("/dojox/mobile/startView", f);
+			}
+		},
+
+		resize: function(){
+			// summary:
+			//		Calls resize() of each child widget.
+			array.forEach(this.getChildren(), function(child){
+				if(child.resize){ child.resize(); }
+			});
+		},
+
+		onCheckStateChanged: function(/*Widget*//*===== listItem, =====*/ /*String*//*===== newState =====*/){
+			// summary:
+			//		Stub function to connect to from your application.
+			// description:
+			//		Called when the check state has been changed.
+		},
+
+		_setStatefulAttr: function(stateful){
+			// tags:
+			//		private
+			this._set("stateful", stateful);
+			this.selectOne = stateful;
+			array.forEach(this.getChildren(), function(child){
+				child.setArrow && child.setArrow();
+			});
+		},
+
+		deselectItem: function(/*dojox/mobile/ListItem*/item){
+			// summary:
+			//		Deselects the given item.
+			item.set("selected", false);
+		},
+
+		deselectAll: function(){
+			// summary:
+			//		Deselects all the items.
+			array.forEach(this.getChildren(), function(child){
+				child.set("selected", false);
+			});
+		},
+
+		selectItem: function(/*ListItem*/item){
+			// summary:
+			//		Selects the given item.
+			item.set("selected", true);
+		}
+	});
+});
+
+},
+'app/views/list/list':function(){
+/*jslint nomen: true */
+/*jshint nomen: true */
+/*global _, define, console*/
+define([
+    'dojo/query!css3',
+    //query is the core of dojo dom query
+    // the return is NodeList that has full set of functions
+    // most of the function have same syntax as jquery see bellow this file for summary
+    'dojo/on',
+    'dojo/NodeList-manipulate',
+    // Load dojo/NodeList-manipulate to get JQuery syntax: see below this file for function syntax
+    'dojo/text!app/views/list/list.html',
+    'dojox/mobile/Heading',
+    'dojox/mobile/EdgeToEdgeStoreList',
+    'dojox/mobile/EdgeToEdgeList',
+    'dojox/mobile/ListItem'
+], function ($, on) {
+    'use strict';
+
+    var view, // set in init(params) to save in closure reference to this view controller instance
+        viewNode; // set in init(params) to save in closure reference to this view dom node
+
+
+
+    return {
+
+        init: function (params) {
+            // summary:
+            //      view life cycle init()
+            console.log(this.name + " view:init()");
+
+            //save the view node in clousure to use as scope for dom manipulatation and query
+            viewNode = this.domNode;
+            view = this;
+
+        },
+
+        beforeActivate: function (view, data) {
+            // summary:
+            //      view life cycle beforeActivate()
+            console.log(this.name + " view:beforeActivate(view,data)");
+        },
+
+        afterActivate: function (view, data) {
+            // summary:
+            //      view life cycle afterActivate()
+            console.log(this.name + " view:afterActivate(view,data)");
+        },
+
+        beforeDeactivate: function (view, data) {
+            // summary:
+            //      view life cycle beforeDeactivate()
+            console.log(this.name + " view:beforeDeactivate(view,data)");
+        },
+
+        afterDeactivate: function (view, data) {
+            // summary:
+            //      view life cycle afterDeactivate()
+            console.log(this.name + " view:afterDeactivate(view,data)");
+        },
+
+        destroy: function (params) {
+            // summary:
+            //      view life cycle destroy()
+            console.log(this.name + " view:destory()");
+        },
+        /*****
+         * Custom Code for View Controller
+         *****/
+
+        _formatterTmpl : function (value, key) {
+            // summary:
+            //      Use to format template properties using the convention ${foo:_formatterTmpl}
+            console.log(this.name + "_formatterTmpl(" + value + "," + "key" + ");");
+
+        },
+        doSomething: function (event) {
+            console.log('did something');
+            // summary:
+            //      Example of a custom view controller callback for event listener
+            console.log(this.name + "doSomething(" + event + ");");
+
+        }
+    };
+
+
+/*
+    - dojo/NodeList-manipulate
+    - Load dojo/NodeList-manipulate to get JQuery syntax:
+
+.html( value)
+.text(value)
+.val(value)
+.append(content)
+.appendTo(query)
+.prepend(content)
+.prependTo(query)
+.after(content)
+.insertAfter(query)
+.before(content)
+.insertBefore(query)
+.wrap(html)
+.wrapAll(html)
+.wrapInner(html)
+.replaceAll(query)
+.clone()
+
+*/
+
+/*  - dojo/query!css3
+    - NodeList functions dojo/query returns NodeList and supports chanining
+    - Read the docs or source for more info:
+        - (http://dojotoolkit.org/api/1.9/dojo/NodeList)
+
+.addClass(className) adds the specified class to every node in the list
+.addClassFx(cssClass, args) Animate the effects of adding a class to all nodes in this list. see dojox.fx.addClass
+.addContent(content, position) add a node, NodeList or some HTML as a string to every item in the list. Returns the original list.
+.adopt(queryOrListOrNode, position) places any/all elements in queryOrListOrNode at a position relative to the first element in this list.
+.after(content) Places the content after every node in the NodeList.
+.andSelf() Adds the nodes from the previous dojo/NodeList to the current dojo/NodeList.
+.anim(properties, duration, easing, onEnd, delay) Animate one or more CSS properties for all nodes in this list.
+.animateProperty(args) Animate all elements of this NodeList across the properties specified. syntax identical to dojo.animateProperty
+.append(content) appends the content to every node in the NodeList.
+.appendTo(query) appends nodes in this NodeList to the nodes matched by the query passed to appendTo.
+.at(index) Returns a new NodeList comprised of items in this NodeList at the given index or indices.
+.attr(property, value) gets or sets the DOM attribute for every element in the NodeList.
+.before(content) Places the content before every node in the NodeList.
+.children(query) Returns all immediate child elements for nodes in this dojo/NodeList. Optionally takes a query to filter the child elements.
+.clone() Clones all the nodes in this NodeList and returns them as a new NodeList.
+.closest(query, root) Returns closest parent that matches query, including current node in this dojo/NodeList if it matches the query.
+.concat(item) Returns a new NodeList comprised of items in this NodeList as well as items passed in as parameters
+.connect(methodName, objOrFunc, funcName) Attach event handlers to every item of the NodeList.
+.coords() Deprecated: Use position() for border-box x/y/w/h or marginBox() for margin-box w/h/l/t.
+.data(key, value) stash or get some arbitrary data on/from these nodes.
+.delegate(selector, eventName, fn) Monitor nodes in this NodeList for [bubbled] events on nodes that match selector. Calls fn(evt) for those events, where (inside of fn()), this == the node that matches the selector.
+.dtl(template, context) Renders the specified template in each of the NodeList entries.
+.empty() clears all content from each node in the list.
+.end() Ends use of the current NodeList by returning the previous NodeList that generated the current NodeList.
+.even() Returns the even nodes in this dojo/NodeList as a dojo/NodeList.
+.every(callback, thisObject) see dojo.every() and the Array.every docs.
+.fadeIn(args) fade in all elements of this NodeList via dojo.fadeIn
+.fadeOut(args) fade out all elements of this NodeList via dojo.fadeOut
+.filter(filter) "masks" the built-in javascript filter() method (supported in Dojo via dojo.filter) to support passing a simple string filter in addition to supporting filtering function objects.
+.first() Returns the first node in this dojo/NodeList as a dojo/NodeList.
+.forEach(callback, thisObj) see dojo.forEach().
+.html(value) allows setting the innerHTML of each node in the NodeList, if there is a value passed in, otherwise, reads the innerHTML value of the first node.
+.indexOf(value, fromIndex) see dojo.indexOf(). The primary difference is that the acted-on array is implicitly this NodeList
+.innerHTML(value) allows setting the innerHTML of each node in the NodeList, if there is a value passed in, otherwise, reads the innerHTML value of the first node.
+.insertAfter(query) The nodes in this NodeList will be placed after the nodes matched by the query passed to insertAfter.
+.insertBefore(query) The nodes in this NodeList will be placed after the nodes matched by the query passed to insertAfter.
+.instantiate(declaredClass, properties) Create a new instance of a specified class, using the specified properties and each node in the NodeList as a srcNodeRef.
+.last() Returns the last node in this dojo/NodeList as a dojo/NodeList.
+.lastIndexOf(value, fromIndex) see dojo.lastIndexOf(). The primary difference is that the acted-on array is implicitly this NodeList
+.map(func, obj) see dojo.map().
+.marginBox() Returns margin-box size of nodes
+.next(query) Returns the next element for nodes in this dojo/NodeList. Optionally takes a query to filter the next elements.
+.nextAll(query) Returns all sibling elements that come after the nodes in this dojo/NodeList. Optionally takes a query to filter the sibling elements.
+.odd() Returns the odd nodes in this dojo/NodeList as a dojo/NodeList.
+.on(eventName, listener) Listen for events on the nodes in the NodeList.
+.orphan(filter) removes elements in this list that match the filter from their parents and returns them as a new NodeList.
+.parent(query) Returns immediate parent elements for nodes in this dojo/NodeList. Optionally takes a query to filter the parent elements.
+.parents(query) Returns all parent elements for nodes in this dojo/NodeList. Optionally takes a query to filter the child elements.
+.place(queryOrNode, position) places elements of this node list relative to the first element matched by queryOrNode.
+.position() Returns border-box objects (x/y/w/h) of all elements in a node list as an Array (not a NodeList).
+.prepend(content) prepends the content to every node in the NodeList.
+.prependTo(query) prepends nodes in this NodeList to the nodes matched by the query passed to prependTo.
+.prev(query) Returns the previous element for nodes in this dojo/NodeList. Optionally takes a query to filter the previous elements.
+.prevAll(query) Returns all sibling elements that come before the nodes in this dojo/NodeList. Optionally takes a query to filter the sibling elements.
+.query(queryStr) Returns a new list whose members match the passed query, assuming elements of the current NodeList as the root for each search.
+.remove(filter) removes elements in this list that match the filter from their parents and returns them as a new NodeList.
+.removeAttr(name) Removes an attribute from each node in the list.
+.removeClass(className) removes the specified class from every node in the list
+.removeClassFx(cssClass, args) Animate the effect of removing a class to all nodes in this list. see dojox.fx.removeClass
+.removeData(key) Remove the data associated with these nodes.
+.replaceAll(query) replaces nodes matched by the query passed to replaceAll with the nodes in this NodeList.
+.replaceClass(addClassStr, removeClassStr) Replaces one or more classes on a node if not present.
+.replaceWith(content) Replaces each node in ths NodeList with the content passed to replaceWith.
+.siblings(query) Returns all sibling elements for nodes in this dojo/NodeList. Optionally takes a query to filter the sibling elements.
+.slice(begin, end) Returns a new NodeList, maintaining this one in place
+.slideTo(args) slide all elements of the node list to the specified place via dojo/fx.slideTo()
+.some(callback, thisObject) Takes the same structure of arguments and returns as dojo.some() with the caveat that the passed array is implicitly this NodeList.
+.splice(index, howmany, item) Returns a new NodeList, manipulating this NodeList based on the arguments passed, potentially splicing in new elements at an offset, optionally deleting elements
+.style(property, value) gets or sets the CSS property for every element in the NodeList
+.text(value) allows setting the text value of each node in the NodeList, if there is a value passed in, otherwise, returns the text value for all the nodes in the NodeList in one string.
+.toggleClass(className, condition) Adds a class to node if not present, or removes if present.
+.toggleClassFx(cssClass, force, args) Animate the effect of adding or removing a class to all nodes in this list. see dojox.fx.toggleClass
+.toString()
+.val(value) If a value is passed, allows seting the value property of form elements in this NodeList, or properly selecting/checking the right value for radio/checkbox/select elements.
+.wipeIn(args) wipe in all elements of this NodeList via dojo/fx.wipeIn()
+.wipeOut(args) wipe out all elements of this NodeList via dojo/fx.wipeOut()
+.wrap(html) Wrap each node in the NodeList with html passed to wrap.
+.wrapAll(html) Insert html where the first node in this NodeList lives, then place all nodes in this NodeList as the child of the html.
+.wrapInner(html) For each node in the NodeList, wrap all its children with the passed in html..
+*/
+
+});
+
+},
+'dojox/mobile/EdgeToEdgeStoreList':function(){
+define([
+	"dojo/_base/declare",
+	"./EdgeToEdgeList",
+	"./_StoreListMixin"
+], function(declare, EdgeToEdgeList, StoreListMixin){
+
+	// module:
+	//		dojox/mobile/EdgeToEdgeStoreList
+
+	return declare("dojox.mobile.EdgeToEdgeStoreList", [EdgeToEdgeList, StoreListMixin],{
+		// summary:
+		//		A dojo/store-enabled version of EdgeToEdgeList.
+		// description:
+		//		EdgeToEdgeStoreList is a subclass of EdgeToEdgeList which
+		//		can generate ListItems according to the given dojo/store store.
+	});
+});
+
+},
+'dojox/mobile/_StoreListMixin':function(){
+define([
+	"dojo/_base/array",
+	"dojo/_base/declare",
+	"./_StoreMixin",
+	"./ListItem",
+	"dojo/has",
+	"dojo/has!dojo-bidi?dojox/mobile/bidi/_StoreListMixin"
+], function(array, declare, StoreMixin, ListItem, has, BidiStoreListMixin){
+
+	// module:
+	//		dojox/mobile/_StoreListMixin
+
+	var _StoreListMixin = declare(has("dojo-bidi") ? "dojox.mobile._NonBidiStoreListMixin" : "dojox.mobile._StoreListMixin", StoreMixin, {
+		// summary:
+		//		Mixin for widgets to generate the list items corresponding to
+		//		the dojo/store data provider object.
+		// description:
+		//		Mixin for widgets to generate the list items corresponding to
+		//		the dojo/store data provider object.
+		//		By mixing this class into the widgets, the list item nodes are
+		//		generated as the child nodes of the widget and automatically
+		//		regenerated whenever the corresponding data items are modified.
+
+		// append: Boolean
+		//		If true, refresh() does not clear the existing items.
+		append: false,
+
+		// itemMap: Object
+		//		An optional parameter mapping field names from the store to ItemList names.
+		//		Example: itemMap:{text:'label', profile_image_url:'icon'}
+		itemMap: null,
+
+		// itemRenderer: ListItem class or subclass
+		//		The class used to create list items. Default is dojox/mobile/ListItem.
+		itemRenderer: ListItem,
+
+		buildRendering: function(){
+			this.inherited(arguments);
+			if(!this.store){ return; }
+			var store = this.store;
+			this.store = null;
+			this.setStore(store, this.query, this.queryOptions);
+		},
+
+		createListItem: function(/*Object*/item){
+			// summary:
+			//		Creates a list item widget.
+			return new this.itemRenderer(this._createItemProperties(item));
+		},
+		
+		_createItemProperties: function(/*Object*/item){
+			// summary:
+			//		Creates list item properties.
+			var props = {};
+			if(!item["label"]){
+				props["label"] = item[this.labelProperty];
+			}
+			// TODO this code should be like for textDir in the bidi mixin createListItem method
+			// however for that dynamic set/get of the dir property must be supported first
+			// that is why for now as a workaround we keep the code here
+			if(has("dojo-bidi") && typeof props["dir"] == "undefined"){
+				props["dir"] = this.isLeftToRight() ? "ltr" : "rtl";
+			}
+			for(var name in item){
+				props[(this.itemMap && this.itemMap[name]) || name] = item[name];
+			}
+			return props;
+		},
+		
+		_setDirAttr: function(props){
+			// summary:
+			//		Set the 'dir' attribute to support Mirroring.
+			//		To be implemented by the bidi/_StoreLisMixin.js
+			return props;
+		},
+		generateList: function(/*Array*/items){
+			// summary:
+			//		Given the data, generates a list of items.
+			if(!this.append){
+				array.forEach(this.getChildren(), function(child){
+					child.destroyRecursive();
+				});
+			}
+			array.forEach(items, function(item, index){
+				this.addChild(this.createListItem(item));
+				if(item[this.childrenProperty]){
+					array.forEach(item[this.childrenProperty], function(child, index){
+						this.addChild(this.createListItem(child));
+					}, this);
+				}
+			}, this);
+		},
+
+		onComplete: function(/*Array*/items){
+			// summary:
+			//		A handler that is called after the fetch completes.
+			this.generateList(items);
+		},
+
+		onError: function(/*Object*/ /*===== errorData =====*/){
+			// summary:
+			//		An error handler.
+		},
+
+		onAdd: function(/*Object*/item, /*Number*/insertedInto){
+			// summary:
+			//		Calls createListItem and adds the new list item when a new data item has been added to the store.
+			this.addChild(this.createListItem(item), insertedInto);
+		},
+
+		onUpdate: function(/*Object*/item, /*Number*/insertedInto){
+			// summary:
+			//		Updates an existing list item when a data item has been modified.
+			this.getChildren()[insertedInto].set(this._createItemProperties(item));
+		},
+
+		onDelete: function(/*Object*/item, /*Number*/removedFrom){
+			// summary:
+			//		Deletes an existing item.
+			this.getChildren()[removedFrom].destroyRecursive();
+		}
+	});
+	return has("dojo-bidi") ? declare("dojox.mobile._StoreListMixin", [_StoreListMixin, BidiStoreListMixin]) : _StoreListMixin;	
+});
+
+},
+'dojox/mobile/_StoreMixin':function(){
+define([
+	"dojo/_base/Deferred",
+	"dojo/_base/declare"
+], function(Deferred, declare){
+
+	// module:
+	//		dojox/mobile/_StoreMixin
+
+	return declare("dojox.mobile._StoreMixin", null, {
+		// summary:
+		//		Mixin for widgets to enable dojo/store data store.
+		// description:
+		//		By mixing this class into a widget, it can get data through a
+		//		dojo/store data store. The widget must implement the following
+		//		methods to handle the retrieved data:
+		//
+		//		- onComplete(/*Array*/items), onError(/*Object*/errorData),
+		//		- onUpdate(/*Object*/item, /*Number*/insertedInto), and
+		//		- onDelete(/*Object*/item, /*Number*/removedFrom).
+	
+		// store: Object
+		//		Reference to data provider object used by this widget.
+		store: null,
+
+		// query: Object
+		//		A query that can be passed to 'store' to initially filter the items.
+		query: null,
+
+		// queryOptions: Object
+		//		An optional parameter for the query.
+		queryOptions: null,
+
+		// labelProperty: String
+		//		A property name (a property in the dojo/store item) that specifies that item's label.
+		labelProperty: "label",
+
+		// childrenProperty: String
+		//		A property name (a property in the dojo/store item) that specifies that item's children.
+		childrenProperty: "children",
+
+		setStore: function(/*dojo/store/api/Store*/store, /*String*/query, /*Object*/queryOptions){
+			// summary:
+			//		Sets the store to use with this widget.
+			if(store === this.store){ return null; }
+			if(store){
+				store.getValue = function(item, property){
+					return item[property];
+				};
+			}
+			this.store = store;
+			this._setQuery(query, queryOptions);
+			return this.refresh();
+		},
+
+		setQuery: function(/*String*/query, /*Object*/queryOptions){
+			this._setQuery(query, queryOptions);
+			return this.refresh();
+		},
+
+		_setQuery: function(/*String*/query, /*Object*/queryOptions){
+			// tags:
+			//		private
+			this.query = query;
+			this.queryOptions = queryOptions || this.queryOptions;
+		},
+
+		refresh: function(){
+			// summary:
+			//		Fetches the data and generates the list items.
+			if(!this.store){ return null; }
+			var _this = this;
+			var promise = this.store.query(this.query, this.queryOptions);
+			if(this._observe_h){
+				this._observe_h.remove();
+			}
+			Deferred.when(promise, function(results){
+				if(results.items){
+					results = results.items; // looks like dojo/data style items array
+				}
+				if(promise.observe){
+					_this._observe_h = promise.observe(function(object, previousIndex, newIndex){
+						if(previousIndex != -1){
+							if(newIndex != previousIndex){
+								// item removed or moved
+								_this.onDelete(object, previousIndex);
+								// TODO: support move, i.e. newIndex != -1?
+							}else{
+								// item modified
+								// if onAdd is not defined, we are "bug compatible" with 1.8 and we do nothing.
+								// TODO remove test in 2.0
+								if(_this.onAdd){
+									_this.onUpdate(object, newIndex);
+								}
+							}
+						}else if(newIndex != -1){
+							// item added
+							if(_this.onAdd){
+								 // new widget with onAdd method defined
+								_this.onAdd(object, newIndex);
+							}else{
+								// TODO remove in 2.0
+								// compatibility with 1.8: onAdd did not exist, add was handled by onUpdate
+								_this.onUpdate(object, newIndex);
+							}
+						}												
+					}, true); // we want to be notified of updates
+				}
+				_this.onComplete(results);
+			}, function(error){
+				_this.onError(error);
+			});
+			return promise;
+		}
+
+/*=====
+		// Subclass MUST implement the following methods.
+
+		, onComplete: function(items){
+			// summary:
+			//		A handler that is called after the fetch completes.
+		},
+
+		onError: function(errorData){
+			// summary:
+			//		An error handler.
+		},
+
+		onUpdate: function(item, insertedInto){
+			// summary:
+			//		Called when an existing data item has been modified in the store.
+			//		Note: for compatibility with previous versions where only onUpdate was present,
+			//		if onAdd is not defined, onUpdate will be called instead.
+		},
+
+		onDelete: function(item, removedFrom){
+			// summary:
+			//		Called when a data item has been removed from the store.
+		},
+		
+		// Subclass should implement the following methods.
+
+		onAdd: function(item, insertedInto){
+			// summary:
+			//		Called when a new data item has been added to the store.
+			//		Note: for compatibility with previous versions where this function did not exist,
+			//		if onAdd is not defined, onUpdate will be called instead.
+		}
+=====*/
+	});
+});
+
+},
 'dojo/i18n':function(){
 define(["./_base/kernel", "require", "./has", "./_base/array", "./_base/config", "./_base/lang", "./_base/xhr", "./json", "module"],
 	function(dojo, require, has, array, config, lang, xhr, json, module){
@@ -13011,8 +15210,9 @@ define(["./_base/kernel", "require", "./has", "./_base/array", "./_base/config",
 });
 
 },
-'url:app/config.json':"{\n    //Mandatory\n    \"id\": \"App\",\n    //Optional\n    \"name\": \"requuest-App\",\n    //Optional\n    \"description\": \"Example dApp, Work Order Requests App\",\n    //Optional, but very useful for views properties\n    \"loaderConfig\": {\n        \"paths\": {\n            \"app\": \"../app\"\n        }\n    },\n    //Optional, but required when not using the parser, and its required by views\n    \"dependencies\": [\n        \"dojo/store/Observable\",\n        \"dojox/app/controllers/History\",\n        \"dojox/app/controllers/HistoryHash\",\n        /* On Mobile always add the 2 following modules dojox/mobule a dojox/mobile/deviceTheme */\n        \"dojox/mobile/common\",\n        /* For build to include css3/lite query selectorEngine */\n        \"dojo/selector/lite\",\n        //Need to inlclude dependency for model stores across views\n        \"dojo/store/Memory\",\n        \"dojo/store/JsonRest\"\n    ],\n    //Mandatory, they listen to App.emit events, they implement dojox/app/Controller\n    \"controllers\": [\n        //listens to \"app-init, app-load\"\n        \"dojox/app/controllers/Load\",\n        //listens to \"app-transition, app-domNode\"\n        \"dojox/app/controllers/Transition\",\n        //listens to \"app-initLayout,app-layoutVIew,app-resize\"\n        \"dojox/app/controllers/Layout\"\n    ],\n    //Mandatory, one or a set of views view1+view2+view3\n    \"defaultView\": \"home\",\n\n    //Optional, App level stings\n    \"nls\": \"app/nls/app_strings\",\n    //Mandatory, Specify Application child views\n    \"views\": {\n        \"home\":{\n            //Mandatory for defaultViews\n            \"template\": \"app/views/home/home.html\",\n            \"controller\" : \"app/views/home/home.js\",\n        }\n    },\n    \"has\": {\n        \"html5history\": {\n            \"controllers\": [\n                \"dojox/app/controllers/History\"\n            ]\n        },\n        \"!html5history\": {\n            \"controllers\": [\n                \"dojox/app/controllers/HistoryHash\"\n            ]\n        }\n    }\n}\n",
-'url:app/views/home/home.html':"<h1>${nls.hello} ${nls.world}</h1>",
+'url:app/config.json':"{\n    //Mandatory\n    \"id\": \"App\",\n    //Optional\n    \"name\": \"requuest-App\",\n    //Optional\n    \"description\": \"Example dApp, Work Order Requests App\",\n    //Optional, but very useful for views properties\n    \"loaderConfig\": {\n        \"paths\": {\n            \"app\": \"../app\"\n        }\n    },\n    //Optional, but required when not using the parser, and its required by views\n    \"dependencies\": [\n        \"dojo/store/Observable\",\n        \"dojox/app/controllers/History\",\n        \"dojox/app/controllers/HistoryHash\",\n        /* On Mobile always add the 2 following modules dojox/mobule a dojox/mobile/deviceTheme */\n        \"dojox/mobile/common\",\n        /* For build to include css3/lite query selectorEngine */\n        \"dojo/selector/lite\",\n        //Need to inlclude dependency for model stores across views\n        \"dojo/store/Memory\",\n        \"dojo/store/JsonRest\"\n    ],\n    //Mandatory, they listen to App.emit events, they implement dojox/app/Controller\n    \"controllers\": [\n        //listens to \"app-init, app-load\"\n        \"dojox/app/controllers/Load\",\n        //listens to \"app-transition, app-domNode\"\n        \"dojox/app/controllers/Transition\",\n        //listens to \"app-initLayout,app-layoutVIew,app-resize\"\n        \"dojox/app/controllers/Layout\"\n    ],\n    //Optional, App levels stores shared with views\n    \"stores\": {\n        \"requests\":{\n            \"type\": \"dojo/store/Memory\",\n            \"observable\": true,\n            \"params\": { // parameters used to initialize the data store\n                \"data\": [{\n                            \"id\": 100,\n                            \"requestType\": \"software\",\n                            \"description\": \"Description text for id=100\",\n                            \"status\": \"open\",\n                            \"priority\": \"1-high\",\n                            \"requestedBy\": \"jsmith@gmail.com\",\n                            \"requestedFinishDate\": \"2013-06-20\",\n                            \"assignedTo\": \"jsmith@gmail.com\",\n                            \"actualFinishDate\": null,\n                            \"estimatedUnits\": 3,\n                            \"unitType\": \"hours\",\n                            \"createdDate\": \"2013-01-20T19:20:30\",\n                            \"updatedDate\": \"2013-01-21T15:21:30\"\n                        },\n                        {\n                            \"id\": 101,\n                            \"requestType\": \"service\",\n                            \"description\": \"Zippy Description text for id=101\",\n                            \"status\": \"open\",\n                            \"priority\": \"2-medium\",\n                            \"requestedBy\": \"jsmith@gmail.com\",\n                            \"requestedFinishDate\": \"2013-07-20\",\n                            \"assignedTo\": \"suestatler@gmail.com\",\n                            \"actualFinishDate\": null,\n                            \"estimatedUnits\": 0,\n                            \"unitType\": \"days\",\n                            \"createdDate\": \"2013-02-20T19:20:30\",\n                            \"updatedDate\": \"2013-03-21T15:21:30\",\n                        },\n                        {\n                            \"id\": 102,\n                            \"requestType\": \"consulting\",\n                            \"description\": \"A Description text for id=102\",\n                            \"status\": \"close\",\n                            \"priority\": \"2-medium\",\n                            \"requestedBy\": \"sdoe@gmail.com\",\n                            \"requestedFinishDate\": \"2013-03-20\",\n                            \"assignedTo\": \"jsmith@gmail.com\",\n                            \"actualFinishDate\": \"2013-02-21T15:21:30\",\n                            \"estimatedUnits\": 10,\n                            \"unitType\": \"days\",\n                            \"createdDate\": \"2013-01-20T19:20:30\",\n                            \"updatedDate\": \"2013-02-21T15:21:30\",\n                        }],\n                \"idProperty\":\"id\"\n            }\n        }/*,\"requests\":{\n            \"type\": \"dojo/store/JsonRest\",\n            \"observable\": true,\n            \"params\": {\n                \"target\": \"app/resources/data/rest/requests.json\"\n            }\n        },\"requests\":{\n            \"type\": \"dojo/store/JsonRest\",\n            \"observable\": true,\n            \"params\": {\n                \"target\": \"http://localhost:3000/items\"\n            }\n        }*/\n\n    },\n\n\n    //Mandatory, one or a set of views view1+view2+view3\n    \"defaultView\": \"home\",\n\n    //Optional, App level stings\n    \"nls\": \"app/nls/app_strings\",\n    //Mandatory, Specify Application child views\n    \"views\": {\n        \"home\":{\n            //Mandatory for defaultViews\n            \"template\": \"app/views/home/home.html\",\n            \"controller\" : \"app/views/home/home.js\",\n        },\n        \"list\":{\n            \"template\": \"app/views/list/list.html\",\n            \"controller\" : \"app/views/list/list.js\",\n            \"nls\": \"app/views/list/nls/list-strings\"\n        }\n    },\n    \"has\": {\n        \"html5history\": {\n            \"controllers\": [\n                \"dojox/app/controllers/History\"\n            ]\n        },\n        \"!html5history\": {\n            \"controllers\": [\n                \"dojox/app/controllers/HistoryHash\"\n            ]\n        }\n    }\n}\n",
+'url:app/views/home/home.html':"<div class=\"view mblView\">\n  <h1 data-dojo-type=\"dojox/mobile/Heading\">\n    ${nls.app_name}\n  </h1>\n  <!-- Transition to a different view using ListItem 'startTransition' Event -->\n  <ul data-dojo-type=\"dojox/mobile/EdgeToEdgeList\">\n    <li data-dojo-type=\"dojox/mobile/ListItem\"\n    data-dojo-props=\"clickable:true,target:'list',url:'#list'\">\n    ${nls.my_requests}\n  </li>\n</ul>\n</div>",
+'url:app/views/list/list.html':"<div class=\"view mblView\">\n  <h1 data-dojo-type=\"dojox/mobile/Heading\" data-dojo-props=\"back: '${nls.back}'\">\n    ${nls.my_requests}\n  </h1>\n  <ul data-dojo-type=\"dojox/mobile/EdgeToEdgeStoreList\"\n  data-dojo-props=\"store: this.loadedStores.requests,\n  itemMap:{description:'label'}\">\n  </ul>\n\n</div>",
 '*now':function(r){r(['dojo/i18n!*preload*app/nls/main*["ar","ca","cs","da","de","el","en","en-gb","en-us","es","es-es","fi","fi-fi","fr","fr-fr","he","he-il","hu","it","it-it","ja","ja-jp","ko","ko-kr","nl","nl-nl","nb","pl","pt","pt-br","pt-pt","ru","sk","sl","sv","th","tr","zh","zh-tw","zh-cn","ROOT"]']);}
 }});
 /*global define, console*/
@@ -13028,9 +15228,6 @@ define("app/main", [
     'dojox/app/main',
     'dojox/json/ref',
     'dojo/text!app/config.json',
-    //TODO: add all html templates being use in config.json to force them to be included in layer
-    // when doing custom dojo build, the build process will recognize them as dependencies for the package
-    'dojo/text!app/views/home/home.html',
     'dojo/domReady!'
 ], function (win, has, Application, json, config) {
     'use strict';
