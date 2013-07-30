@@ -2104,7 +2104,7 @@ define(["../has", "./config", "require", "module"], function(has, config, requir
 	dojo.isAsync = ! 1  || require.async;
 	dojo.locale = config.locale;
 
-	var rev = "$Rev: 43d05c6 $".match(/\d+/);
+	var rev = "$Rev$".match(/\d+/);
 	dojo.version = {
 		// summary:
 		//		Version number of the Dojo Toolkit
@@ -2117,7 +2117,7 @@ define(["../has", "./config", "require", "module"], function(has, config, requir
 		//		- flag: String: Descriptor flag. If total version is "1.2.0beta1", will be "beta1"
 		//		- revision: Number: The SVN rev from which dojo was pulled
 
-		major: 1, minor: 9, patch: 1, flag: "",
+		major: 1, minor: 9, patch: 0, flag: "dev",
 		revision: rev ? +rev[0] : NaN,
 		toString: function(){
 			var v = dojo.version;
@@ -5681,6 +5681,10 @@ define(["./has!dom-addeventlistener?:./aspect", "./_base/kernel", "./sniff"], fu
 				// see if we have a valid matchesTarget or default to dojo.query
 				matchesTarget = matchesTarget && matchesTarget.matches ? matchesTarget : dojo.query;
 				// there is a selector, so make sure it matches
+				if(eventTarget.nodeType != 1){
+					// text node will fail in native match selector
+					eventTarget = eventTarget.parentNode;
+				}
 				while(!matchesTarget.matches(eventTarget, selector, target)){
 					if(eventTarget == target || children === false || !(eventTarget = eventTarget.parentNode) || eventTarget.nodeType != 1){ // intentional assignment
 						return;

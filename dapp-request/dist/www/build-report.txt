@@ -1,4 +1,4 @@
-Build started: Mon Jul 29 2013 21:40:20 GMT-0400 (EDT)
+Build started: Tue Jul 30 2013 07:56:30 GMT-0400 (EDT)
 Build application version: 1.7.0dev (23930)
 Messages:
 info(100) Assumed module uses legacy loader API.
@@ -1173,9 +1173,6 @@ info(106) Optimizing CSS.
 	file: /Users/csantana23/git/dojo/dapp-examples/dapp-request/src/app/views/css/app.css
 	file: /Users/csantana23/git/dojo/dapp-examples/dapp-request/src/app/views/css/app_layout.css
 	file: /Users/csantana23/git/dojo/dapp-examples/dapp-request/src/app/views/css/app_theme.css
-	file: /Users/csantana23/git/dojo/dapp-examples/dapp-request/src/app/views/view1/css/view1.css
-	file: /Users/csantana23/git/dojo/dapp-examples/dapp-request/src/app/views/view1/css/view1_layout.css
-	file: /Users/csantana23/git/dojo/dapp-examples/dapp-request/src/app/views/view1/css/view1_theme.css
 info(107) Package Version:
 	package: dojo; version: 1.9.0dev
 	package: dijit; version: 1.9.0dev
@@ -1237,7 +1234,7 @@ warn(224) A plugin dependency was encountered but there was no build-time plugin
 	module: dijit/Tree; plugin: dojo/query
 	module: dojox/mobile/DatePicker; plugin: dojox/mobile/_PickerChooser
 	module: dojox/mobile/TimePicker; plugin: dojox/mobile/_PickerChooser
-	module: app/views/view1/view1Ctrl; plugin: dojo/query
+	module: app/views/home/home; plugin: dojo/query
 Layer Contents:
 dojo/dojo:
 	dojo/dojo
@@ -1315,10 +1312,7 @@ app/main:
 	dojo/request
 	dojo/request/default
 	app/config.json
-	app/resources/data/items.json
-	app/views/app.html
-	app/views/view1/view1.html
-	app/views/view2/view2.html
+	app/views/home/home.html
 	dojo/store/Observable
 	dojox/app/controllers/History
 	dojox/app/Controller
@@ -1330,7 +1324,6 @@ app/main:
 	dijit/main
 	dojox/mobile/sniff
 	dojox/mobile/uacss
-	dojox/mobile/deviceTheme
 	dojo/store/Memory
 	dojo/store/util/QueryResults
 	dojo/store/util/SimpleQueryEngine
@@ -1355,30 +1348,6 @@ app/main:
 	dojo/parser
 	dojo/_base/url
 	dojox/app/ViewBase
-	app/views/view1/view1Ctrl
-	dojox/mobile/ListItem
-	dojox/mobile/iconUtils
-	dojox/mobile/_ItemBase
-	dijit/_Contained
-	dijit/_Container
-	dojox/mobile/TransitionEvent
-	dojox/mobile/ProgressIndicator
-	dojox/mobile/_css3
-	dojo/NodeList-manipulate
-	app/views/view1/nls/view1_strings
-	dojox/mobile/RoundRectList
-	dojox/mobile/Button
-	dijit/form/_ButtonMixin
-	dijit/form/_FormWidgetMixin
-	dojo/window
-	dijit/a11y
-	dojox/mobile/RoundRectStoreList
-	dojox/mobile/_StoreListMixin
-	dojox/mobile/_StoreMixin
-	dojox/mobile/TextBox
-	dijit/form/_FormValueMixin
-	dijit/form/_TextBoxMixin
-	dojox/mobile/RoundRectCategory
 	dojo/i18n
 
 
@@ -1386,4 +1355,4 @@ app/main:
 Process finished normally
 	errors: 0
 	warnings: 54
-	build time: 11.93 seconds
+	build time: 7.626 seconds

@@ -1,31 +1,26 @@
 /*jslint nomen: true */
 /*jshint nomen: true */
-/*global _, define, console, alert */
+/*global _, define, console*/
 define([
-    'dojo/_base/declare',
     'dojo/query!css3',
     //query is the core of dojo dom query
     // the return is NodeList that has full set of functions
     // most of the function have same syntax as jquery see bellow this file for summary
     'dojo/on',
     'dojox/mobile/ListItem',
-    'dojo/NodeList-manipulate'
+    'dojo/NodeList-manipulate',
     // Load dojo/NodeList-manipulate to get JQuery syntax: see below this file for function syntax
-], function (declare, $, on, ListItem) {
+    'dojo/text!app/views/home/home.html'
+    //Include template so it gets included in js layer for dist build
+], function ($, on) {
     'use strict';
 
-    var handles,
-        view,
-        viewNode,
-        count = 0,
-        DataListItem = declare(ListItem, {
-            target: "requestItemDetails"
-        });
+    var view, // set in init(params) to save in closure reference to this view controller instance
+        viewNode; // set in init(params) to save in closure reference to this view dom node
 
 
 
     return {
-        DataListItem: DataListItem,
 
         init: function (params) {
             // summary:
@@ -48,16 +43,6 @@ define([
             // summary:
             //      view life cycle afterActivate()
             console.log(this.name + " view:afterActivate(view,data)");
-            //Atach onclick event to fire once
-            // TIP: Always scope your query selector to the View using viewNode
-            on.once($("#doSomethingOnce", viewNode), "click", this.doSomething);
-            //If using jquery the syntaxt will be: $("#doSomethingOnce", viewNode).one("click",this.doSomething)
-            //$("#doSomethingOnce",viewNode).one("click", this.doSomething);
-            count = 0;
-
-            //Use jquery syntax here .val() and .sytle() depends on loading dojo/NodeList-manipulate
-            $('input[type="text"]', viewNode).val(this.nls.idle).style("color", "red");
-
         },
 
         beforeDeactivate: function (view, data) {
@@ -81,32 +66,18 @@ define([
          * Custom Code for View Controller
          *****/
 
-        // JavaScript Primitives
-        'aNumber'    : 42,
-        'aString'    : 'JavaScript',
-        'aStringScapedQuotes'    : '<a href="index.html#view2" target="_blank">index.html#view2</a>',
-        'aBoolean'   : true,
-        'aNull'      : null,
-
         _formatterTmpl : function (value, key) {
             // summary:
             //      Use to format template properties using the convention ${foo:_formatterTmpl}
-            if (value === null) {
-                return "null";
-            }
-            if (key === "aString") {
-                return this.nls.view1_hello;
-            }
-
-            return value;
+            console.log(this.name + "_formatterTmpl(" + value + "," + "key" + ");");
 
         },
         doSomething: function (event) {
             console.log('did something');
-            // TIP: Always scope your query selector to the View using viewNode
-            //Use jquery syntax here .val() and .sytle() depends on loading dojo/NodeList-manipulate
-            $('input[type="text"]', viewNode).val(" " + view.nls.doSomething + ":" + count);
-            count = count + 1;
+            // summary:
+            //      Example of a custom view controller callback for event listener
+            console.log(this.name + "doSomething(" + event + ");");
+
         }
     };
 
