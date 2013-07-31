@@ -1,4 +1,4 @@
-Build started: Tue Jul 30 2013 17:19:17 GMT-0400 (EDT)
+Build started: Wed Jul 31 2013 17:36:06 GMT-0400 (EDT)
 Build application version: 1.7.0dev (23930)
 Messages:
 info(100) Assumed module uses legacy loader API.
@@ -1234,6 +1234,7 @@ warn(224) A plugin dependency was encountered but there was no build-time plugin
 	module: dijit/Tree; plugin: dojo/query
 	module: dojox/mobile/DatePicker; plugin: dojox/mobile/_PickerChooser
 	module: dojox/mobile/TimePicker; plugin: dojox/mobile/_PickerChooser
+	module: app/views/details/details; plugin: dojo/query
 	module: app/views/home/home; plugin: dojo/query
 	module: app/views/list/list; plugin: dojo/query
 Layer Contents:
@@ -1372,12 +1373,27 @@ app/main:
 	dojox/mobile/EdgeToEdgeStoreList
 	dojox/mobile/_StoreListMixin
 	dojox/mobile/_StoreMixin
+	dojox/mobile/FilteredListMixin
+	dojox/mobile/SearchBox
+	dijit/form/_SearchMixin
+	dojox/mobile/TextBox
+	dijit/form/_FormValueMixin
+	dijit/form/_FormWidgetMixin
+	dojo/window
+	dijit/a11y
+	dijit/form/_TextBoxMixin
+	dojox/mobile/ScrollableView
+	dojox/mobile/_ScrollableMixin
+	dojox/mobile/scrollable
+	dojox/mobile/_maskUtils
 	app/views/list/nls/list-strings
+	app/views/details/details
+	app/views/details/details.html
 	dojo/i18n
 
 
 
 Process finished normally
 	errors: 0
-	warnings: 55
-	build time: 9.806 seconds
+	warnings: 56
+	build time: 47.976 seconds
