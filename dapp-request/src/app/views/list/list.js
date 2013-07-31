@@ -1,5 +1,5 @@
-/*jslint nomen: true */
-/*jshint nomen: true */
+/*jslint nomen: true todo: true */
+/*jshint nomen: true todo: true */
 /*global _, define, console*/
 define([
     'dojo/_base/declare',
@@ -23,7 +23,20 @@ define([
         viewNode,
         RequestListItem = declare(ListItem, {
             target: "details",
-            clickable: true
+            clickable: true,
+            postMixInProperties: function () {
+                //TODO: Talk to dojo expert about this. calling this cause an error
+                //"TypeError: 'caller', 'callee', and 'arguments' properties may not be accessed on strict mode functions or the arguments objects for calls to them
+                //at inherited [as __inherited] (http://localhost:8080/dojo/_base/declare.js:98:16)
+                //this.inherited(arguments);
+                this.id = "request_" + this.id; //FIXME: really ugly hack to get unique dom node id,  this might be a bug on dojo EdgeToEdgeStoreList to generating a dynamic id
+                this.transitionOptions = {
+                    params: {
+                        "id" : this.id
+                    }
+                };
+
+            }
         });
 
 
