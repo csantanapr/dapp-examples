@@ -119,6 +119,10 @@
             "template": "app/views/list/list.html",
             "controller" : "app/views/list/list.js",
             "nls": "app/views/list/nls/list-strings"
+        },
+        "details":{
+            "template": "app/views/details/details.html",
+            "controller" : "app/views/details/details.js"
         }
     },
     "has": {

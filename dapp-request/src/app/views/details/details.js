@@ -2,8 +2,6 @@
 /*jshint nomen: true */
 /*global _, define, console*/
 define([
-    'dojo/_base/declare',
-    'dojox/mobile/ListItem',
     'dojo/query!css3',
     //query is the core of dojo dom query
     // the return is NodeList that has full set of functions
@@ -11,25 +9,18 @@ define([
     'dojo/on',
     'dojo/NodeList-manipulate',
     // Load dojo/NodeList-manipulate to get JQuery syntax: see below this file for function syntax
-    'dojo/text!app/views/list/list.html',
-    'dojox/mobile/Heading',
-    'dojox/mobile/EdgeToEdgeStoreList',
-    'dojox/mobile/EdgeToEdgeList',
-    'dojox/mobile/FilteredListMixin'
-], function (declare, ListItem, $, on) {
+    'dojo/text!app/views/details/details.html',
+    'dojox/mobile/Heading'
+], function ($, on) {
     'use strict';
 
     var view, // set in init(params) to save in closure reference to this view controller instance
-        viewNode,
-        RequestListItem = declare(ListItem, {
-            target: "details",
-            clickable: true
-        });
+        viewNode; // set in init(params) to save in closure reference to this view dom node
 
 
 
     return {
-        RequestListItem: RequestListItem,
+
         init: function (params) {
             // summary:
             //      view life cycle init()
@@ -200,3 +191,4 @@ define([
 */
 
 });
+

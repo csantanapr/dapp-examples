@@ -5,7 +5,8 @@ define({
         world: 'world',
         app_name: 'Request App',
         my_requests: 'My Requests',
-        back: 'Back'
+        back: 'Back',
+        request_details: 'Request Details'
     },
     es: true
 });

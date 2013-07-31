@@ -4,5 +4,6 @@ define({
     world: 'mundo',
     app_name: 'Pedidos',
     my_requests: 'Mis Pedidos',
-    back: 'Atras'
+    back: 'Atras',
+    request_details: 'Detalles del Pedido'
 });
