@@ -6,23 +6,25 @@
   </h1>
 
 
- <!--
+
   <div data-dojo-type="dojox/mobile/EdgeToEdgeStoreList"
-       data-dojo-attach-point="requests" id="requestsList"
+       data-dojo-attach-point="requests"
        data-dojo-props="store: this.loadedStores.requests,
-       itemRenderer: this.RequestListItem, stateful: false">
+       itemRenderer: this.RequestListItem,
+       itemMap:{description:'label'}">
   </div>
-  -->
+
 
 
 
   <!-- FIXME: We should use itemMap and then use event delegation with query selector on ul
               Uncomment this when event delegation is implemented
               bug #5 https://github.com/csantanapr/dapp-examples/issues/5
-  -->
+
   <ul data-dojo-type="dojox/mobile/EdgeToEdgeStoreList"
       data-dojo-props="store: this.loadedStores.requests,itemMap:{description:'label'}">
   </ul>
+  -->
 
 
 
