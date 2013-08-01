@@ -7,15 +7,23 @@ define([
     // the return is NodeList that has full set of functions
     // most of the function have same syntax as jquery see bellow this file for summary
     'dojo/on',
+    'dojo/when',
     'dojo/NodeList-manipulate',
     // Load dojo/NodeList-manipulate to get JQuery syntax: see below this file for function syntax
     'dojo/text!app/views/details/details.html',
-    'dojox/mobile/Heading'
-], function ($, on) {
+    'dojox/mobile/Heading',
+    'dojox/mobile/ToolBarButton',
+    'dojox/mobile/Button',
+    'dojox/mobile/FormLayout',
+    'dojox/mobile/TextBox',
+    'dojox/mobile/RoundRect',
+    'dojox/mobile/ExpandingTextArea'
+], function ($, on, when) {
     'use strict';
 
-    var view, // set in init(params) to save in closure reference to this view controller instance
-        viewNode; // set in init(params) to save in closure reference to this view dom node
+    var viewWidget, // set in init(params) to save in closure reference to this view controller instance
+        viewNode,   // set in init(params) to save in closure reference to this view dom node
+        _editMode = false;
 
 
 
@@ -28,14 +36,43 @@ define([
 
             //save the view node in clousure to use as scope for dom manipulatation and query
             viewNode = this.domNode;
-            view = this;
+            viewWidget = this;
 
         },
 
         beforeActivate: function (view, data) {
             // summary:
             //      view life cycle beforeActivate()
-            console.log(this.name + " view:beforeActivate(view,data)");
+
+            // get the id of the displayed contact from the params
+            var id = this.params.id,
+                promise = null;
+
+            // cancel button must be shown in edit mode only
+            viewWidget.cancelButton.domNode.style.display = "none";
+
+            promise = viewWidget.loadedStores.requestsListStore.get(id);
+            when(promise, function (request) {
+                viewWidget.reqid.set("value", request ? request.id : null);
+                viewWidget.requestType.set("value", request ? request.requestType : null);
+                //viewWidget._initFieldValue(request, "requestType", viewWidget.loadedStores.requestTypeStore);
+                viewWidget.description.set("value", request ? request.description : null);
+                viewWidget.status.set("value", request ? request.status : null);
+                //viewWidget._initFieldValue(request, "status", viewWidget.loadedStores.requestStatusStore);
+                viewWidget.priority.set("value", request ? request.priority : null);
+                //viewWidget._initFieldValue(request, "priority", viewWidget.loadedStores.requestPriorityStore);
+
+                viewWidget.requestedBy.set("value", request ? request.requestedBy : null);
+                viewWidget.requestedFinishDate.set("value", request ? request.requestedFinishDate : null);
+                viewWidget.assignedTo.set("value", request ? request.assignedTo : null);
+                viewWidget.actualFinishDate.set("value", request ? request.actualFinishDate : null);
+                viewWidget.estimatedUnits.set("value", request ? request.estimatedUnits : null);
+                viewWidget.unitType.set("value", request ? request.unitType : null);
+                //viewWidget._initFieldValue(request, "unitType", viewWidget.loadedStores.requestUnitTypeStore);
+                viewWidget.createdDate.set("value", request ? request.createdDate : null);
+                viewWidget.updatedDate.set("value", request ? request.updatedDate : null);
+            });
+
         },
 
         afterActivate: function (view, data) {
@@ -77,6 +114,16 @@ define([
             //      Example of a custom view controller callback for event listener
             console.log(this.name + "doSomething(" + event + ");");
 
+        },
+        _copyForm: function () {
+            // summary:
+            //      Copies the form data
+            console.log(this.name + " view:_copyForm()");
+        },
+        _deleteRequest: function () {
+            // summary:
+            //      I gues it's suppose to delete something
+            console.log(this.name + " view:_deleteRequest()");
         }
     };
 

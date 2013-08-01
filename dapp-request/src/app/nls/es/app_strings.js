@@ -5,5 +5,7 @@ define({
     app_name: 'Pedidos',
     my_requests: 'Mis Pedidos',
     back: 'Atras',
-    request_details: 'Detalles del Pedido'
+    cancel: 'Cancelar',
+    requests: "Pedidos",
+    list: "Lista"
 });

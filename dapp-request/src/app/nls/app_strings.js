@@ -6,7 +6,9 @@ define({
         app_name: 'Request App',
         my_requests: 'My Requests',
         back: 'Back',
-        request_details: 'Request Details'
+        cancel: 'Cancel',
+        requests: "Requests",
+        list: "List"
     },
     es: true
 });

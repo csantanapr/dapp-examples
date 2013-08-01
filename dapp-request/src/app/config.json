@@ -35,7 +35,7 @@
     ],
     //Optional, App levels stores shared with views
     "stores": {
-        "requests":{
+        "requestsListStore":{
             "type": "dojo/store/Memory",
             "observable": true,
             "params": { // parameters used to initialize the data store
@@ -123,7 +123,8 @@
         },
         "requestItemDetails":{
             "template": "app/views/details/details.html",
-            "controller" : "app/views/details/details.js"
+            "controller" : "app/views/details/details.js",
+            "nls": "app/views/details/nls/details-strings"
         },
         "requestListSearch":{
             "template": "app/views/search/search.html",
