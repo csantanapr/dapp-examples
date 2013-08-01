@@ -1,53 +1,27 @@
-/*jslint nomen: true todo: true */
-/*jshint nomen: true todo: true */
+/*jslint nomen: true */
+/*jshint nomen: true */
 /*global _, define, console*/
 define([
-    'dojo/_base/declare',
-    'dojox/mobile/ListItem',
     'dojo/query!css3',
     //query is the core of dojo dom query
     // the return is NodeList that has full set of functions
     // most of the function have same syntax as jquery see bellow this file for summary
     'dojo/on',
-    'dojo/_base/lang',
-    'dijit/registry',
-    'dojo/_base/array',
+    'dojox/mobile/ListItem',
     'dojo/NodeList-manipulate',
     // Load dojo/NodeList-manipulate to get JQuery syntax: see below this file for function syntax
-    'dojo/text!app/views/list/list.html',
-    'dojox/mobile/Heading',
-    'dojox/mobile/EdgeToEdgeStoreList',
-    'dojox/mobile/EdgeToEdgeList',
-    'dojox/mobile/FilteredListMixin',
-    'dojox/mobile/ToolBarButton',
-    'dojox/mobile/Button'
-], function (declare, ListItem, $, on, lang, registry, array) {
+    'dojo/text!app/views/search/search.html',
+    'dojox/mobile/Heading'
+], function ($, on) {
     'use strict';
 
-    var viewWidget, // set in init(params) to save in closure reference to this view controller instance
-        viewNode,
-        RequestListItem = declare(ListItem, {
-            paramsToInherit: "target,clickable",
-            postMixInProperties: function () {
-                //TODO: Talk to dojo expert about this. calling this cause an error
-                //"TypeError: 'caller', 'callee', and 'arguments' properties may not be accessed on strict mode functions or the arguments objects for calls to them
-                //at inherited [as __inherited] (http://localhost:8080/dojo/_base/declare.js:98:16)
-                //this.inherited(arguments);
-                var store_item_id = this.id;
-                this.id = "request_" + this.id; //FIXME: really ugly hack to get unique dom node id,  this might be a bug on dojo EdgeToEdgeStoreList to generating a dynamic id
-                this.transitionOptions = {
-                    params: {
-                        "id" : store_item_id
-                    }
-                };
-
-            }
-        });
+    var view, // set in init(params) to save in closure reference to this view controller instance
+        viewNode; // set in init(params) to save in closure reference to this view dom node
 
 
 
     return {
-        RequestListItem: RequestListItem,
+
         init: function (params) {
             // summary:
             //      view life cycle init()
@@ -55,25 +29,7 @@ define([
 
             //save the view node in clousure to use as scope for dom manipulatation and query
             viewNode = this.domNode;
-            viewWidget = this;
-
-            //TODO: split this code into sub methods
-            this.createButton.on("click", lang.hitch(this, function () {
-                viewWidget.requests.deselectAll();
-                this.app.transitionToView(this.domNode, {
-                    target: "requestItemDetails"
-                });
-            }));
-
-            this.searchButton.on("click", lang.hitch(this, function () {
-                this.app.transitionToView(this.domNode, {
-                    target: "requestListSearch"
-                });
-            }));
-
-            if (this.params && this.params.id) {
-                this.selectItemById(this.params.id);
-            }
+            view = this;
 
         },
 
@@ -122,16 +78,6 @@ define([
             //      Example of a custom view controller callback for event listener
             console.log(this.name + "doSomething(" + event + ");");
 
-        },
-        selectItemById: function (itemId) {
-            var requests = registry.byId("requestsList");
-            array.some(requests.getChildren(), function (child) {
-                if (child.id === itemId) {
-                    requests.selectItem(child);
-                    return true;
-                }
-                return false;
-            });
         }
     };
 

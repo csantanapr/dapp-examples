@@ -1,16 +1,25 @@
 <div class="view mblView">
   <h1 data-dojo-type="dojox/mobile/Heading" data-dojo-props="back: '${nls.back}'">
     ${nls.my_requests}
+
+    <button data-dojo-type="dojox/mobile/ToolBarButton" style="position: absolute; right: 0"
+        data-dojo-attach-point="createButton"
+        data-dojo-attach-point="add">
+    ${nls.add}
+    </button>
   </h1>
 
+  <button data-dojo-type="dojox/mobile/Button"
+    data-dojo-attach-point="searchButton">${nls.search}</button>
   <!-- target and clickable are set in the ul/StoreList to be inherent by li/children being created see list.js for paramsToInherit: "target,clickable"-->
   <ul data-dojo-type="dojox/mobile/EdgeToEdgeStoreList"
-       data-dojo-attach-point="requests"
-       data-dojo-props="store: this.loadedStores.requests,
-       itemRenderer: this.RequestListItem,
-       itemMap:{description:'label'},
-       target: 'details',
-       clickable: true">
+      id="requestsList"
+      data-dojo-attach-point="requests"
+      data-dojo-props="store: this.loadedStores.requests,
+      itemRenderer: this.RequestListItem,
+      itemMap:{description:'label'},
+      target: 'requestItemDetails',
+      clickable: true">
   </ul>
   <!-- FIXME: We should use itemMap and then use event delegation with query selector on ul
               Uncomment this when event delegation is implemented
