@@ -19,7 +19,7 @@ define([
 ], function (declare, ListItem, $, on) {
     'use strict';
 
-    var view, // set in init(params) to save in closure reference to this view controller instance
+    var viewWidget, // set in init(params) to save in closure reference to this view controller instance
         viewNode,
         RequestListItem = declare(ListItem, {
             target: "details",
@@ -50,7 +50,7 @@ define([
 
             //save the view node in clousure to use as scope for dom manipulatation and query
             viewNode = this.domNode;
-            view = this;
+            viewWidget = this;
 
         },
 
