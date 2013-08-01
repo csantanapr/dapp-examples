@@ -1,4 +1,4 @@
-Build started: Thu Aug 01 2013 13:56:01 GMT-0400 (EDT)
+Build started: Thu Aug 01 2013 14:05:28 GMT-0400 (EDT)
 Build application version: 1.7.0dev (23930)
 Messages:
 info(100) Assumed module uses legacy loader API.
@@ -1237,6 +1237,7 @@ warn(224) A plugin dependency was encountered but there was no build-time plugin
 	module: app/views/details/details; plugin: dojo/query
 	module: app/views/home/home; plugin: dojo/query
 	module: app/views/list/list; plugin: dojo/query
+	module: app/views/search/search; plugin: dojo/query
 Layer Contents:
 dojo/dojo:
 	dojo/dojo
@@ -1391,11 +1392,13 @@ app/main:
 	app/views/list/nls/list-strings
 	app/views/details/details
 	app/views/details/details.html
+	app/views/search/search
+	app/views/search/search.html
 	dojo/i18n
 
 
 
 Process finished normally
 	errors: 0
-	warnings: 56
-	build time: 9.659 seconds
+	warnings: 57
+	build time: 9.545 seconds
