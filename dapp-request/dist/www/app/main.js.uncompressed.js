@@ -14156,6 +14156,5012 @@ define([
 
 },
 'app/views/list/list':function(){
+/*jslint nomen: true todo: true */
+/*jshint nomen: true todo: true */
+/*global _, define, console*/
+define([
+    'dojo/_base/declare',
+    'dojox/mobile/ListItem',
+    'dojo/query!css3',
+    //query is the core of dojo dom query
+    // the return is NodeList that has full set of functions
+    // most of the function have same syntax as jquery see bellow this file for summary
+    'dojo/on',
+    'dojo/_base/lang',
+    'dijit/registry',
+    'dojo/_base/array',
+    'dojo/NodeList-manipulate',
+    // Load dojo/NodeList-manipulate to get JQuery syntax: see below this file for function syntax
+    'dojo/text!app/views/list/list.html',
+    'dojox/mobile/Heading',
+    'dojox/mobile/EdgeToEdgeStoreList',
+    'dojox/mobile/EdgeToEdgeList',
+    'dojox/mobile/FilteredListMixin',
+    'dojox/mobile/ToolBarButton',
+    'dojox/mobile/Button'
+], function (declare, ListItem, $, on, lang, registry, array) {
+    'use strict';
+
+    var viewWidget, // set in init(params) to save in closure reference to this view controller instance
+        viewNode,
+        RequestListItem = declare(ListItem, {
+            paramsToInherit: "target,clickable",
+            postMixInProperties: function () {
+                //TODO: Talk to dojo expert about this. calling this cause an error
+                //"TypeError: 'caller', 'callee', and 'arguments' properties may not be accessed on strict mode functions or the arguments objects for calls to them
+                //at inherited [as __inherited] (http://localhost:8080/dojo/_base/declare.js:98:16)
+                //this.inherited(arguments);
+                var store_item_id = this.id;
+                this.id = "request_" + this.id; //FIXME: really ugly hack to get unique dom node id,  this might be a bug on dojo EdgeToEdgeStoreList to generating a dynamic id
+                this.transitionOptions = {
+                    params: {
+                        "id" : store_item_id
+                    }
+                };
+
+            }
+        });
+
+
+
+    return {
+        RequestListItem: RequestListItem,
+        init: function (params) {
+            // summary:
+            //      view life cycle init()
+            console.log(this.name + " view:init()");
+
+            //save the view node in clousure to use as scope for dom manipulatation and query
+            viewNode = this.domNode;
+            viewWidget = this;
+
+            //TODO: split this code into sub methods
+            this.createButton.on("click", lang.hitch(this, function () {
+                viewWidget.requests.deselectAll();
+                this.app.transitionToView(this.domNode, {
+                    target: "requestItemDetails"
+                });
+            }));
+
+            this.searchButton.on("click", lang.hitch(this, function () {
+                this.app.transitionToView(this.domNode, {
+                    target: "requestListSearch"
+                });
+            }));
+
+            if (this.params && this.params.id) {
+                this.selectItemById(this.params.id);
+            }
+
+        },
+
+        beforeActivate: function (view, data) {
+            // summary:
+            //      view life cycle beforeActivate()
+            console.log(this.name + " view:beforeActivate(view,data)");
+        },
+
+        afterActivate: function (view, data) {
+            // summary:
+            //      view life cycle afterActivate()
+            console.log(this.name + " view:afterActivate(view,data)");
+        },
+
+        beforeDeactivate: function (view, data) {
+            // summary:
+            //      view life cycle beforeDeactivate()
+            console.log(this.name + " view:beforeDeactivate(view,data)");
+        },
+
+        afterDeactivate: function (view, data) {
+            // summary:
+            //      view life cycle afterDeactivate()
+            console.log(this.name + " view:afterDeactivate(view,data)");
+        },
+
+        destroy: function (params) {
+            // summary:
+            //      view life cycle destroy()
+            console.log(this.name + " view:destory()");
+        },
+        /*****
+         * Custom Code for View Controller
+         *****/
+
+        _formatterTmpl : function (value, key) {
+            // summary:
+            //      Use to format template properties using the convention ${foo:_formatterTmpl}
+            console.log(this.name + "_formatterTmpl(" + value + "," + "key" + ");");
+
+        },
+        doSomething: function (event) {
+            console.log('did something');
+            // summary:
+            //      Example of a custom view controller callback for event listener
+            console.log(this.name + "doSomething(" + event + ");");
+
+        },
+        selectItemById: function (itemId) {
+            var requests = registry.byId("requestsList");
+            array.some(requests.getChildren(), function (child) {
+                if (child.id === itemId) {
+                    requests.selectItem(child);
+                    return true;
+                }
+                return false;
+            });
+        }
+    };
+
+
+/*
+    - dojo/NodeList-manipulate
+    - Load dojo/NodeList-manipulate to get JQuery syntax:
+
+.html( value)
+.text(value)
+.val(value)
+.append(content)
+.appendTo(query)
+.prepend(content)
+.prependTo(query)
+.after(content)
+.insertAfter(query)
+.before(content)
+.insertBefore(query)
+.wrap(html)
+.wrapAll(html)
+.wrapInner(html)
+.replaceAll(query)
+.clone()
+
+*/
+
+/*  - dojo/query!css3
+    - NodeList functions dojo/query returns NodeList and supports chanining
+    - Read the docs or source for more info:
+        - (http://dojotoolkit.org/api/1.9/dojo/NodeList)
+
+.addClass(className) adds the specified class to every node in the list
+.addClassFx(cssClass, args) Animate the effects of adding a class to all nodes in this list. see dojox.fx.addClass
+.addContent(content, position) add a node, NodeList or some HTML as a string to every item in the list. Returns the original list.
+.adopt(queryOrListOrNode, position) places any/all elements in queryOrListOrNode at a position relative to the first element in this list.
+.after(content) Places the content after every node in the NodeList.
+.andSelf() Adds the nodes from the previous dojo/NodeList to the current dojo/NodeList.
+.anim(properties, duration, easing, onEnd, delay) Animate one or more CSS properties for all nodes in this list.
+.animateProperty(args) Animate all elements of this NodeList across the properties specified. syntax identical to dojo.animateProperty
+.append(content) appends the content to every node in the NodeList.
+.appendTo(query) appends nodes in this NodeList to the nodes matched by the query passed to appendTo.
+.at(index) Returns a new NodeList comprised of items in this NodeList at the given index or indices.
+.attr(property, value) gets or sets the DOM attribute for every element in the NodeList.
+.before(content) Places the content before every node in the NodeList.
+.children(query) Returns all immediate child elements for nodes in this dojo/NodeList. Optionally takes a query to filter the child elements.
+.clone() Clones all the nodes in this NodeList and returns them as a new NodeList.
+.closest(query, root) Returns closest parent that matches query, including current node in this dojo/NodeList if it matches the query.
+.concat(item) Returns a new NodeList comprised of items in this NodeList as well as items passed in as parameters
+.connect(methodName, objOrFunc, funcName) Attach event handlers to every item of the NodeList.
+.coords() Deprecated: Use position() for border-box x/y/w/h or marginBox() for margin-box w/h/l/t.
+.data(key, value) stash or get some arbitrary data on/from these nodes.
+.delegate(selector, eventName, fn) Monitor nodes in this NodeList for [bubbled] events on nodes that match selector. Calls fn(evt) for those events, where (inside of fn()), this == the node that matches the selector.
+.dtl(template, context) Renders the specified template in each of the NodeList entries.
+.empty() clears all content from each node in the list.
+.end() Ends use of the current NodeList by returning the previous NodeList that generated the current NodeList.
+.even() Returns the even nodes in this dojo/NodeList as a dojo/NodeList.
+.every(callback, thisObject) see dojo.every() and the Array.every docs.
+.fadeIn(args) fade in all elements of this NodeList via dojo.fadeIn
+.fadeOut(args) fade out all elements of this NodeList via dojo.fadeOut
+.filter(filter) "masks" the built-in javascript filter() method (supported in Dojo via dojo.filter) to support passing a simple string filter in addition to supporting filtering function objects.
+.first() Returns the first node in this dojo/NodeList as a dojo/NodeList.
+.forEach(callback, thisObj) see dojo.forEach().
+.html(value) allows setting the innerHTML of each node in the NodeList, if there is a value passed in, otherwise, reads the innerHTML value of the first node.
+.indexOf(value, fromIndex) see dojo.indexOf(). The primary difference is that the acted-on array is implicitly this NodeList
+.innerHTML(value) allows setting the innerHTML of each node in the NodeList, if there is a value passed in, otherwise, reads the innerHTML value of the first node.
+.insertAfter(query) The nodes in this NodeList will be placed after the nodes matched by the query passed to insertAfter.
+.insertBefore(query) The nodes in this NodeList will be placed after the nodes matched by the query passed to insertAfter.
+.instantiate(declaredClass, properties) Create a new instance of a specified class, using the specified properties and each node in the NodeList as a srcNodeRef.
+.last() Returns the last node in this dojo/NodeList as a dojo/NodeList.
+.lastIndexOf(value, fromIndex) see dojo.lastIndexOf(). The primary difference is that the acted-on array is implicitly this NodeList
+.map(func, obj) see dojo.map().
+.marginBox() Returns margin-box size of nodes
+.next(query) Returns the next element for nodes in this dojo/NodeList. Optionally takes a query to filter the next elements.
+.nextAll(query) Returns all sibling elements that come after the nodes in this dojo/NodeList. Optionally takes a query to filter the sibling elements.
+.odd() Returns the odd nodes in this dojo/NodeList as a dojo/NodeList.
+.on(eventName, listener) Listen for events on the nodes in the NodeList.
+.orphan(filter) removes elements in this list that match the filter from their parents and returns them as a new NodeList.
+.parent(query) Returns immediate parent elements for nodes in this dojo/NodeList. Optionally takes a query to filter the parent elements.
+.parents(query) Returns all parent elements for nodes in this dojo/NodeList. Optionally takes a query to filter the child elements.
+.place(queryOrNode, position) places elements of this node list relative to the first element matched by queryOrNode.
+.position() Returns border-box objects (x/y/w/h) of all elements in a node list as an Array (not a NodeList).
+.prepend(content) prepends the content to every node in the NodeList.
+.prependTo(query) prepends nodes in this NodeList to the nodes matched by the query passed to prependTo.
+.prev(query) Returns the previous element for nodes in this dojo/NodeList. Optionally takes a query to filter the previous elements.
+.prevAll(query) Returns all sibling elements that come before the nodes in this dojo/NodeList. Optionally takes a query to filter the sibling elements.
+.query(queryStr) Returns a new list whose members match the passed query, assuming elements of the current NodeList as the root for each search.
+.remove(filter) removes elements in this list that match the filter from their parents and returns them as a new NodeList.
+.removeAttr(name) Removes an attribute from each node in the list.
+.removeClass(className) removes the specified class from every node in the list
+.removeClassFx(cssClass, args) Animate the effect of removing a class to all nodes in this list. see dojox.fx.removeClass
+.removeData(key) Remove the data associated with these nodes.
+.replaceAll(query) replaces nodes matched by the query passed to replaceAll with the nodes in this NodeList.
+.replaceClass(addClassStr, removeClassStr) Replaces one or more classes on a node if not present.
+.replaceWith(content) Replaces each node in ths NodeList with the content passed to replaceWith.
+.siblings(query) Returns all sibling elements for nodes in this dojo/NodeList. Optionally takes a query to filter the sibling elements.
+.slice(begin, end) Returns a new NodeList, maintaining this one in place
+.slideTo(args) slide all elements of the node list to the specified place via dojo/fx.slideTo()
+.some(callback, thisObject) Takes the same structure of arguments and returns as dojo.some() with the caveat that the passed array is implicitly this NodeList.
+.splice(index, howmany, item) Returns a new NodeList, manipulating this NodeList based on the arguments passed, potentially splicing in new elements at an offset, optionally deleting elements
+.style(property, value) gets or sets the CSS property for every element in the NodeList
+.text(value) allows setting the text value of each node in the NodeList, if there is a value passed in, otherwise, returns the text value for all the nodes in the NodeList in one string.
+.toggleClass(className, condition) Adds a class to node if not present, or removes if present.
+.toggleClassFx(cssClass, force, args) Animate the effect of adding or removing a class to all nodes in this list. see dojox.fx.toggleClass
+.toString()
+.val(value) If a value is passed, allows seting the value property of form elements in this NodeList, or properly selecting/checking the right value for radio/checkbox/select elements.
+.wipeIn(args) wipe in all elements of this NodeList via dojo/fx.wipeIn()
+.wipeOut(args) wipe out all elements of this NodeList via dojo/fx.wipeOut()
+.wrap(html) Wrap each node in the NodeList with html passed to wrap.
+.wrapAll(html) Insert html where the first node in this NodeList lives, then place all nodes in this NodeList as the child of the html.
+.wrapInner(html) For each node in the NodeList, wrap all its children with the passed in html..
+*/
+
+});
+
+},
+'dojox/mobile/EdgeToEdgeStoreList':function(){
+define([
+	"dojo/_base/declare",
+	"./EdgeToEdgeList",
+	"./_StoreListMixin"
+], function(declare, EdgeToEdgeList, StoreListMixin){
+
+	// module:
+	//		dojox/mobile/EdgeToEdgeStoreList
+
+	return declare("dojox.mobile.EdgeToEdgeStoreList", [EdgeToEdgeList, StoreListMixin],{
+		// summary:
+		//		A dojo/store-enabled version of EdgeToEdgeList.
+		// description:
+		//		EdgeToEdgeStoreList is a subclass of EdgeToEdgeList which
+		//		can generate ListItems according to the given dojo/store store.
+	});
+});
+
+},
+'dojox/mobile/_StoreListMixin':function(){
+define([
+	"dojo/_base/array",
+	"dojo/_base/declare",
+	"./_StoreMixin",
+	"./ListItem",
+	"dojo/has",
+	"dojo/has!dojo-bidi?dojox/mobile/bidi/_StoreListMixin"
+], function(array, declare, StoreMixin, ListItem, has, BidiStoreListMixin){
+
+	// module:
+	//		dojox/mobile/_StoreListMixin
+
+	var _StoreListMixin = declare(has("dojo-bidi") ? "dojox.mobile._NonBidiStoreListMixin" : "dojox.mobile._StoreListMixin", StoreMixin, {
+		// summary:
+		//		Mixin for widgets to generate the list items corresponding to
+		//		the dojo/store data provider object.
+		// description:
+		//		Mixin for widgets to generate the list items corresponding to
+		//		the dojo/store data provider object.
+		//		By mixing this class into the widgets, the list item nodes are
+		//		generated as the child nodes of the widget and automatically
+		//		regenerated whenever the corresponding data items are modified.
+
+		// append: Boolean
+		//		If true, refresh() does not clear the existing items.
+		append: false,
+
+		// itemMap: Object
+		//		An optional parameter mapping field names from the store to ItemList names.
+		//		Example: itemMap:{text:'label', profile_image_url:'icon'}
+		itemMap: null,
+
+		// itemRenderer: ListItem class or subclass
+		//		The class used to create list items. Default is dojox/mobile/ListItem.
+		itemRenderer: ListItem,
+
+		buildRendering: function(){
+			this.inherited(arguments);
+			if(!this.store){ return; }
+			var store = this.store;
+			this.store = null;
+			this.setStore(store, this.query, this.queryOptions);
+		},
+
+		createListItem: function(/*Object*/item){
+			// summary:
+			//		Creates a list item widget.
+			return new this.itemRenderer(this._createItemProperties(item));
+		},
+		
+		_createItemProperties: function(/*Object*/item){
+			// summary:
+			//		Creates list item properties.
+			var props = {};
+			if(!item["label"]){
+				props["label"] = item[this.labelProperty];
+			}
+			// TODO this code should be like for textDir in the bidi mixin createListItem method
+			// however for that dynamic set/get of the dir property must be supported first
+			// that is why for now as a workaround we keep the code here
+			if(has("dojo-bidi") && typeof props["dir"] == "undefined"){
+				props["dir"] = this.isLeftToRight() ? "ltr" : "rtl";
+			}
+			for(var name in item){
+				props[(this.itemMap && this.itemMap[name]) || name] = item[name];
+			}
+			return props;
+		},
+		
+		_setDirAttr: function(props){
+			// summary:
+			//		Set the 'dir' attribute to support Mirroring.
+			//		To be implemented by the bidi/_StoreLisMixin.js
+			return props;
+		},
+		generateList: function(/*Array*/items){
+			// summary:
+			//		Given the data, generates a list of items.
+			if(!this.append){
+				array.forEach(this.getChildren(), function(child){
+					child.destroyRecursive();
+				});
+			}
+			array.forEach(items, function(item, index){
+				this.addChild(this.createListItem(item));
+				if(item[this.childrenProperty]){
+					array.forEach(item[this.childrenProperty], function(child, index){
+						this.addChild(this.createListItem(child));
+					}, this);
+				}
+			}, this);
+		},
+
+		onComplete: function(/*Array*/items){
+			// summary:
+			//		A handler that is called after the fetch completes.
+			this.generateList(items);
+		},
+
+		onError: function(/*Object*/ /*===== errorData =====*/){
+			// summary:
+			//		An error handler.
+		},
+
+		onAdd: function(/*Object*/item, /*Number*/insertedInto){
+			// summary:
+			//		Calls createListItem and adds the new list item when a new data item has been added to the store.
+			this.addChild(this.createListItem(item), insertedInto);
+		},
+
+		onUpdate: function(/*Object*/item, /*Number*/insertedInto){
+			// summary:
+			//		Updates an existing list item when a data item has been modified.
+			this.getChildren()[insertedInto].set(this._createItemProperties(item));
+		},
+
+		onDelete: function(/*Object*/item, /*Number*/removedFrom){
+			// summary:
+			//		Deletes an existing item.
+			this.getChildren()[removedFrom].destroyRecursive();
+		}
+	});
+	return has("dojo-bidi") ? declare("dojox.mobile._StoreListMixin", [_StoreListMixin, BidiStoreListMixin]) : _StoreListMixin;	
+});
+
+},
+'dojox/mobile/_StoreMixin':function(){
+define([
+	"dojo/_base/Deferred",
+	"dojo/_base/declare"
+], function(Deferred, declare){
+
+	// module:
+	//		dojox/mobile/_StoreMixin
+
+	return declare("dojox.mobile._StoreMixin", null, {
+		// summary:
+		//		Mixin for widgets to enable dojo/store data store.
+		// description:
+		//		By mixing this class into a widget, it can get data through a
+		//		dojo/store data store. The widget must implement the following
+		//		methods to handle the retrieved data:
+		//
+		//		- onComplete(/*Array*/items), onError(/*Object*/errorData),
+		//		- onUpdate(/*Object*/item, /*Number*/insertedInto), and
+		//		- onDelete(/*Object*/item, /*Number*/removedFrom).
+	
+		// store: Object
+		//		Reference to data provider object used by this widget.
+		store: null,
+
+		// query: Object
+		//		A query that can be passed to 'store' to initially filter the items.
+		query: null,
+
+		// queryOptions: Object
+		//		An optional parameter for the query.
+		queryOptions: null,
+
+		// labelProperty: String
+		//		A property name (a property in the dojo/store item) that specifies that item's label.
+		labelProperty: "label",
+
+		// childrenProperty: String
+		//		A property name (a property in the dojo/store item) that specifies that item's children.
+		childrenProperty: "children",
+
+		setStore: function(/*dojo/store/api/Store*/store, /*String*/query, /*Object*/queryOptions){
+			// summary:
+			//		Sets the store to use with this widget.
+			if(store === this.store){ return null; }
+			if(store){
+				store.getValue = function(item, property){
+					return item[property];
+				};
+			}
+			this.store = store;
+			this._setQuery(query, queryOptions);
+			return this.refresh();
+		},
+
+		setQuery: function(/*String*/query, /*Object*/queryOptions){
+			this._setQuery(query, queryOptions);
+			return this.refresh();
+		},
+
+		_setQuery: function(/*String*/query, /*Object*/queryOptions){
+			// tags:
+			//		private
+			this.query = query;
+			this.queryOptions = queryOptions || this.queryOptions;
+		},
+
+		refresh: function(){
+			// summary:
+			//		Fetches the data and generates the list items.
+			if(!this.store){ return null; }
+			var _this = this;
+			var promise = this.store.query(this.query, this.queryOptions);
+			if(this._observe_h){
+				this._observe_h.remove();
+			}
+			Deferred.when(promise, function(results){
+				if(results.items){
+					results = results.items; // looks like dojo/data style items array
+				}
+				if(promise.observe){
+					_this._observe_h = promise.observe(function(object, previousIndex, newIndex){
+						if(previousIndex != -1){
+							if(newIndex != previousIndex){
+								// item removed or moved
+								_this.onDelete(object, previousIndex);
+								// TODO: support move, i.e. newIndex != -1?
+							}else{
+								// item modified
+								// if onAdd is not defined, we are "bug compatible" with 1.8 and we do nothing.
+								// TODO remove test in 2.0
+								if(_this.onAdd){
+									_this.onUpdate(object, newIndex);
+								}
+							}
+						}else if(newIndex != -1){
+							// item added
+							if(_this.onAdd){
+								 // new widget with onAdd method defined
+								_this.onAdd(object, newIndex);
+							}else{
+								// TODO remove in 2.0
+								// compatibility with 1.8: onAdd did not exist, add was handled by onUpdate
+								_this.onUpdate(object, newIndex);
+							}
+						}												
+					}, true); // we want to be notified of updates
+				}
+				_this.onComplete(results);
+			}, function(error){
+				_this.onError(error);
+			});
+			return promise;
+		}
+
+/*=====
+		// Subclass MUST implement the following methods.
+
+		, onComplete: function(items){
+			// summary:
+			//		A handler that is called after the fetch completes.
+		},
+
+		onError: function(errorData){
+			// summary:
+			//		An error handler.
+		},
+
+		onUpdate: function(item, insertedInto){
+			// summary:
+			//		Called when an existing data item has been modified in the store.
+			//		Note: for compatibility with previous versions where only onUpdate was present,
+			//		if onAdd is not defined, onUpdate will be called instead.
+		},
+
+		onDelete: function(item, removedFrom){
+			// summary:
+			//		Called when a data item has been removed from the store.
+		},
+		
+		// Subclass should implement the following methods.
+
+		onAdd: function(item, insertedInto){
+			// summary:
+			//		Called when a new data item has been added to the store.
+			//		Note: for compatibility with previous versions where this function did not exist,
+			//		if onAdd is not defined, onUpdate will be called instead.
+		}
+=====*/
+	});
+});
+
+},
+'dojox/mobile/FilteredListMixin':function(){
+define([
+	"require",
+	"dojo/_base/array",
+	"dojo/_base/declare",
+	"dojo/_base/lang",
+	"dojo/dom",
+	"dojo/dom-class",
+	"dojo/dom-construct",
+	"dojo/aspect",
+	"dijit/registry",
+	"./SearchBox",
+	"./ScrollableView",
+	"./viewRegistry"
+], function(require, array, declare, lang, dom, domClass, domConstruct,  
+			aspect, registry, SearchBox, ScrollableView, viewRegistry){
+
+	// module:
+	//		dojox/mobile/FilteredListMixin
+
+	return declare("dojox.mobile.FilteredListMixin", null, {
+		// summary:
+		//		Mixin for filtered lists.
+		// description:
+		//		This mixin adds filtering capabilities to all dojox/mobile list widgets:
+		//		dojox/mobile/RoundRectList and any of its subclasses (RoundRectStoreList, 
+		//		RoundRectDataList, EdgeToEdgeList, EdgeToEdgeStoreList, EdgeToEdgeDataList).
+		//		When mixing this class into a list widget, the list items are dynamically 
+		//		filtered depending on the filtering string that the user enters in a 
+		//		dojox/mobile/SearchBox. 
+		//
+		//		This mixin supports the following use-cases:
+		//		1. For user's convenience, by simply mixing this class into a list widget 
+		//		the mixin creates a dojox/mobile/SearchBox and a dojox/mobile/ScrollableView. 
+		//		The list is placed inside the ScrollableView and the SearchBox, which allows
+		//		filtering the list, is placed on top of the ScrollableView.
+		//		2. Alternatively, the user can create (and style) the instance of dojox/mobile/SearchBox, 
+		//		and specify its id using the property filterBoxRef of this mixin. This allows
+		//		placing the SearchBox anywhere in the DOM, while the mixin takes care of 
+		//		the necessary glue to ensure the list is filtered according to the filter criteria
+		//		entered in the SearchBox.
+		//
+		//		The filtering works for lists backed by a store (dojo/store or dojo/data), as well 
+		//		as for lists not backed by a store. When filtering a list backed by a store 
+		//		containing hierarchical data (data items that are children of a parent data item), 
+		//		the store must support recursive search queries such that the filtering can match 
+		//		child items.
+		//
+		//		For configuration purposes, the instance of dojox/mobile/SearchBox can be retrieved
+		//		using the method getFilterBox(). If a dojox/mobile/ScrollableView is created by
+		//		this mixin, it can be retrieved using getScrollableView().
+		//
+		// example:
+		// |	<!-- Markup use-case: -->
+		// |	<!-- SearchBox and ScrollableView created by the mixin. -->
+		// |	<!-- Filtered EdgeToEdgeStoreList created in markup. -->
+		// |	<div data-dojo-type="dojox/mobile/View">
+		// |		<h1 data-dojo-type="dojox/mobile/Heading" data-dojo-props="fixed: 'top'">Some heading</h1>
+		// |		<ul data-dojo-type="dojox/mobile/EdgeToEdgeStoreList"
+		// |			data-dojo-mixins="dojox/mobile/FilteredListMixin"
+		// |			data-dojo-props="placeHolder: 'Search', store: myStore"></ul>
+		// |	</div>
+		// example:
+		// |	<!-- Markup use-case: -->
+		// |	<!-- SearchBox and ScrollableView created by the mixin. -->
+		// |	<!-- Filtered RoundRectList created in markup. --> 
+		// |	<div data-dojo-type="dojox/mobile/View">
+		// |		<h1 data-dojo-type="dojox/mobile/Heading" data-dojo-props="fixed: 'top'">Some heading</h1>
+		// |		<ul id="list" data-dojo-type="dojox/mobile/RoundRectList"
+		// |			data-dojo-mixins="dojox/mobile/FilteredListMixin"
+		// |			data-dojo-props="placeHolder: 'Search'">
+		// |			<li data-dojo-type="dojox/mobile/ListItem">Item 1</li>
+		// |			<li data-dojo-type="dojox/mobile/ListItem">Item 2</li>
+		// |			...
+		// |		</ul>
+		// |	</div>
+		// example:
+		// |	// Programmatic use-case:
+		// |	// SearchBox and ScrollableView created by the mixin.
+		// |	// Filtered EdgeToEdgeStoreList created programmatically.
+		// |	require(["dojo/_base/declare", "dojo/ready", "dojox/mobile", "dojox/mobile/EdgeToEdgeStoreList", 
+		// |			"dojox/mobile/FilteredListMixin", ...],	function(declare, ready, registry, ...){
+		// |		ready(function(){
+		// |			var listWidget =
+		// |				new declare([EdgeToEdgeStoreList, FilteredListMixin])(
+		// |					{placeHolder: 'Search', store: myStore, "filteredList"});
+		// |			listWidget.startup();
+		// |		});
+		// |	});
+		// |	...
+		// |	<div id="view" data-dojo-type="dojox/mobile/View">
+		// |		<h1 data-dojo-type="dojox/mobile/Heading" data-dojo-props="fixed: 'top'">Some heading</h1>
+		// |		<div id="filteredList">
+		// |	</div>
+		// example:
+		// |	<!-- Markup use-case: -->
+		// |	<!-- SearchBox and ScrollableView provided by the user. -->
+		// |	<!-- Filtered EdgeToEdgeDataList created in markup. --> 
+		// |	<div data-dojo-type="dojox/mobile/View">
+		// |		<h1 data-dojo-type="dojox/mobile/Heading" data-dojo-props="fixed: 'top'">Some heading</h1>
+		// |		<input id="filterBox" data-dojo-type="dojox/mobile/SearchBox" type="search"
+		// |			class="mblFilteredEdgeToEdgeListSearchBox">		
+		// |		<div data-dojo-type="dojox/mobile/ScrollableView">
+		// |			<ul data-dojo-type="dojox/mobile/EdgeToEdgeDataList" 
+		// |				data-dojo-mixins="dojox/mobile/FilteredListMixin"
+		// |				data-dojo-props="filterBoxRef: 'filterBox', placeHolder: 'Search', store: myStore"></ul>
+		// |		</div>
+		// |	</div>
+		// example:
+		// |	// Programmatic use-case:
+		// |	// SearchBox and ScrollableView provided by the user.
+		// |	// Filtered EdgeToEdgeStoreList created programmatically.
+		// |	require(["dojo/_base/declare", "dojo/ready", "dijit/registry", "dojox/mobile",
+		// |			"dojox/mobile/EdgeToEdgeStoreList", "dojox/mobile/FilteredListMixin",
+		// |			"dojox/mobile/ScrollableView", ...], function(declare, ready, registry, ...){
+		// |		ready(function(){
+		// |			var view = registry.byId("scrollableView");
+		// |			var listWidget =
+		// |				new declare([EdgeToEdgeStoreList, FilteredListMixin])(
+		// |					{id:"list", filterBoxRef: 'filterBox', placeHolder: 'Search', store: myStore});
+		// |			listWidget.placeAt(view.containerNode);
+		// |			listWidget.startup();
+		// |		});
+		// |	});
+		// |	...
+		// |	<div data-dojo-type="dojox/mobile/View">
+		// |		<h1 data-dojo-type="dojox/mobile/Heading" data-dojo-props="fixed: 'top'">Some heading</h1>
+		// |		<input id="filterBox" data-dojo-type="dojox/mobile/SearchBox" type="search"
+		// |			class="mblFilteredEdgeToEdgeListSearchBox">		
+		// |		<div id="scrollableView" data-dojo-type="dojox/mobile/ScrollableView">
+		// |	</div>
+
+		// Implementation notes:
+		// - The mixin requires dojox/mobile/ScrollableView statically. It could be required
+		// dynamically, only when needed, that is in the use-case when the mixin creates the 
+		// ScrollableView by itself. But this would create an usability trouble: if the user 
+		// would want to get the instance of ScrollableView in a dojo/ready (say, for configuring
+		// it), he would need to require it upfront, to cope with the case of asynchronous 
+		// loading. Thus, requiring it statically has been preferred, because it avoids this
+		// constraint on user's side and it is not a serious overhead, because in practice 
+		// the filtering is used for long lists, for which a ScrollableView is anyway likely 
+		// to be used. 
+		// - Differently, the loading of the store/data modules is performed dynamically,
+		// in order to avoid their overhead when they are not actually needed.
+		
+		// filterBoxRef: String
+		//		The reference for the search box allowing to enter the filtering criteria.
+		//		Only used at construction time:
+		//		- If unspecified, the mixin creates a dojox/mobile/SearchBox and 
+		//		a dojox/mobile/ScrollableView. The list is placed inside the ScrollableView and the
+		//		SearchBox, wrapped in a DIV, is placed on top of the ScrollableView.
+		//		- If the string is the id of a widget which is an instance of dojox/mobile/SearchBox 
+		//		or a subclass, the mixin uses this SearchBox for filtering the list.
+		//		- If the id is specified but does not reference a dojox/mobile/SearchBox or 
+		//		subclass, an error is thrown. 
+		filterBoxRef: null,
+		
+		// placeHolder: String
+		//		Defines a hint to help users fill out the input field (as defined in HTML 5) of the 
+		//		dojox/mobile/SearchBox. This should only contain plain text	(no HTML markup).
+		//		When the SearchBox is provided by the user (not created by this mixin), its placeHolder
+		//		property takes precedence.
+		placeHolder: "",
+		
+		// filterBoxVisible: Boolean
+		//		A flag which allows to show or hide the dojox/mobile/SearchBox associated with
+		//		the list.
+		filterBoxVisible: true,
+		
+		// _filterBox: [private] dojox/mobile/SearchBox
+		//		The instance of dojox/mobile/SearchBox used by this mixin. 
+		//		Stored for getFilterBox().
+		_filterBox: null,
+		
+		// _createdFilterBox: [private] dojox/mobile/SearchBox
+		//		The instance of dojox/mobile/SearchBox created by this mixin, or null if none
+		//		has been created. Stored for being able to destroy it together with the list widget.
+		_createdFilterBox: null,
+		
+		// _createdScrollableView: [private] dojox/mobile/ScrollableView
+		//		The instance of dojox/mobile/ScrollableView created by this mixin, if any. 
+		//		Stored for getScrollableView() and for being able to destroy it together 
+		//		with the list widget.
+		_createdScrollableView: null,
+		
+		startup: function(){
+			if(this._started){ return; }
+			
+			this.inherited(arguments);
+			
+			if(this.filterBoxRef){
+				// Case #1: search box provided by the user
+				this._filterBox = registry.byId(this.filterBoxRef);
+				
+				if (this._filterBox && this._filterBox.isInstanceOf(SearchBox)){ 
+					// If the list is backed by a dojox/mobile/_StoreListMixin, it
+					// has a labelProperty which is given precedence. 
+					this._filterBox.set("searchAttr", this.labelProperty ? this.labelProperty : "label");
+					if(!this._filterBox.placeHolder){
+						// Give precedence to the placeHolder that may be specified on the provided SearchBox
+						this._filterBox.set("placeHolder", this.placeHolder);
+					}
+					this._filterBox.on("search", lang.hitch(this, "_onFilter"));
+				}else{
+					throw new Error("Cannot find a widget of type dojox/mobile/SearchBox or subclass " +
+						"at the specified filterBoxRef: " + this.filterBoxRef);
+				}
+			}else{ 
+				// Case #2: automatic mode. The mixin creates a SearchBox and a ScrollableView.
+				this._filterBox =
+					new SearchBox({
+						// If the list is backed by a dojox/mobile/_StoreListMixin, it
+						// has a labelProperty which is given precedence. 
+						searchAttr: this.labelProperty ? this.labelProperty : "label",
+						ignoreCase: true,
+						incremental: true,
+						onSearch: lang.hitch(this, "_onFilter"),
+						selectOnClick: true,
+						placeHolder: this.placeHolder
+				});
+				
+				// Store them to be able to destroy them together with the list (see destroy()).
+				this._createdFilterBox = this._filterBox; 
+				this._createdScrollableView = new ScrollableView();
+				
+				var currentDomNode = this.domNode,
+					listParentNode = this.domNode.parentNode;
+				listParentNode.replaceChild(this._createdScrollableView.domNode, this.domNode);
+				// Put the list inside the ScrollableView:
+				domConstruct.place(currentDomNode, this._createdScrollableView.containerNode);
+				
+				var searchBoxParentDiv = domConstruct.create("div");
+				// Put the SearchBox as child of the DIV 
+				domConstruct.place(this._createdFilterBox.domNode, searchBoxParentDiv);
+				// Put the DIV as sibling of the ScrollableView: 
+				domConstruct.place(searchBoxParentDiv, this._createdScrollableView.domNode, "before");
+					
+				if(this.filterBoxClass){
+					// Only adding the class when the mixin creates the SearchBox by itself.
+					domClass.add(searchBoxParentDiv, this.filterBoxClass);
+				}
+					
+				this._createdFilterBox.startup();
+				this._createdScrollableView.startup();
+				this._createdScrollableView.resize();
+			}
+			
+			// Do not use this.getScrollableView() here, because this doesn't cover the
+			// use-case when the scrollable is not created by this mixin.
+			var sv = viewRegistry.getEnclosingScrollable(this.domNode);
+			if(sv){
+				this.connect(sv, "onFlickAnimationEnd", lang.hitch(this, function(){
+					if(!this._filterBox.focusNode.value){ // if search criteria is empty
+						// store the scroll position such that we can reset the 
+						// initial scroll when the user goes back to the unfiltered
+						// list (as done by some native mobile apps). 
+						this._previousUnfilteredScrollPos = sv.getPos();
+					}
+				}));
+			}
+			
+			if(!this.store){
+				this._createStore(this._initStore);
+			}else{
+				this._initStore();
+			}
+		},
+		
+		_setFilterBoxVisibleAttr: function(/* Boolean */ visible){
+			// tags:
+			//		private
+			this._set("filterBoxVisible", visible);
+			if (this._filterBox && this._filterBox.domNode){
+				this._filterBox.domNode.style.display = visible ? "" : "none";
+			}
+		},
+		
+		_setPlaceHolderAttr: function(/* String */ placeHolder){
+			// tags:
+			//		private
+			this._set("placeHolder", placeHolder);
+			if (this._filterBox){ // allow update after construction time
+				this._filterBox.set("placeHolder", placeHolder);
+			}
+		},
+		
+		getFilterBox: function(){
+			// summary:
+			//		Returns the dojox/mobile/SearchBox widget used for entering the filtering criteria.
+			//		If an instance has been referenced at construction time using the property filterBoxRef,
+			//		this instance is returned. Otherwise, returns the instance created by the mixin.
+			//		This function allows the user to get the instance of SearchBox in order to customize
+			//		its parameters. 
+			return this._filterBox;
+		},
+		
+		getScrollableView: function(){
+			// summary:
+			//		Returns the instance of dojox/mobile/ScrollableView created by this mixin,
+			//		or null if none has been created. The mixin creates a ScrollableView if and
+			//		only if the property filterBoxRef is unspecified.
+			//		This function allows the user to get the instance of ScrollableView in order to
+			//		customize its parameters.
+			return this._createdScrollableView;
+		},
+		
+		_initStore: function(){
+			// description:
+			//		Initializes the store.
+			// tags:
+			//		private
+			var store = this.store;
+			if(!store.get || !store.query){ // if old store (dojo/data)
+				// Detect the old dojo/data stores (since the stores don't actually extend a common
+				// base class, there is no direct way to do this check. Hence we rely on the presence 
+				// or absence of these two properties of the new stores which are required for the
+				// list widgets).
+				// TODO: to be removed when removing the support for lists backed by the old dojo/data 
+				// (EdgeToEdgeDataStore, RoundRectDataList).
+				require(["dojo/store/DataStore"], lang.hitch(this, function(DataStore){
+					// wrap the dojo/data store into a dojo/store
+					store = new DataStore({store: store});	
+					this._filterBox.store = store;				
+				}));
+			}else{
+				this._filterBox.store = store;
+			}
+		},
+	
+		_createStore: function(initStoreFunction/* Function */){
+			// summary:
+			//		Creates the store.
+			// description:
+			//		This method is used when the list is not backed by a store. In this case,
+			//		a store is created and filled with items containing the text of the list items.
+			// tags:
+			//		private
+			require(["./_StoreListMixin", "dojo/store/Memory"], lang.hitch(this, function(module, Memory){
+				declare.safeMixin(this, new module());
+					
+				this.append = true; // to avoid that _StoreListMixin.generateList destroys the items
+					
+				// _StoreListMixin.createListItem creates a new item. Instead, we want to reuse the
+				// original item instance, hence:
+				this.createListItem = function(/*Object*/item){
+					return item.listItem;
+				};
+					
+				aspect.before(this, "generateList", function(){
+					// remove all children
+					array.forEach(this.getChildren(), function(child){
+						child.domNode.parentNode.removeChild(child.domNode);
+					});
+				});
+					
+				// Collect the text from the list items
+				var items = [];
+				var text = null;
+				array.forEach(this.getChildren(), function(child){
+					text = child.label ? child.label : (child.domNode.innerText || child.domNode.textContent);
+					items.push({label: text, listItem: child});
+				});
+				var listData = {items: items};
+				// store for the dojox/mobile/EdgeToEdgeStoreList
+				var store = new Memory({idProperty:"label", data: listData});
+				this.store = null;
+				this.query = {};
+				this.setStore(store, this.query, this.queryOptions);
+				lang.hitch(this, initStoreFunction)();
+			}));
+		},
+		
+		_onFilter: function(results, query, options){
+			// summary:
+			//		Internal handler for filtering events.
+			// tags:
+			//		private
+			if(this.onFilter(results, query, options) === false){ return; } // user's filtering action
+			this.setQuery(query);
+			
+			// Do not use this.getScrollableView() because this doesn't cover the
+			// use-case when the scrollable is not created by this mixin.
+			var sv = viewRegistry.getEnclosingScrollable(this.domNode);
+			if(sv){
+				// When the user goes back to the unfiltered list, restore the previous 
+				// scroll position stored for unfiltered list (as done by some native mobile apps).
+				// Otherwise, reset the scroll position, to ensure that the new subset of 
+				// items is visible. 
+				sv.scrollTo(this._filterBox.focusNode.value ?
+					{x:0, y:0} :
+					this._previousUnfilteredScrollPos || {x:0, y:0});
+			}
+		},
+		
+		onFilter: function(/*===== results, query, options =====*/){
+			// summary:
+			//		User-defined function to handle filter actions. If the function returns false,
+			//		the filtering is cancelled.
+			// tags:
+			//		callback
+		},
+		
+		destroy: function(/*Boolean?*/ preserveDom){
+			// summary:
+			//		Destroys the widget. If the list has created dojox/mobile/SearchBox 
+			//		or dojox/mobile/ScrollableView widgets, these widgets are also destroyed.
+			// preserveDom: Boolean
+			//		If true, this method will leave the original DOM structure alone.
+		
+			this.inherited(arguments);
+			
+			// Only destroy widgets created (thus, owned) by this mixin (if any).
+			if(this._createdFilterBox){ 
+				this._createdFilterBox.destroy(preserveDom);
+				this._createdFilterBox = null;
+			}
+			if(this._createdScrollableView){ 
+				this._createdScrollableView.destroy(preserveDom);
+				this._createdScrollableView = null;
+			}
+		}
+	});
+});
+
+},
+'dojox/mobile/SearchBox':function(){
+define([
+	"dojo/_base/declare",
+	"dojo/_base/lang",
+	"dojo/_base/window",
+	"dijit/form/_SearchMixin",
+	"dojox/mobile/TextBox",
+	"dojo/dom-class",
+	"dojo/keys",
+	"dojo/touch",
+	"dojo/on",
+	"./sniff"
+], function(declare, lang, win, SearchMixin, TextBox, domClass, keys, touch, on, has){
+
+	return declare("dojox.mobile.SearchBox", [TextBox, SearchMixin], {
+		// summary:
+		//		A non-templated base class for INPUT type="search".
+
+		// baseClass: String
+		//		The name of the CSS class of this widget.
+		baseClass: "mblTextBox mblSearchBox",
+
+		// type: String
+		//		Corresponds to the type attribute of the HTML `<input>` element.
+		//		The value is "search".
+		type: "search",
+
+		placeHolder: "",
+
+		// incremental: Boolean
+		//		Set true to search on every key or false to only search after 
+		//		pressing ENTER or cancel.
+		incremental: true,
+
+		_setIncrementalAttr: function(val){
+			// summary:
+			//		Custom setter so the INPUT doesn't get the incremental attribute set.
+			// tags:
+			//		private
+			this.incremental = val;
+		},
+
+		_onInput: function(e){
+			// tags:
+			//		private
+			if(e.charOrCode == keys.ENTER){
+				e.charOrCode = 229;
+			}else if(!this.incremental){
+				e.charOrCode = 0; // call _onInput to make sure a pending query is aborted
+			}
+			this.inherited(arguments);
+		},
+
+		postCreate: function(){
+			this.inherited(arguments);
+			this.textbox.removeAttribute('incremental'); // only want onsearch to fire for ENTER and cancel
+			if(!this.textbox.hasAttribute('results')){
+				this.textbox.setAttribute('results', '0'); // enables webkit search decoration
+			}
+			if(has("ios") < 5){
+				domClass.add(this.domNode, 'iphone4'); // cannot click cancel button after focus so just remove it
+				this.connect(this.textbox, "onfocus", // if value changes between start of onfocus to end, then it was a cancel
+					function(){
+						if(this.textbox.value !== ''){
+							this.defer(
+								function(){
+									if(this.textbox.value === ''){
+										this._onInput({ charOrCode: keys.ENTER }); // emulate onsearch
+									}
+								}
+							);
+						}
+					}
+				);
+			}
+			this.connect(this.textbox, "onsearch",
+				function(){
+					this._onInput({ charOrCode: keys.ENTER });
+				}
+			);
+			
+			// Clear action for the close button (iOS specific)
+			var _this = this;
+			var touchStartX, touchStartY;
+			var handleRelease;
+			if(has("ios")){
+				this.on(touch.press, function(evt){
+					var rect;
+					touchStartX = evt.touches ? evt.touches[0].pageX : evt.pageX;
+					touchStartY = evt.touches ? evt.touches[0].pageY : evt.pageY;
+					// As the native searchbox on iOS, clear on release, not on start.
+					handleRelease = on(win.doc, touch.release,
+						function(evt){
+							var rect, dx, dy;
+							if(_this.get("value") != ""){
+								dx = evt.pageX - touchStartX;
+								dy = evt.pageY - touchStartY;
+								// Mimic the behavior of native iOS searchbox: 
+								// if location of release event close to the location of start event:
+								if(Math.abs(dx) <= 4 && Math.abs(dy) <= 4){
+									evt.preventDefault();
+									_this.set("value", "");
+									_this._onInput({ charOrCode: keys.ENTER });
+								}
+							}
+							if(handleRelease){ // possibly already cancelled/cleared on touch.press
+								handleRelease.remove();
+								handleRelease = null;
+							}
+						}
+					);
+					rect = _this.domNode.getBoundingClientRect();
+					// if touched in the right-most 20 pixels of the search box 
+					if(rect.right - (evt.touches ? evt.touches[0].pageX : evt.pageX) >= 20){
+						// cancel
+						if(handleRelease){
+							handleRelease.remove();
+							handleRelease = null;
+						} 
+					}
+				});
+			}
+		}
+	});
+});
+
+},
+'dijit/form/_SearchMixin':function(){
+define([
+	"dojo/_base/declare", // declare
+	"dojo/keys", // keys
+	"dojo/_base/lang", // lang.clone lang.hitch
+	"dojo/query", // query
+	"dojo/string", // string.substitute
+	"dojo/when",
+	"../registry"	// registry.byId
+], function(declare, keys, lang, query, string, when, registry){
+
+	// module:
+	//		dijit/form/_SearchMixin
+
+
+	return declare("dijit.form._SearchMixin", null, {
+		// summary:
+		//		A mixin that implements the base functionality to search a store based upon user-entered text such as
+		//		with `dijit/form/ComboBox` or `dijit/form/FilteringSelect`
+		// tags:
+		//		protected
+
+		// pageSize: Integer
+		//		Argument to data provider.
+		//		Specifies maximum number of search results to return per query
+		pageSize: Infinity,
+
+		// store: [const] dojo/store/api/Store
+		//		Reference to data provider object used by this ComboBox.
+		//		The store must accept an object hash of properties for its query. See `query` and `queryExpr` for details.
+		store: null,
+
+		// fetchProperties: Object
+		//		Mixin to the store's fetch.
+		//		For example, to set the sort order of the ComboBox menu, pass:
+		//	|	{ sort: [{attribute:"name",descending: true}] }
+		//		To override the default queryOptions so that deep=false, do:
+		//	|	{ queryOptions: {ignoreCase: true, deep: false} }
+		fetchProperties:{},
+
+		// query: Object
+		//		A query that can be passed to `store` to initially filter the items.
+		//		ComboBox overwrites any reference to the `searchAttr` and sets it to the `queryExpr` with the user's input substituted.
+		query: {},
+
+		// searchDelay: Integer
+		//		Delay in milliseconds between when user types something and we start
+		//		searching based on that value
+		searchDelay: 200,
+
+		// searchAttr: String
+		//		Search for items in the data store where this attribute (in the item)
+		//		matches what the user typed
+		searchAttr: "name",
+
+		// queryExpr: String
+		//		This specifies what query is sent to the data store,
+		//		based on what the user has typed.  Changing this expression will modify
+		//		whether the results are only exact matches, a "starting with" match,
+		//		etc.
+		//		`${0}` will be substituted for the user text.
+		//		`*` is used for wildcards.
+		//		`${0}*` means "starts with", `*${0}*` means "contains", `${0}` means "is"
+		queryExpr: "${0}*",
+
+		// ignoreCase: Boolean
+		//		Set true if the query should ignore case when matching possible items
+		ignoreCase: true,
+
+		_patternToRegExp: function(pattern){
+			// summary:
+			//		Helper function to convert a simple pattern to a regular expression for matching.
+			// description:
+			//		Returns a regular expression object that conforms to the defined conversion rules.
+			//		For example:
+			//
+			//		- ca*   -> /^ca.*$/
+			//		- *ca*  -> /^.*ca.*$/
+			//		- *c\*a*  -> /^.*c\*a.*$/
+			//		- *c\*a?*  -> /^.*c\*a..*$/
+			//
+			//		and so on.
+			// pattern: string
+			//		A simple matching pattern to convert that follows basic rules:
+			//
+			//		- * Means match anything, so ca* means match anything starting with ca
+			//		- ? Means match single character.  So, b?b will match to bob and bab, and so on.
+			//		- \ is an escape character.  So for example, \* means do not treat * as a match, but literal character *.
+			//
+			//		To use a \ as a character in the string, it must be escaped.  So in the pattern it should be
+			//		represented by \\ to be treated as an ordinary \ character instead of an escape.
+
+			return new RegExp("^" + pattern.replace(/(\\.)|(\*)|(\?)|\W/g, function(str, literal, star, question){
+				return star ? ".*" : question ? "." : literal ? literal : "\\" + str;
+			}) + "$", this.ignoreCase ? "mi" : "m");
+		},
+
+		_abortQuery: function(){
+			// stop in-progress query
+			if(this.searchTimer){
+				this.searchTimer = this.searchTimer.remove();
+			}
+			if(this._queryDeferHandle){
+				this._queryDeferHandle = this._queryDeferHandle.remove();
+			}
+			if(this._fetchHandle){
+				if(this._fetchHandle.abort){
+					this._cancelingQuery = true;
+					this._fetchHandle.abort();
+					this._cancelingQuery = false;
+				}
+				if(this._fetchHandle.cancel){
+					this._cancelingQuery = true;
+					this._fetchHandle.cancel();
+					this._cancelingQuery = false;
+				}
+				this._fetchHandle = null;
+			}
+		},
+
+		_processInput: function(/*Event*/ evt){
+			// summary:
+			//		Handles input (keyboard/paste) events
+			if(this.disabled || this.readOnly){ return; }
+			var key = evt.charOrCode;
+
+			// except for cutting/pasting case - ctrl + x/v
+			if("type" in evt && evt.type.substring(0,3) == "key" && (evt.altKey || ((evt.ctrlKey || evt.metaKey) && (key != 'x' && key != 'v')) || key == keys.SHIFT)){
+				return; // throw out weird key combinations and spurious events
+			}
+
+			var doSearch = false;
+			this._prev_key_backspace = false;
+
+			switch(key){
+				case keys.DELETE:
+				case keys.BACKSPACE:
+					this._prev_key_backspace = true;
+					this._maskValidSubsetError = true;
+					doSearch = true;
+					break;
+
+				default:
+					// Non char keys (F1-F12 etc..) shouldn't start a search..
+					// Ascii characters and IME input (Chinese, Japanese etc.) should.
+					//IME input produces keycode == 229.
+					doSearch = typeof key == 'string' || key == 229;
+			}
+			if(doSearch){
+				// need to wait a tad before start search so that the event
+				// bubbles through DOM and we have value visible
+				if(!this.store){
+					this.onSearch();
+				}else{
+					this.searchTimer = this.defer("_startSearchFromInput", 1);
+				}
+			}
+		},
+
+		onSearch: function(/*===== results, query, options =====*/){
+			// summary:
+			//		Callback when a search completes.
+			//
+			// results: Object
+			//		An array of items from the originating _SearchMixin's store.
+			//
+			// query: Object
+			//		A copy of the originating _SearchMixin's query property.
+			//
+			// options: Object
+			//		The additional parameters sent to the originating _SearchMixin's store, including: start, count, queryOptions.
+			//
+			// tags:
+			//		callback
+		},
+
+		_startSearchFromInput: function(){
+			this._startSearch(this.focusNode.value);
+		},
+
+		_startSearch: function(/*String*/ text){
+			// summary:
+			//		Starts a search for elements matching text (text=="" means to return all items),
+			//		and calls onSearch(...) when the search completes, to display the results.
+
+			this._abortQuery();
+			var
+				_this = this,
+				// Setup parameters to be passed to store.query().
+				// Create a new query to prevent accidentally querying for a hidden
+				// value from FilteringSelect's keyField
+				query = lang.clone(this.query), // #5970
+				options = {
+					start: 0,
+					count: this.pageSize,
+					queryOptions: {		// remove for 2.0
+						ignoreCase: this.ignoreCase,
+						deep: true
+					}
+				},
+				qs = string.substitute(this.queryExpr, [text.replace(/([\\\*\?])/g, "\\$1")]),
+				q,
+				startQuery = function(){
+					var resPromise = _this._fetchHandle = _this.store.query(query, options);
+					if(_this.disabled || _this.readOnly || (q !== _this._lastQuery)){
+						return;
+					} // avoid getting unwanted notify
+					when(resPromise, function(res){
+						_this._fetchHandle = null;
+						if(!_this.disabled && !_this.readOnly && (q === _this._lastQuery)){ // avoid getting unwanted notify
+							when(resPromise.total, function(total){
+								res.total = total;
+								var pageSize = _this.pageSize;
+								if(isNaN(pageSize) || pageSize > res.total){ pageSize = res.total; }
+								// Setup method to fetching the next page of results
+								res.nextPage = function(direction){
+									//	tell callback the direction of the paging so the screen
+									//	reader knows which menu option to shout
+									options.direction = direction = direction !== false;
+									options.count = pageSize;
+									if(direction){
+										options.start += res.length;
+										if(options.start >= res.total){
+											options.count = 0;
+										}
+									}else{
+										options.start -= pageSize;
+										if(options.start < 0){
+											options.count = Math.max(pageSize + options.start, 0);
+											options.start = 0;
+										}
+									}
+									if(options.count <= 0){
+										res.length = 0;
+										_this.onSearch(res, query, options);
+									}else{
+										startQuery();
+									}
+								};
+								_this.onSearch(res, query, options);
+							});
+						}
+					}, function(err){
+						_this._fetchHandle = null;
+						if(!_this._cancelingQuery){	// don't treat canceled query as an error
+							console.error(_this.declaredClass + ' ' + err.toString());
+						}
+					});
+				};
+
+			lang.mixin(options, this.fetchProperties);
+
+			// Generate query
+			if(this.store._oldAPI){
+				// remove this branch for 2.0
+				q = qs;
+			}else{
+				// Query on searchAttr is a regex for benefit of dojo/store/Memory,
+				// but with a toString() method to help dojo/store/JsonRest.
+				// Search string like "Co*" converted to regex like /^Co.*$/i.
+				q = this._patternToRegExp(qs);
+				q.toString = function(){ return qs; };
+			}
+
+			// set _lastQuery, *then* start the timeout
+			// otherwise, if the user types and the last query returns before the timeout,
+			// _lastQuery won't be set and their input gets rewritten
+			this._lastQuery = query[this.searchAttr] = q;
+			this._queryDeferHandle = this.defer(startQuery, this.searchDelay);
+		},
+
+		//////////// INITIALIZATION METHODS ///////////////////////////////////////
+
+		constructor: function(){
+			this.query={};
+			this.fetchProperties={};
+		},
+
+		postMixInProperties: function(){
+			if(!this.store){
+				var list = this.list;
+				if(list){
+					this.store = registry.byId(list);
+				}
+			}
+			this.inherited(arguments);
+		}
+	});
+});
+
+},
+'dojox/mobile/TextBox':function(){
+define([
+	"dojo/_base/declare",
+	"dojo/dom-construct",
+	"dijit/_WidgetBase",
+	"dijit/form/_FormValueMixin",
+	"dijit/form/_TextBoxMixin",
+	"dojo/has",
+	"dojo/has!dojo-bidi?dojox/mobile/bidi/TextBox"
+], function(declare, domConstruct, WidgetBase, FormValueMixin, TextBoxMixin, has, BidiTextBox){
+
+	var TextBox = declare(has("dojo-bidi") ? "dojox.mobile.NonBidiTextBox" : "dojox.mobile.TextBox", [WidgetBase, FormValueMixin, TextBoxMixin],{
+		// summary:
+		//		A non-templated base class for textbox form inputs
+
+		baseClass: "mblTextBox",
+
+		// Override automatic assigning type --> node, it causes exception on IE8.
+		// Instead, type must be specified as this.type when the node is created, as part of the original DOM
+		_setTypeAttr: null,
+
+		// Map widget attributes to DOMNode attributes.
+		_setPlaceHolderAttr: function(/*String*/value){
+			value = this._cv ? this._cv(value) : value;
+			this._set("placeHolder", value);
+			this.textbox.setAttribute("placeholder", value);
+		},
+
+		buildRendering: function(){
+			if(!this.srcNodeRef){
+				this.srcNodeRef = domConstruct.create("input", {"type":this.type});
+			}
+			this.inherited(arguments);
+			this.textbox = this.focusNode = this.domNode;
+		},
+
+		postCreate: function(){
+			this.inherited(arguments);
+			this.connect(this.textbox, "onmouseup", function(){ this._mouseIsDown = false; });
+			this.connect(this.textbox, "onmousedown", function(){ this._mouseIsDown = true; });
+			this.connect(this.textbox, "onfocus", function(e){
+				this._onFocus(this._mouseIsDown ? "mouse" : e);
+				this._mouseIsDown = false;
+			});
+			this.connect(this.textbox, "onblur", "_onBlur");
+		}
+	});
+	return has("dojo-bidi") ? declare("dojox.mobile.TextBox", [TextBox, BidiTextBox]) : TextBox;	
+});
+
+},
+'dijit/form/_FormValueMixin':function(){
+define([
+	"dojo/_base/declare", // declare
+	"dojo/dom-attr", // domAttr.set
+	"dojo/keys", // keys.ESCAPE
+	"dojo/_base/lang",
+	"dojo/on",
+	"./_FormWidgetMixin"
+], function(declare, domAttr, keys, lang, on, _FormWidgetMixin){
+
+	// module:
+	//		dijit/form/_FormValueMixin
+
+	return declare("dijit.form._FormValueMixin", _FormWidgetMixin, {
+		// summary:
+		//		Mixin for widgets corresponding to native HTML elements such as `<input>` or `<select>`
+		//		that have user changeable values.
+		// description:
+		//		Each _FormValueMixin represents a single input value, and has a (possibly hidden) `<input>` element,
+		//		to which it serializes it's input value, so that form submission (either normal submission or via FormBind?)
+		//		works as expected.
+
+		// readOnly: Boolean
+		//		Should this widget respond to user input?
+		//		In markup, this is specified as "readOnly".
+		//		Similar to disabled except readOnly form values are submitted.
+		readOnly: false,
+
+		_setReadOnlyAttr: function(/*Boolean*/ value){
+			domAttr.set(this.focusNode, 'readOnly', value);
+			this._set("readOnly", value);
+		},
+
+		postCreate: function(){
+			this.inherited(arguments);
+
+			// Update our reset value if it hasn't yet been set (because this.set()
+			// is only called when there *is* a value)
+			if(this._resetValue === undefined){
+				this._lastValueReported = this._resetValue = this.value;
+			}
+		},
+
+		_setValueAttr: function(/*anything*/ newValue, /*Boolean?*/ priorityChange){
+			// summary:
+			//		Hook so set('value', value) works.
+			// description:
+			//		Sets the value of the widget.
+			//		If the value has changed, then fire onChange event, unless priorityChange
+			//		is specified as null (or false?)
+			this._handleOnChange(newValue, priorityChange);
+		},
+
+		_handleOnChange: function(/*anything*/ newValue, /*Boolean?*/ priorityChange){
+			// summary:
+			//		Called when the value of the widget has changed.  Saves the new value in this.value,
+			//		and calls onChange() if appropriate.   See _FormWidget._handleOnChange() for details.
+			this._set("value", newValue);
+			this.inherited(arguments);
+		},
+
+		undo: function(){
+			// summary:
+			//		Restore the value to the last value passed to onChange
+			this._setValueAttr(this._lastValueReported, false);
+		},
+
+		reset: function(){
+			// summary:
+			//		Reset the widget's value to what it was at initialization time
+			this._hasBeenBlurred = false;
+			this._setValueAttr(this._resetValue, true);
+		}
+	});
+});
+
+},
+'dijit/form/_FormWidgetMixin':function(){
+define([
+	"dojo/_base/array", // array.forEach
+	"dojo/_base/declare", // declare
+	"dojo/dom-attr", // domAttr.set
+	"dojo/dom-style", // domStyle.get
+	"dojo/_base/lang", // lang.hitch lang.isArray
+	"dojo/mouse", // mouse.isLeft
+	"dojo/on",
+	"dojo/sniff", // has("webkit")
+	"dojo/window", // winUtils.scrollIntoView
+	"../a11y"    // a11y.hasDefaultTabStop
+], function(array, declare, domAttr, domStyle, lang, mouse, on, has, winUtils, a11y){
+
+	// module:
+	//		dijit/form/_FormWidgetMixin
+
+	return declare("dijit.form._FormWidgetMixin", null, {
+		// summary:
+		//		Mixin for widgets corresponding to native HTML elements such as `<checkbox>` or `<button>`,
+		//		which can be children of a `<form>` node or a `dijit/form/Form` widget.
+		//
+		// description:
+		//		Represents a single HTML element.
+		//		All these widgets should have these attributes just like native HTML input elements.
+		//		You can set them during widget construction or afterwards, via `dijit/_WidgetBase.set()`.
+		//
+		//		They also share some common methods.
+
+		// name: [const] String
+		//		Name used when submitting form; same as "name" attribute or plain HTML elements
+		name: "",
+
+		// alt: String
+		//		Corresponds to the native HTML `<input>` element's attribute.
+		alt: "",
+
+		// value: String
+		//		Corresponds to the native HTML `<input>` element's attribute.
+		value: "",
+
+		// type: [const] String
+		//		Corresponds to the native HTML `<input>` element's attribute.
+		type: "text",
+
+		// type: String
+		//		Apply aria-label in markup to the widget's focusNode
+		"aria-label": "focusNode",
+
+		// tabIndex: String
+		//		Order fields are traversed when user hits the tab key
+		tabIndex: "0",
+		_setTabIndexAttr: "focusNode", // force copy even when tabIndex default value, needed since Button is <span>
+
+		// disabled: Boolean
+		//		Should this widget respond to user input?
+		//		In markup, this is specified as "disabled='disabled'", or just "disabled".
+		disabled: false,
+
+		// intermediateChanges: Boolean
+		//		Fires onChange for each value change or only on demand
+		intermediateChanges: false,
+
+		// scrollOnFocus: Boolean
+		//		On focus, should this widget scroll into view?
+		scrollOnFocus: true,
+
+		// Override _WidgetBase mapping id to this.domNode, needs to be on focusNode so <label> etc.
+		// works with screen reader
+		_setIdAttr: "focusNode",
+
+		_setDisabledAttr: function(/*Boolean*/ value){
+			this._set("disabled", value);
+			domAttr.set(this.focusNode, 'disabled', value);
+			if(this.valueNode){
+				domAttr.set(this.valueNode, 'disabled', value);
+			}
+			this.focusNode.setAttribute("aria-disabled", value ? "true" : "false");
+
+			if(value){
+				// reset these, because after the domNode is disabled, we can no longer receive
+				// mouse related events, see #4200
+				this._set("hovering", false);
+				this._set("active", false);
+
+				// clear tab stop(s) on this widget's focusable node(s)  (ComboBox has two focusable nodes)
+				var attachPointNames = "tabIndex" in this.attributeMap ? this.attributeMap.tabIndex :
+					("_setTabIndexAttr" in this) ? this._setTabIndexAttr : "focusNode";
+				array.forEach(lang.isArray(attachPointNames) ? attachPointNames : [attachPointNames], function(attachPointName){
+					var node = this[attachPointName];
+					// complex code because tabIndex=-1 on a <div> doesn't work on FF
+					if(has("webkit") || a11y.hasDefaultTabStop(node)){    // see #11064 about webkit bug
+						node.setAttribute('tabIndex', "-1");
+					}else{
+						node.removeAttribute('tabIndex');
+					}
+				}, this);
+			}else{
+				if(this.tabIndex != ""){
+					this.set('tabIndex', this.tabIndex);
+				}
+			}
+		},
+
+		_onFocus: function(/*String*/ by){
+			// If user clicks on the widget, even if the mouse is released outside of it,
+			// this widget's focusNode should get focus (to mimic native browser behavior).
+			// Browsers often need help to make sure the focus via mouse actually gets to the focusNode.
+			// TODO: consider removing all of this for 2.0 or sooner, see #16622 etc.
+			if(by == "mouse" && this.isFocusable()){
+				// IE exhibits strange scrolling behavior when refocusing a node so only do it when !focused.
+				var focusHandle = this.own(on(this.focusNode, "focus", function(){
+					mouseUpHandle.remove();
+					focusHandle.remove();
+				}))[0];
+				// Set a global event to handle mouseup, so it fires properly
+				// even if the cursor leaves this.domNode before the mouse up event.
+				var mouseUpHandle = this.own(on(this.ownerDocumentBody, "mouseup, touchend", lang.hitch(this, function(evt){
+					mouseUpHandle.remove();
+					focusHandle.remove();
+					// if here, then the mousedown did not focus the focusNode as the default action
+					if(this.focused){
+						if(evt.type == "touchend"){
+							this.defer("focus"); // native focus hasn't occurred yet
+						}else{
+							this.focus(); // native focus already occurred on mousedown
+						}
+					}
+				})))[0];
+			}
+			if(this.scrollOnFocus){
+				this.defer(function(){
+					winUtils.scrollIntoView(this.domNode);
+				}); // without defer, the input caret position can change on mouse click
+			}
+			this.inherited(arguments);
+		},
+
+		isFocusable: function(){
+			// summary:
+			//		Tells if this widget is focusable or not.  Used internally by dijit.
+			// tags:
+			//		protected
+			return !this.disabled && this.focusNode && (domStyle.get(this.domNode, "display") != "none");
+		},
+
+		focus: function(){
+			// summary:
+			//		Put focus on this widget
+			if(!this.disabled && this.focusNode.focus){
+				try{
+					this.focusNode.focus();
+				}catch(e){
+				}
+				/*squelch errors from hidden nodes*/
+			}
+		},
+
+		compare: function(/*anything*/ val1, /*anything*/ val2){
+			// summary:
+			//		Compare 2 values (as returned by get('value') for this widget).
+			// tags:
+			//		protected
+			if(typeof val1 == "number" && typeof val2 == "number"){
+				return (isNaN(val1) && isNaN(val2)) ? 0 : val1 - val2;
+			}else if(val1 > val2){
+				return 1;
+			}else if(val1 < val2){
+				return -1;
+			}else{
+				return 0;
+			}
+		},
+
+		onChange: function(/*===== newValue =====*/){
+			// summary:
+			//		Callback when this widget's value is changed.
+			// tags:
+			//		callback
+		},
+
+		// _onChangeActive: [private] Boolean
+		//		Indicates that changes to the value should call onChange() callback.
+		//		This is false during widget initialization, to avoid calling onChange()
+		//		when the initial value is set.
+		_onChangeActive: false,
+
+		_handleOnChange: function(/*anything*/ newValue, /*Boolean?*/ priorityChange){
+			// summary:
+			//		Called when the value of the widget is set.  Calls onChange() if appropriate
+			// newValue:
+			//		the new value
+			// priorityChange:
+			//		For a slider, for example, dragging the slider is priorityChange==false,
+			//		but on mouse up, it's priorityChange==true.  If intermediateChanges==false,
+			//		onChange is only called form priorityChange=true events.
+			// tags:
+			//		private
+			if(this._lastValueReported == undefined && (priorityChange === null || !this._onChangeActive)){
+				// this block executes not for a change, but during initialization,
+				// and is used to store away the original value (or for ToggleButton, the original checked state)
+				this._resetValue = this._lastValueReported = newValue;
+			}
+			this._pendingOnChange = this._pendingOnChange
+				|| (typeof newValue != typeof this._lastValueReported)
+				|| (this.compare(newValue, this._lastValueReported) != 0);
+			if((this.intermediateChanges || priorityChange || priorityChange === undefined) && this._pendingOnChange){
+				this._lastValueReported = newValue;
+				this._pendingOnChange = false;
+				if(this._onChangeActive){
+					if(this._onChangeHandle){
+						this._onChangeHandle.remove();
+					}
+					// defer allows hidden value processing to run and
+					// also the onChange handler can safely adjust focus, etc
+					this._onChangeHandle = this.defer(
+						function(){
+							this._onChangeHandle = null;
+							this.onChange(newValue);
+						}); // try to collapse multiple onChange's fired faster than can be processed
+				}
+			}
+		},
+
+		create: function(){
+			// Overrides _Widget.create()
+			this.inherited(arguments);
+			this._onChangeActive = true;
+		},
+
+		destroy: function(){
+			if(this._onChangeHandle){ // destroy called before last onChange has fired
+				this._onChangeHandle.remove();
+				this.onChange(this._lastValueReported);
+			}
+			this.inherited(arguments);
+		}
+	});
+});
+
+},
+'dojo/window':function(){
+define(["./_base/lang", "./sniff", "./_base/window", "./dom", "./dom-geometry", "./dom-style", "./dom-construct"],
+	function(lang, has, baseWindow, dom, geom, style, domConstruct){
+
+	// feature detection
+	/* not needed but included here for future reference
+	has.add("rtl-innerVerticalScrollBar-on-left", function(win, doc){
+		var	body = baseWindow.body(doc),
+			scrollable = domConstruct.create('div', {
+				style: {overflow:'scroll', overflowX:'hidden', direction:'rtl', visibility:'hidden', position:'absolute', left:'0', width:'64px', height:'64px'}
+			}, body, "last"),
+			center = domConstruct.create('center', {
+				style: {overflow:'hidden', direction:'ltr'}
+			}, scrollable, "last"),
+			inner = domConstruct.create('div', {
+				style: {overflow:'visible', display:'inline' }
+			}, center, "last");
+		inner.innerHTML="&nbsp;";
+		var midPoint = Math.max(inner.offsetLeft, geom.position(inner).x);
+		var ret = midPoint >= 32;
+		center.removeChild(inner);
+		scrollable.removeChild(center);
+		body.removeChild(scrollable);
+		return ret;
+	});
+	*/
+	has.add("rtl-adjust-position-for-verticalScrollBar", function(win, doc){
+		var	body = baseWindow.body(doc),
+			scrollable = domConstruct.create('div', {
+				style: {overflow:'scroll', overflowX:'visible', direction:'rtl', visibility:'hidden', position:'absolute', left:'0', top:'0', width:'64px', height:'64px'}
+			}, body, "last"),
+			div = domConstruct.create('div', {
+				style: {overflow:'hidden', direction:'ltr'}
+			}, scrollable, "last"),
+			ret = geom.position(div).x != 0;
+		scrollable.removeChild(div);
+		body.removeChild(scrollable);
+		return ret;
+	});
+
+	has.add("position-fixed-support", function(win, doc){
+		// IE6, IE7+quirks, and some older mobile browsers don't support position:fixed
+		var	body = baseWindow.body(doc),
+			outer = domConstruct.create('span', {
+				style: {visibility:'hidden', position:'fixed', left:'1px', top:'1px'}
+			}, body, "last"),
+			inner = domConstruct.create('span', {
+				style: {position:'fixed', left:'0', top:'0'}
+			}, outer, "last"),
+			ret = geom.position(inner).x != geom.position(outer).x;
+		outer.removeChild(inner);
+		body.removeChild(outer);
+		return ret;
+	});
+
+	// module:
+	//		dojo/window
+
+	var window = {
+		// summary:
+		//		TODOC
+
+		getBox: function(/*Document?*/ doc){
+			// summary:
+			//		Returns the dimensions and scroll position of the viewable area of a browser window
+
+			doc = doc || baseWindow.doc;
+
+			var
+				scrollRoot = (doc.compatMode == 'BackCompat') ? baseWindow.body(doc) : doc.documentElement,
+				// get scroll position
+				scroll = geom.docScroll(doc), // scrollRoot.scrollTop/Left should work
+				w, h;
+
+			if(has("touch")){ // if(scrollbars not supported)
+				var uiWindow = window.get(doc);   // use UI window, not dojo.global window
+				// on mobile, scrollRoot.clientHeight <= uiWindow.innerHeight <= scrollRoot.offsetHeight, return uiWindow.innerHeight
+				w = uiWindow.innerWidth || scrollRoot.clientWidth; // || scrollRoot.clientXXX probably never evaluated
+				h = uiWindow.innerHeight || scrollRoot.clientHeight;
+			}else{
+				// on desktops, scrollRoot.clientHeight <= scrollRoot.offsetHeight <= uiWindow.innerHeight, return scrollRoot.clientHeight
+				// uiWindow.innerWidth/Height includes the scrollbar and cannot be used
+				w = scrollRoot.clientWidth;
+				h = scrollRoot.clientHeight;
+			}
+			return {
+				l: scroll.x,
+				t: scroll.y,
+				w: w,
+				h: h
+			};
+		},
+
+		get: function(/*Document*/ doc){
+			// summary:
+			//		Get window object associated with document doc.
+			// doc:
+			//		The document to get the associated window for.
+
+			// In some IE versions (at least 6.0), document.parentWindow does not return a
+			// reference to the real window object (maybe a copy), so we must fix it as well
+			// We use IE specific execScript to attach the real window reference to
+			// document._parentWindow for later use
+			if(has("ie") && window !== document.parentWindow){
+				/*
+				In IE 6, only the variable "window" can be used to connect events (others
+				may be only copies).
+				*/
+				doc.parentWindow.execScript("document._parentWindow = window;", "Javascript");
+				//to prevent memory leak, unset it after use
+				//another possibility is to add an onUnload handler which seems overkill to me (liucougar)
+				var win = doc._parentWindow;
+				doc._parentWindow = null;
+				return win;	//	Window
+			}
+
+			return doc.parentWindow || doc.defaultView;	//	Window
+		},
+
+		scrollIntoView: function(/*DomNode*/ node, /*Object?*/ pos){
+			// summary:
+			//		Scroll the passed node into view using minimal movement, if it is not already.
+
+			// Don't rely on node.scrollIntoView working just because the function is there since
+			// it forces the node to the page's bottom or top (and left or right in IE) without consideration for the minimal movement.
+			// WebKit's node.scrollIntoViewIfNeeded doesn't work either for inner scrollbars in right-to-left mode
+			// and when there's a fixed position scrollable element
+
+			try{ // catch unexpected/unrecreatable errors (#7808) since we can recover using a semi-acceptable native method
+				node = dom.byId(node);
+				var	doc = node.ownerDocument || baseWindow.doc,	// TODO: why baseWindow.doc?  Isn't node.ownerDocument always defined?
+					body = baseWindow.body(doc),
+					html = doc.documentElement || body.parentNode,
+					isIE = has("ie"),
+					isWK = has("webkit");
+				// if an untested browser, then use the native method
+				if(node == body || node == html){ return; }
+				if(!(has("mozilla") || isIE || isWK || has("opera")) && ("scrollIntoView" in node)){
+					node.scrollIntoView(false); // short-circuit to native if possible
+					return;
+				}
+				var	backCompat = doc.compatMode == 'BackCompat',
+					rootWidth = Math.min(body.clientWidth || html.clientWidth, html.clientWidth || body.clientWidth),
+					rootHeight = Math.min(body.clientHeight || html.clientHeight, html.clientHeight || body.clientHeight),
+					scrollRoot = (isWK || backCompat) ? body : html,
+					nodePos = pos || geom.position(node),
+					el = node.parentNode,
+					isFixed = function(el){
+						return (isIE <= 6 || (isIE == 7 && backCompat))
+							? false
+							: (has("position-fixed-support") && (style.get(el, 'position').toLowerCase() == "fixed"));
+					};
+				if(isFixed(node)){ return; } // nothing to do
+				while(el){
+					if(el == body){ el = scrollRoot; }
+					var	elPos = geom.position(el),
+						fixedPos = isFixed(el),
+						rtl = style.getComputedStyle(el).direction.toLowerCase() == "rtl";
+
+					if(el == scrollRoot){
+						elPos.w = rootWidth; elPos.h = rootHeight;
+						if(scrollRoot == html && isIE && rtl){ elPos.x += scrollRoot.offsetWidth-elPos.w; } // IE workaround where scrollbar causes negative x
+						if(elPos.x < 0 || !isIE || isIE >= 9){ elPos.x = 0; } // older IE can have values > 0
+						if(elPos.y < 0 || !isIE || isIE >= 9){ elPos.y = 0; }
+					}else{
+						var pb = geom.getPadBorderExtents(el);
+						elPos.w -= pb.w; elPos.h -= pb.h; elPos.x += pb.l; elPos.y += pb.t;
+						var clientSize = el.clientWidth,
+							scrollBarSize = elPos.w - clientSize;
+						if(clientSize > 0 && scrollBarSize > 0){
+							if(rtl && has("rtl-adjust-position-for-verticalScrollBar")){
+								elPos.x += scrollBarSize;
+							}
+							elPos.w = clientSize;
+						}
+						clientSize = el.clientHeight;
+						scrollBarSize = elPos.h - clientSize;
+						if(clientSize > 0 && scrollBarSize > 0){
+							elPos.h = clientSize;
+						}
+					}
+					if(fixedPos){ // bounded by viewport, not parents
+						if(elPos.y < 0){
+							elPos.h += elPos.y; elPos.y = 0;
+						}
+						if(elPos.x < 0){
+							elPos.w += elPos.x; elPos.x = 0;
+						}
+						if(elPos.y + elPos.h > rootHeight){
+							elPos.h = rootHeight - elPos.y;
+						}
+						if(elPos.x + elPos.w > rootWidth){
+							elPos.w = rootWidth - elPos.x;
+						}
+					}
+					// calculate overflow in all 4 directions
+					var	l = nodePos.x - elPos.x, // beyond left: < 0
+//						t = nodePos.y - Math.max(elPos.y, 0), // beyond top: < 0
+						t = nodePos.y - elPos.y, // beyond top: < 0
+						r = l + nodePos.w - elPos.w, // beyond right: > 0
+						bot = t + nodePos.h - elPos.h; // beyond bottom: > 0
+					var s, old;
+					if(r * l > 0 && (!!el.scrollLeft || el == scrollRoot || el.scrollWidth > el.offsetHeight)){
+						s = Math[l < 0? "max" : "min"](l, r);
+						if(rtl && ((isIE == 8 && !backCompat) || isIE >= 9)){ s = -s; }
+						old = el.scrollLeft;
+						el.scrollLeft += s;
+						s = el.scrollLeft - old;
+						nodePos.x -= s;
+					}
+					if(bot * t > 0 && (!!el.scrollTop || el == scrollRoot || el.scrollHeight > el.offsetHeight)){
+						s = Math.ceil(Math[t < 0? "max" : "min"](t, bot));
+						old = el.scrollTop;
+						el.scrollTop += s;
+						s = el.scrollTop - old;
+						nodePos.y -= s;
+					}
+					el = (el != scrollRoot) && !fixedPos && el.parentNode;
+				}
+			}catch(error){
+				console.error('scrollIntoView: ' + error);
+				node.scrollIntoView(false);
+			}
+		}
+	};
+
+	 1  && lang.setObject("dojo.window", window);
+
+	return window;
+});
+
+},
+'dijit/a11y':function(){
+define([
+	"dojo/_base/array", // array.forEach array.map
+	"dojo/dom",			// dom.byId
+	"dojo/dom-attr", // domAttr.attr domAttr.has
+	"dojo/dom-style", // domStyle.style
+	"dojo/_base/lang", // lang.mixin()
+	"dojo/sniff", // has("ie")  1 
+	"./main"	// for exporting methods to dijit namespace
+], function(array, dom, domAttr, domStyle, lang, has, dijit){
+
+	// module:
+	//		dijit/a11y
+
+	var undefined;
+
+	var a11y = {
+		// summary:
+		//		Accessibility utility functions (keyboard, tab stops, etc.)
+
+		_isElementShown: function(/*Element*/ elem){
+			var s = domStyle.get(elem);
+			return (s.visibility != "hidden")
+				&& (s.visibility != "collapsed")
+				&& (s.display != "none")
+				&& (domAttr.get(elem, "type") != "hidden");
+		},
+
+		hasDefaultTabStop: function(/*Element*/ elem){
+			// summary:
+			//		Tests if element is tab-navigable even without an explicit tabIndex setting
+
+			// No explicit tabIndex setting, need to investigate node type
+			switch(elem.nodeName.toLowerCase()){
+				case "a":
+					// An <a> w/out a tabindex is only navigable if it has an href
+					return domAttr.has(elem, "href");
+				case "area":
+				case "button":
+				case "input":
+				case "object":
+				case "select":
+				case "textarea":
+					// These are navigable by default
+					return true;
+				case "iframe":
+					// If it's an editor <iframe> then it's tab navigable.
+					var body;
+					try{
+						// non-IE
+						var contentDocument = elem.contentDocument;
+						if("designMode" in contentDocument && contentDocument.designMode == "on"){
+							return true;
+						}
+						body = contentDocument.body;
+					}catch(e1){
+						// contentWindow.document isn't accessible within IE7/8
+						// if the iframe.src points to a foreign url and this
+						// page contains an element, that could get focus
+						try{
+							body = elem.contentWindow.document.body;
+						}catch(e2){
+							return false;
+						}
+					}
+					return body && (body.contentEditable == 'true' ||
+						(body.firstChild && body.firstChild.contentEditable == 'true'));
+				default:
+					return elem.contentEditable == 'true';
+			}
+		},
+
+		effectiveTabIndex: function(/*Element*/ elem){
+			// summary:
+			//		Returns effective tabIndex of an element, either a number, or undefined if element isn't focusable.
+
+			if(domAttr.get(elem, "disabled")){
+				return undefined;
+			}else if(domAttr.has(elem, "tabIndex")){
+				// Explicit tab index setting
+				return +domAttr.get(elem, "tabIndex");// + to convert string --> number
+			}else{
+				// No explicit tabIndex setting, so depends on node type
+				return a11y.hasDefaultTabStop(elem) ? 0 : undefined;
+			}
+		},
+
+		isTabNavigable: function(/*Element*/ elem){
+			// summary:
+			//		Tests if an element is tab-navigable
+
+			return a11y.effectiveTabIndex(elem) >= 0;
+		},
+
+		isFocusable: function(/*Element*/ elem){
+			// summary:
+			//		Tests if an element is focusable by tabbing to it, or clicking it with the mouse.
+
+			return a11y.effectiveTabIndex(elem) >= -1;
+		},
+
+		_getTabNavigable: function(/*DOMNode*/ root){
+			// summary:
+			//		Finds descendants of the specified root node.
+			// description:
+			//		Finds the following descendants of the specified root node:
+			//
+			//		- the first tab-navigable element in document order
+			//		  without a tabIndex or with tabIndex="0"
+			//		- the last tab-navigable element in document order
+			//		  without a tabIndex or with tabIndex="0"
+			//		- the first element in document order with the lowest
+			//		  positive tabIndex value
+			//		- the last element in document order with the highest
+			//		  positive tabIndex value
+			var first, last, lowest, lowestTabindex, highest, highestTabindex, radioSelected = {};
+
+			function radioName(node){
+				// If this element is part of a radio button group, return the name for that group.
+				return node && node.tagName.toLowerCase() == "input" &&
+					node.type && node.type.toLowerCase() == "radio" &&
+					node.name && node.name.toLowerCase();
+			}
+
+			var shown = a11y._isElementShown, effectiveTabIndex = a11y.effectiveTabIndex;
+			var walkTree = function(/*DOMNode*/ parent){
+				for(var child = parent.firstChild; child; child = child.nextSibling){
+					// Skip text elements, hidden elements, and also non-HTML elements (those in custom namespaces) in IE,
+					// since show() invokes getAttribute("type"), which crash on VML nodes in IE.
+					if(child.nodeType != 1 || (has("ie") <= 9 && child.scopeName !== "HTML") || !shown(child)){
+						continue;
+					}
+
+					var tabindex = effectiveTabIndex(child);
+					if(tabindex >= 0){
+						if(tabindex == 0){
+							if(!first){
+								first = child;
+							}
+							last = child;
+						}else if(tabindex > 0){
+							if(!lowest || tabindex < lowestTabindex){
+								lowestTabindex = tabindex;
+								lowest = child;
+							}
+							if(!highest || tabindex >= highestTabindex){
+								highestTabindex = tabindex;
+								highest = child;
+							}
+						}
+						var rn = radioName(child);
+						if(domAttr.get(child, "checked") && rn){
+							radioSelected[rn] = child;
+						}
+					}
+					if(child.nodeName.toUpperCase() != 'SELECT'){
+						walkTree(child);
+					}
+				}
+			};
+			if(shown(root)){
+				walkTree(root);
+			}
+			function rs(node){
+				// substitute checked radio button for unchecked one, if there is a checked one with the same name.
+				return radioSelected[radioName(node)] || node;
+			}
+
+			return { first: rs(first), last: rs(last), lowest: rs(lowest), highest: rs(highest) };
+		},
+
+		getFirstInTabbingOrder: function(/*String|DOMNode*/ root, /*Document?*/ doc){
+			// summary:
+			//		Finds the descendant of the specified root node
+			//		that is first in the tabbing order
+			var elems = a11y._getTabNavigable(dom.byId(root, doc));
+			return elems.lowest ? elems.lowest : elems.first; // DomNode
+		},
+
+		getLastInTabbingOrder: function(/*String|DOMNode*/ root, /*Document?*/ doc){
+			// summary:
+			//		Finds the descendant of the specified root node
+			//		that is last in the tabbing order
+			var elems = a11y._getTabNavigable(dom.byId(root, doc));
+			return elems.last ? elems.last : elems.highest; // DomNode
+		}
+	};
+
+	 1  && lang.mixin(dijit, a11y);
+
+	return a11y;
+});
+
+},
+'dijit/form/_TextBoxMixin':function(){
+define([
+	"dojo/_base/array", // array.forEach
+	"dojo/_base/declare", // declare
+	"dojo/dom", // dom.byId
+	"dojo/has",
+	"dojo/keys", // keys.ALT keys.CAPS_LOCK keys.CTRL keys.META keys.SHIFT
+	"dojo/_base/lang", // lang.mixin
+	"dojo/on", // on
+	"../main"    // for exporting dijit._setSelectionRange, dijit.selectInputText
+], function(array, declare, dom, has, keys, lang, on, dijit){
+
+	// module:
+	//		dijit/form/_TextBoxMixin
+
+	var _TextBoxMixin = declare("dijit.form._TextBoxMixin" + (has("dojo-bidi") ? "_NoBidi" : ""), null, {
+		// summary:
+		//		A mixin for textbox form input widgets
+
+		// trim: Boolean
+		//		Removes leading and trailing whitespace if true.  Default is false.
+		trim: false,
+
+		// uppercase: Boolean
+		//		Converts all characters to uppercase if true.  Default is false.
+		uppercase: false,
+
+		// lowercase: Boolean
+		//		Converts all characters to lowercase if true.  Default is false.
+		lowercase: false,
+
+		// propercase: Boolean
+		//		Converts the first character of each word to uppercase if true.
+		propercase: false,
+
+		// maxLength: String
+		//		HTML INPUT tag maxLength declaration.
+		maxLength: "",
+
+		// selectOnClick: [const] Boolean
+		//		If true, all text will be selected when focused with mouse
+		selectOnClick: false,
+
+		// placeHolder: String
+		//		Defines a hint to help users fill out the input field (as defined in HTML 5).
+		//		This should only contain plain text (no html markup).
+		placeHolder: "",
+
+		_getValueAttr: function(){
+			// summary:
+			//		Hook so get('value') works as we like.
+			// description:
+			//		For `dijit/form/TextBox` this basically returns the value of the `<input>`.
+			//
+			//		For `dijit/form/MappedTextBox` subclasses, which have both
+			//		a "displayed value" and a separate "submit value",
+			//		This treats the "displayed value" as the master value, computing the
+			//		submit value from it via this.parse().
+			return this.parse(this.get('displayedValue'), this.constraints);
+		},
+
+		_setValueAttr: function(value, /*Boolean?*/ priorityChange, /*String?*/ formattedValue){
+			// summary:
+			//		Hook so set('value', ...) works.
+			//
+			// description:
+			//		Sets the value of the widget to "value" which can be of
+			//		any type as determined by the widget.
+			//
+			// value:
+			//		The visual element value is also set to a corresponding,
+			//		but not necessarily the same, value.
+			//
+			// formattedValue:
+			//		If specified, used to set the visual element value,
+			//		otherwise a computed visual value is used.
+			//
+			// priorityChange:
+			//		If true, an onChange event is fired immediately instead of
+			//		waiting for the next blur event.
+
+			var filteredValue;
+			if(value !== undefined){
+				// TODO: this is calling filter() on both the display value and the actual value.
+				// I added a comment to the filter() definition about this, but it should be changed.
+				filteredValue = this.filter(value);
+				if(typeof formattedValue != "string"){
+					if(filteredValue !== null && ((typeof filteredValue != "number") || !isNaN(filteredValue))){
+						formattedValue = this.filter(this.format(filteredValue, this.constraints));
+					}else{
+						formattedValue = '';
+					}
+				}
+			}
+			if(formattedValue != null /* and !undefined */ && ((typeof formattedValue) != "number" || !isNaN(formattedValue)) && this.textbox.value != formattedValue){
+				this.textbox.value = formattedValue;
+				this._set("displayedValue", this.get("displayedValue"));
+			}
+
+			this.inherited(arguments, [filteredValue, priorityChange]);
+		},
+
+		// displayedValue: String
+		//		For subclasses like ComboBox where the displayed value
+		//		(ex: Kentucky) and the serialized value (ex: KY) are different,
+		//		this represents the displayed value.
+		//
+		//		Setting 'displayedValue' through set('displayedValue', ...)
+		//		updates 'value', and vice-versa.  Otherwise 'value' is updated
+		//		from 'displayedValue' periodically, like onBlur etc.
+		//
+		//		TODO: move declaration to MappedTextBox?
+		//		Problem is that ComboBox references displayedValue,
+		//		for benefit of FilteringSelect.
+		displayedValue: "",
+
+		_getDisplayedValueAttr: function(){
+			// summary:
+			//		Hook so get('displayedValue') works.
+			// description:
+			//		Returns the displayed value (what the user sees on the screen),
+			//		after filtering (ie, trimming spaces etc.).
+			//
+			//		For some subclasses of TextBox (like ComboBox), the displayed value
+			//		is different from the serialized value that's actually
+			//		sent to the server (see `dijit/form/ValidationTextBox.serialize()`)
+
+			// TODO: maybe we should update this.displayedValue on every keystroke so that we don't need
+			// this method
+			// TODO: this isn't really the displayed value when the user is typing
+			return this.filter(this.textbox.value);
+		},
+
+		_setDisplayedValueAttr: function(/*String*/ value){
+			// summary:
+			//		Hook so set('displayedValue', ...) works.
+			// description:
+			//		Sets the value of the visual element to the string "value".
+			//		The widget value is also set to a corresponding,
+			//		but not necessarily the same, value.
+
+			if(value == null /* or undefined */){
+				value = ''
+			}
+			else if(typeof value != "string"){
+				value = String(value)
+			}
+
+			this.textbox.value = value;
+
+			// sets the serialized value to something corresponding to specified displayedValue
+			// (if possible), and also updates the textbox.value, for example converting "123"
+			// to "123.00"
+			this._setValueAttr(this.get('value'), undefined);
+
+			this._set("displayedValue", this.get('displayedValue'));
+		},
+
+		format: function(value /*=====, constraints =====*/){
+			// summary:
+			//		Replaceable function to convert a value to a properly formatted string.
+			// value: String
+			// constraints: Object
+			// tags:
+			//		protected extension
+			return value == null /* or undefined */ ? "" : (value.toString ? value.toString() : value);
+		},
+
+		parse: function(value /*=====, constraints =====*/){
+			// summary:
+			//		Replaceable function to convert a formatted string to a value
+			// value: String
+			// constraints: Object
+			// tags:
+			//		protected extension
+
+			return value;	// String
+		},
+
+		_refreshState: function(){
+			// summary:
+			//		After the user types some characters, etc., this method is
+			//		called to check the field for validity etc.  The base method
+			//		in `dijit/form/TextBox` does nothing, but subclasses override.
+			// tags:
+			//		protected
+		},
+
+		 onInput: function(/*===== event =====*/){
+			 // summary:
+			 //		Connect to this function to receive notifications of various user data-input events.
+			 //		Return false to cancel the event and prevent it from being processed.
+			 // event:
+			 //		keydown | keypress | cut | paste | input
+			 // tags:
+			 //		callback
+		 },
+
+		__skipInputEvent: false,
+		_onInput: function(/*Event*/ evt){
+			// summary:
+			//		Called AFTER the input event has happened
+
+			this._processInput(evt);
+
+			if(this.intermediateChanges){
+				// allow the key to post to the widget input box
+				this.defer(function(){
+					this._handleOnChange(this.get('value'), false);
+				});
+			}
+		},
+
+		_processInput: function(/*Event*/ evt){
+			// summary:
+			//		Default action handler for user input events
+
+			this._refreshState();
+
+			// In case someone is watch()'ing for changes to displayedValue
+			this._set("displayedValue", this.get("displayedValue"));
+		},
+
+		postCreate: function(){
+			// setting the value here is needed since value="" in the template causes "undefined"
+			// and setting in the DOM (instead of the JS object) helps with form reset actions
+			this.textbox.setAttribute("value", this.textbox.value); // DOM and JS values should be the same
+
+			this.inherited(arguments);
+
+			// normalize input events to reduce spurious event processing
+			//	onkeydown: do not forward modifier keys
+			//		       set charOrCode to numeric keycode
+			//	onkeypress: do not forward numeric charOrCode keys (already sent through onkeydown)
+			//	onpaste & oncut: set charOrCode to 229 (IME)
+			//	oninput: if primary event not already processed, set charOrCode to 229 (IME), else do not forward
+			var handleEvent = function(e){
+				var charOrCode;
+				if(e.type == "keydown"){
+					charOrCode = e.keyCode;
+					switch(charOrCode){ // ignore state keys
+						case keys.SHIFT:
+						case keys.ALT:
+						case keys.CTRL:
+						case keys.META:
+						case keys.CAPS_LOCK:
+						case keys.NUM_LOCK:
+						case keys.SCROLL_LOCK:
+							return;
+					}
+					if(!e.ctrlKey && !e.metaKey && !e.altKey){ // no modifiers
+						switch(charOrCode){ // ignore location keys
+							case keys.NUMPAD_0:
+							case keys.NUMPAD_1:
+							case keys.NUMPAD_2:
+							case keys.NUMPAD_3:
+							case keys.NUMPAD_4:
+							case keys.NUMPAD_5:
+							case keys.NUMPAD_6:
+							case keys.NUMPAD_7:
+							case keys.NUMPAD_8:
+							case keys.NUMPAD_9:
+							case keys.NUMPAD_MULTIPLY:
+							case keys.NUMPAD_PLUS:
+							case keys.NUMPAD_ENTER:
+							case keys.NUMPAD_MINUS:
+							case keys.NUMPAD_PERIOD:
+							case keys.NUMPAD_DIVIDE:
+								return;
+						}
+						if((charOrCode >= 65 && charOrCode <= 90) || (charOrCode >= 48 && charOrCode <= 57) || charOrCode == keys.SPACE){
+							return; // keypress will handle simple non-modified printable keys
+						}
+						var named = false;
+						for(var i in keys){
+							if(keys[i] === e.keyCode){
+								named = true;
+								break;
+							}
+						}
+						if(!named){
+							return;
+						} // only allow named ones through
+					}
+				}
+				charOrCode = e.charCode >= 32 ? String.fromCharCode(e.charCode) : e.charCode;
+				if(!charOrCode){
+					charOrCode = (e.keyCode >= 65 && e.keyCode <= 90) || (e.keyCode >= 48 && e.keyCode <= 57) || e.keyCode == keys.SPACE ? String.fromCharCode(e.keyCode) : e.keyCode;
+				}
+				if(!charOrCode){
+					charOrCode = 229; // IME
+				}
+				if(e.type == "keypress"){
+					if(typeof charOrCode != "string"){
+						return;
+					}
+					if((charOrCode >= 'a' && charOrCode <= 'z') || (charOrCode >= 'A' && charOrCode <= 'Z') || (charOrCode >= '0' && charOrCode <= '9') || (charOrCode === ' ')){
+						if(e.ctrlKey || e.metaKey || e.altKey){
+							return;
+						} // can only be stopped reliably in keydown
+					}
+				}
+				if(e.type == "input"){
+					if(this.__skipInputEvent){ // duplicate event
+						this.__skipInputEvent = false;
+						return;
+					}
+				}else{
+					this.__skipInputEvent = true;
+				}
+				// create fake event to set charOrCode and to know if preventDefault() was called
+				var faux = { faux: true }, attr;
+				for(attr in e){
+					if(attr != "layerX" && attr != "layerY"){ // prevent WebKit warnings
+						var v = e[attr];
+						if(typeof v != "function" && typeof v != "undefined"){
+							faux[attr] = v;
+						}
+					}
+				}
+				lang.mixin(faux, {
+					charOrCode: charOrCode,
+					_wasConsumed: false,
+					preventDefault: function(){
+						faux._wasConsumed = true;
+						e.preventDefault();
+					},
+					stopPropagation: function(){
+						e.stopPropagation();
+					}
+				});
+				// give web page author a chance to consume the event
+				//console.log(faux.type + ', charOrCode = (' + (typeof charOrCode) + ') ' + charOrCode + ', ctrl ' + !!faux.ctrlKey + ', alt ' + !!faux.altKey + ', meta ' + !!faux.metaKey + ', shift ' + !!faux.shiftKey);
+				if(this.onInput(faux) === false){ // return false means stop
+					faux.preventDefault();
+					faux.stopPropagation();
+				}
+				if(faux._wasConsumed){
+					return;
+				} // if preventDefault was called
+				this.defer(function(){
+					this._onInput(faux);
+				}); // widget notification after key has posted
+				if(e.type == "keypress"){
+					e.stopPropagation(); // don't allow parents to stop printables from being typed
+				}
+			};
+			this.own(on(this.textbox, "keydown, keypress, paste, cut, input, compositionend", lang.hitch(this, handleEvent)));
+		},
+
+		_blankValue: '', // if the textbox is blank, what value should be reported
+		filter: function(val){
+			// summary:
+			//		Auto-corrections (such as trimming) that are applied to textbox
+			//		value on blur or form submit.
+			// description:
+			//		For MappedTextBox subclasses, this is called twice
+			//
+			//		- once with the display value
+			//		- once the value as set/returned by set('value', ...)
+			//
+			//		and get('value'), ex: a Number for NumberTextBox.
+			//
+			//		In the latter case it does corrections like converting null to NaN.  In
+			//		the former case the NumberTextBox.filter() method calls this.inherited()
+			//		to execute standard trimming code in TextBox.filter().
+			//
+			//		TODO: break this into two methods in 2.0
+			//
+			// tags:
+			//		protected extension
+			if(val === null){
+				return this._blankValue;
+			}
+			if(typeof val != "string"){
+				return val;
+			}
+			if(this.trim){
+				val = lang.trim(val);
+			}
+			if(this.uppercase){
+				val = val.toUpperCase();
+			}
+			if(this.lowercase){
+				val = val.toLowerCase();
+			}
+			if(this.propercase){
+				val = val.replace(/[^\s]+/g, function(word){
+					return word.substring(0, 1).toUpperCase() + word.substring(1);
+				});
+			}
+			return val;
+		},
+
+		_setBlurValue: function(){
+			// Format the displayed value, for example (for NumberTextBox) convert 1.4 to 1.400,
+			// or (for CurrencyTextBox) 2.50 to $2.50
+
+			this._setValueAttr(this.get('value'), true);
+		},
+
+		_onBlur: function(e){
+			if(this.disabled){
+				return;
+			}
+			this._setBlurValue();
+			this.inherited(arguments);
+		},
+
+		_isTextSelected: function(){
+			return this.textbox.selectionStart != this.textbox.selectionEnd;
+		},
+
+		_onFocus: function(/*String*/ by){
+			if(this.disabled || this.readOnly){
+				return;
+			}
+
+			// Select all text on focus via click if nothing already selected.
+			// Since mouse-up will clear the selection, need to defer selection until after mouse-up.
+			// Don't do anything on focus by tabbing into the widget since there's no associated mouse-up event.
+			if(this.selectOnClick && by == "mouse"){
+				// Use on.once() to only select all text on first click only; otherwise users would have no way to clear
+				// the selection.
+				this._selectOnClickHandle = on.once(this.domNode, "mouseup, touchend", lang.hitch(this, function(evt){
+					// Check if the user selected some text manually (mouse-down, mouse-move, mouse-up)
+					// and if not, then select all the text
+					if(!this._isTextSelected()){
+						_TextBoxMixin.selectInputText(this.textbox);
+					}
+				}));
+				this.own(this._selectOnClickHandle);
+
+				// in case the mouseup never comes
+				this.defer(function(){
+					if(this._selectOnClickHandle){
+						this._selectOnClickHandle.remove();
+						this._selectOnClickHandle = null;
+					}
+				}, 500); // if mouseup not received soon, then treat it as some gesture
+			}
+			// call this.inherited() before refreshState(), since this.inherited() will possibly scroll the viewport
+			// (to scroll the TextBox into view), which will affect how _refreshState() positions the tooltip
+			this.inherited(arguments);
+
+			this._refreshState();
+		},
+
+		reset: function(){
+			// Overrides `dijit/_FormWidget/reset()`.
+			// Additionally resets the displayed textbox value to ''
+			this.textbox.value = '';
+			this.inherited(arguments);
+		}
+	});
+
+	if(has("dojo-bidi")){
+		_TextBoxMixin = declare("dijit.form._TextBoxMixin", _TextBoxMixin, {
+			_setValueAttr: function(){
+				this.inherited(arguments);
+				this.applyTextDir(this.focusNode);
+			},
+			_setDisplayedValueAttr: function(){
+				this.inherited(arguments);
+				this.applyTextDir(this.focusNode);
+			},
+			_onInput: function(){
+				this.applyTextDir(this.focusNode);
+				this.inherited(arguments);
+			}
+		});
+	}
+
+	_TextBoxMixin._setSelectionRange = dijit._setSelectionRange = function(/*DomNode*/ element, /*Number?*/ start, /*Number?*/ stop){
+		if(element.setSelectionRange){
+			element.setSelectionRange(start, stop);
+		}
+	};
+
+	_TextBoxMixin.selectInputText = dijit.selectInputText = function(/*DomNode*/ element, /*Number?*/ start, /*Number?*/ stop){
+		// summary:
+		//		Select text in the input element argument, from start (default 0), to stop (default end).
+
+		// TODO: use functions in _editor/selection.js?
+		element = dom.byId(element);
+		if(isNaN(start)){
+			start = 0;
+		}
+		if(isNaN(stop)){
+			stop = element.value ? element.value.length : 0;
+		}
+		try{
+			element.focus();
+			_TextBoxMixin._setSelectionRange(element, start, stop);
+		}catch(e){ /* squelch random errors (esp. on IE) from unexpected focus changes or DOM nodes being hidden */
+		}
+	};
+
+	return _TextBoxMixin;
+});
+
+},
+'dojox/mobile/ScrollableView':function(){
+define([
+	"dojo/_base/array",
+	"dojo/_base/declare",
+	"dojo/dom-class",
+	"dojo/dom-construct",
+	"dijit/registry",	// registry.byNode
+	"./View",
+	"./_ScrollableMixin"
+], function(array, declare, domClass, domConstruct, registry, View, ScrollableMixin){
+
+	// module:
+	//		dojox/mobile/ScrollableView
+
+	return declare("dojox.mobile.ScrollableView", [View, ScrollableMixin], {
+		// summary:
+		//		A container that has a touch scrolling capability.
+		// description:
+		//		ScrollableView is a subclass of View (dojox/mobile/View).
+		//		Unlike the base View class, ScrollableView's domNode always stays
+		//		at the top of the screen and its height is "100%" of the screen.
+		//		Inside this fixed domNode, the containerNode scrolls. The browser's
+		//		default scrolling behavior is disabled, and the scrolling mechanism is
+		//		reimplemented in JavaScript. Thus the user does not need to use the
+		//		two-finger operation to scroll the inner DIV (containerNode).
+		//		The main purpose of this widget is to realize fixed-positioned header
+		//		and/or footer bars.
+
+		// scrollableParams: Object
+		//		Parameters for dojox/mobile/scrollable.init().
+		scrollableParams: null,
+
+		// keepScrollPos: Boolean
+		//		Overrides dojox/mobile/View/keepScrollPos.
+		keepScrollPos: false,
+
+		constructor: function(){
+			// summary:
+			//		Creates a new instance of the class.
+			this.scrollableParams = {noResize: true};
+		},
+
+		buildRendering: function(){
+			this.inherited(arguments);
+			domClass.add(this.domNode, "mblScrollableView");
+			this.domNode.style.overflow = "hidden";
+			this.domNode.style.top = "0px";
+			this.containerNode = domConstruct.create("div",
+				{className:"mblScrollableViewContainer"}, this.domNode);
+			this.containerNode.style.position = "absolute";
+			this.containerNode.style.top = "0px"; // view bar is relative
+			if(this.scrollDir === "v"){
+				this.containerNode.style.width = "100%";
+			}
+		},
+
+		startup: function(){
+			if(this._started){ return; }
+			// user can initialize the app footers using a value for fixedFooter (we keep this value for non regression of existing apps)
+			if(this.fixedFooter && !this.isLocalFooter){
+				this._fixedAppFooter = this.fixedFooter;
+				this.fixedFooter = "";
+			}
+			this.reparent();
+			this.inherited(arguments);
+		},
+
+		resize: function(){
+			// summary:
+			//		Calls resize() of each child widget.
+			this.inherited(arguments); // scrollable#resize() will be called
+			array.forEach(this.getChildren(), function(child){
+				if(child.resize){ child.resize(); }
+			});
+			this._dim = this.getDim(); // update dimension cache
+			if(this._conn){
+				// if a resize happens during a scroll, update the scrollbar
+				this.resetScrollBar();
+			}
+		},
+
+		isTopLevel: function(/*Event*/e){
+			// summary:
+			//		Returns true if this is a top-level widget.
+			//		Overrides dojox/mobile/scrollable.isTopLevel.
+			var parent = this.getParent && this.getParent();
+			return (!parent || !parent.resize); // top level widget
+		},
+
+		addFixedBar: function(/*Widget*/widget){
+			// summary:
+			//		Adds a view local fixed bar to this widget.
+			// description:
+			//		This method can be used to programmatically add a view local
+			//		fixed bar to ScrollableView. The bar is appended to this
+			//		widget's domNode. The addChild API cannot be used for this
+			//		purpose, because it adds the given widget to containerNode.
+			var c = widget.domNode;
+			var fixed = this.checkFixedBar(c, true);
+			if(!fixed){ return; }
+			// Fixed bar has to be added to domNode, not containerNode.
+			this.domNode.appendChild(c);
+			if(fixed === "top"){
+				this.fixedHeaderHeight = c.offsetHeight;
+				this.isLocalHeader = true;
+			}else if(fixed === "bottom"){
+				this.fixedFooterHeight = c.offsetHeight;
+				this.isLocalFooter = true;
+				c.style.bottom = "0px";
+			}
+			this.resize();
+		},
+
+		reparent: function(){
+			// summary:
+			//		Moves all the children, except header and footer, to
+			//		containerNode.
+			var i, idx, len, c;
+			for(i = 0, idx = 0, len = this.domNode.childNodes.length; i < len; i++){
+				c = this.domNode.childNodes[idx];
+				// search for view-specific header or footer
+				if(c === this.containerNode || this.checkFixedBar(c, true)){
+					idx++;
+					continue;
+				}
+				this.containerNode.appendChild(this.domNode.removeChild(c));
+			}
+		},
+
+		onAfterTransitionIn: function(moveTo, dir, transition, context, method){
+			// summary:
+			//		Overrides View.onAfterTransitionIn to flash the scroll bar
+			//		after performing a view transition.
+			this.flashScrollBar();
+		},
+
+		getChildren: function(){
+			// summary:
+			//		Overrides _WidgetBase.getChildren to add local fixed bars,
+			//		which are not under containerNode, to the children array.
+			var children = this.inherited(arguments);
+			var fixedWidget;
+			if(this.fixedHeader && this.fixedHeader.parentNode === this.domNode){
+				fixedWidget = registry.byNode(this.fixedHeader);
+				if(fixedWidget){
+					children.push(fixedWidget);
+				}
+			}
+			if(this.fixedFooter && this.fixedFooter.parentNode === this.domNode){
+				fixedWidget = registry.byNode(this.fixedFooter);
+				if(fixedWidget){
+					children.push(fixedWidget);
+				}
+			}
+			return children;
+		},
+
+		_addTransitionPaddingTop: function(/*String|Integer*/ value){
+			// add padding top to the view in order to get alignment during the transition
+			this.domNode.style.paddingTop = value + "px";
+			this.containerNode.style.paddingTop = value + "px";
+		},
+
+		_removeTransitionPaddingTop: function(){
+			// remove padding top from the view after the transition
+			this.domNode.style.paddingTop = "";
+			this.containerNode.style.paddingTop = "";
+		}
+
+	});
+});
+
+},
+'dojox/mobile/_ScrollableMixin':function(){
+define([
+	"dojo/_base/kernel",
+	"dojo/_base/config",
+	"dojo/_base/declare",
+	"dojo/_base/lang",
+	"dojo/_base/window",
+	"dojo/dom",
+	"dojo/dom-class",
+	"dijit/registry",	// registry.byNode
+	"./scrollable"
+], function(dojo, config, declare, lang, win, dom, domClass, registry, Scrollable){
+	// module:
+	//		dojox/mobile/_ScrollableMixin
+
+	var cls = declare("dojox.mobile._ScrollableMixin", Scrollable, {
+		// summary:
+		//		Mixin for widgets to have a touch scrolling capability.
+	
+		// fixedHeader: String
+		//		Id of the fixed header.
+		fixedHeader: "",
+
+		// fixedFooter: String
+		//		Id of the fixed footer.
+		fixedFooter: "",
+
+		_fixedAppFooter: "",
+
+		// scrollableParams: Object
+		//		Parameters for dojox/mobile/scrollable.init().
+		scrollableParams: null,
+
+		// allowNestedScrolls: Boolean
+		//		Flag to allow scrolling in nested containers, e.g. to allow ScrollableView in a SwapView.
+		allowNestedScrolls: true,
+
+		// appBars: Boolean
+		//		Enables the search for application-specific bars (header or footer).
+		appBars: true, 
+
+		constructor: function(){
+			// summary:
+			//		Creates a new instance of the class.
+			// tags:
+			//		private
+			this.scrollableParams = {};
+		},
+
+		destroy: function(){
+			this.cleanup();
+			this.inherited(arguments);
+		},
+
+		startup: function(){
+			if(this._started){ return; }
+			if(this._fixedAppFooter){
+				this._fixedAppFooter = dom.byId(this._fixedAppFooter);
+			}
+			this.findAppBars();
+			var node, params = this.scrollableParams;
+			if(this.fixedHeader){
+				node = dom.byId(this.fixedHeader);
+				if(node.parentNode == this.domNode){ // local footer
+					this.isLocalHeader = true;
+				}
+				params.fixedHeaderHeight = node.offsetHeight;
+			}
+			if(this.fixedFooter){
+				node = dom.byId(this.fixedFooter);
+				if(node.parentNode == this.domNode){ // local footer
+					this.isLocalFooter = true;
+					node.style.bottom = "0px";
+				}
+				params.fixedFooterHeight = node.offsetHeight;
+			}
+			this.scrollType = this.scrollType || config["mblScrollableScrollType"] || 0;
+			this.init(params);
+			if(this.allowNestedScrolls){
+				for(var p = this.getParent(); p; p = p.getParent()){
+					if(p && p.scrollableParams){
+						this.dirLock = true;
+						p.dirLock = true;
+						break;
+					}
+				}
+			}
+			// subscribe to afterResizeAll to scroll the focused input field into view
+			// so as not to break layout on orientation changes while keyboard is shown (#14991)
+			this._resizeHandle = this.subscribe("/dojox/mobile/afterResizeAll", function(){
+				if(this.domNode.style.display === 'none'){ return; }
+				var elem = win.doc.activeElement;
+				if(this.isFormElement(elem) && dom.isDescendant(elem, this.containerNode)){
+					this.scrollIntoView(elem);
+				}
+			});
+			this.inherited(arguments);
+		},
+
+		findAppBars: function(){
+			// summary:
+			//		Search for application-specific header or footer.
+			if(!this.appBars){ return; }
+			var i, len, c;
+			for(i = 0, len = win.body().childNodes.length; i < len; i++){
+				c = win.body().childNodes[i];
+				this.checkFixedBar(c, false);
+			}
+			if(this.domNode.parentNode){
+				for(i = 0, len = this.domNode.parentNode.childNodes.length; i < len; i++){
+					c = this.domNode.parentNode.childNodes[i];
+					this.checkFixedBar(c, false);
+				}
+			}
+			this.fixedFooterHeight = this.fixedFooter ? this.fixedFooter.offsetHeight : 0;
+		},
+
+		checkFixedBar: function(/*DomNode*/node, /*Boolean*/local){
+			// summary:
+			//		Checks if the given node is a fixed bar or not.
+			if(node.nodeType === 1){
+				var fixed = node.getAttribute("fixed") // TODO: Remove the non-HTML5-compliant attribute in 2.0
+					|| node.getAttribute("data-mobile-fixed")
+					|| (registry.byNode(node) && registry.byNode(node).fixed);
+				if(fixed === "top"){
+					domClass.add(node, "mblFixedHeaderBar");
+					if(local){
+						node.style.top = "0px";
+						this.fixedHeader = node;
+					}
+					return fixed;
+				}else if(fixed === "bottom"){
+					domClass.add(node, "mblFixedBottomBar");
+					if(local){
+						this.fixedFooter = node;
+					}else{
+						this._fixedAppFooter = node;
+					}
+					return fixed;
+				}
+			}
+			return null;
+		}
+	});
+	return cls;
+});
+
+},
+'dojox/mobile/scrollable':function(){
+define([
+	"dojo/_base/kernel",
+	"dojo/_base/connect",
+	"dojo/_base/event",
+	"dojo/_base/lang",
+	"dojo/_base/window",
+	"dojo/dom-class",
+	"dojo/dom-construct",
+	"dojo/dom-style",
+	"dojo/dom-geometry",
+	"dojo/touch",
+	"./sniff",
+	"./_css3",
+	"./_maskUtils"
+], function(dojo, connect, event, lang, win, domClass, domConstruct, domStyle,
+			domGeom, touch, has, css3, maskUtils){
+
+	// module:
+	//		dojox/mobile/scrollable
+
+	// TODO: rename to Scrollable.js (capital S) for 2.0
+
+	// TODO: shouldn't be referencing this dojox/mobile variable, would be better to require the mobile.js module
+	var dm = lang.getObject("dojox.mobile", true);
+
+	// feature detection
+	has.add("translate3d", function(){
+		if(has("css3-animations")){
+			var elem = win.doc.createElement("div");
+			elem.style[css3.name("transform")] = "translate3d(0px,1px,0px)";
+			win.doc.documentElement.appendChild(elem);
+			var v = win.doc.defaultView.getComputedStyle(elem, '')[css3.name("transform", true)];
+			var hasTranslate3d = v && v.indexOf("matrix") === 0;
+			win.doc.documentElement.removeChild(elem);
+			return hasTranslate3d;
+		}
+	});
+
+	var Scrollable = function(){
+		// summary:
+		//		Mixin for enabling touch scrolling capability.
+		// description:
+		//		Mixin for enabling touch scrolling capability.
+		//		Mobile WebKit browsers do not allow scrolling inner DIVs. (For instance,
+		//		on iOS you need the two-finger operation to scroll them.)
+		//		That means you cannot have fixed-positioned header/footer bars.
+		//		To solve this issue, this module disables the browsers default scrolling
+		//		behavior, and rebuilds its own scrolling machinery by handling touch
+		//		events. In this module, this.domNode has height "100%" and is fixed to
+		//		the window, and this.containerNode scrolls. If you place a bar outside
+		//		of this.containerNode, then it will be fixed-positioned while
+		//		this.containerNode is scrollable.
+		//
+		//		This module has the following features:
+		//
+		//		- Scrolls inner DIVs vertically, horizontally, or both.
+		//		- Vertical and horizontal scroll bars.
+		//		- Flashes the scroll bars when a view is shown.
+		//		- Simulates the flick operation using animation.
+		//		- Respects header/footer bars if any.
+	};
+
+	lang.extend(Scrollable, {
+		// fixedHeaderHeight: Number
+		//		height of a fixed header
+		fixedHeaderHeight: 0,
+
+		// fixedFooterHeight: Number
+		//		height of a fixed footer
+		fixedFooterHeight: 0,
+
+		// isLocalFooter: Boolean
+		//		footer is view-local (as opposed to application-wide)
+		isLocalFooter: false,
+
+		// scrollBar: Boolean
+		//		show scroll bar or not
+		scrollBar: true,
+
+		// scrollDir: String
+		//		v: vertical, h: horizontal, vh: both, f: flip
+		scrollDir: "v",
+
+		// weight: Number
+		//		frictional drag
+		weight: 0.6,
+
+		// fadeScrollBar: Boolean
+		fadeScrollBar: true,
+
+		// disableFlashScrollBar: Boolean
+		disableFlashScrollBar: false,
+
+		// threshold: Number
+		//		drag threshold value in pixels
+		threshold: 4,
+
+		// constraint: Boolean
+		//		bounce back to the content area
+		constraint: true,
+
+		// touchNode: DOMNode
+		//		a node that will have touch event handlers
+		touchNode: null,
+
+		// propagatable: Boolean
+		//		let touchstart event propagate up
+		propagatable: true,
+
+		// dirLock: Boolean
+		//		disable the move handler if scroll starts in the unexpected direction
+		dirLock: false,
+
+		// height: String
+		//		explicitly specified height of this widget (ex. "300px")
+		height: "",
+
+		// scrollType: Number
+		//		- 1: use -webkit-transform:translate3d(x,y,z) style, use -webkit-animation for slide anim
+		//		- 2: use top/left style,
+		//		- 3: use -webkit-transform:translate3d(x,y,z) style, use -webkit-transition for slide anim
+		//		- 0: use default value (2 in case of Android < 3, 3 if iOS6, otherwise 1)
+		scrollType: 0,
+		
+		// for Tooltip.js
+		_parentPadBorderExtentsBottom: 0,
+		
+		init: function(/*Object?*/params){
+			// summary:
+			//		Initialize according to the given params.
+			// description:
+			//		Mixes in the given params into this instance. At least domNode
+			//		and containerNode have to be given.
+			//		Starts listening to the touchstart events.
+			//		Calls resize(), if this widget is a top level widget.
+			if(params){
+				for(var p in params){
+					if(params.hasOwnProperty(p)){
+						this[p] = ((p == "domNode" || p == "containerNode") && typeof params[p] == "string") ?
+							win.doc.getElementById(params[p]) : params[p]; // mix-in params
+					}
+				}
+			}
+			// prevent browser scrolling on IE10 (evt.preventDefault() is not enough)
+			if(typeof this.domNode.style.msTouchAction != "undefined"){
+				this.domNode.style.msTouchAction = "none";
+			}
+			this.touchNode = this.touchNode || this.containerNode;
+			this._v = (this.scrollDir.indexOf("v") != -1); // vertical scrolling
+			this._h = (this.scrollDir.indexOf("h") != -1); // horizontal scrolling
+			this._f = (this.scrollDir == "f"); // flipping views
+
+			this._ch = []; // connect handlers
+			this._ch.push(connect.connect(this.touchNode, touch.press, this, "onTouchStart"));
+			if(has("css3-animations")){
+				// flag for whether to use -webkit-transform:translate3d(x,y,z) or top/left style.
+				// top/left style works fine as a workaround for input fields auto-scrolling issue,
+				// so use top/left in case of Android by default.
+				this._useTopLeft = this.scrollType ? this.scrollType === 2 : has('android') < 3;
+				// Flag for using webkit transition on transform, instead of animation + keyframes.
+				// (keyframes create a slight delay before the slide animation...)
+				if(!this._useTopLeft){
+					this._useTransformTransition = this.scrollType ? this.scrollType === 3 : has("ios") >= 6;
+				}
+				if(!this._useTopLeft){
+					if(this._useTransformTransition){
+						this._ch.push(connect.connect(this.domNode, css3.name("transitionEnd"), this, "onFlickAnimationEnd"));
+						this._ch.push(connect.connect(this.domNode, css3.name("transitionStart"), this, "onFlickAnimationStart"));
+					}else{
+						this._ch.push(connect.connect(this.domNode, css3.name("animationEnd"), this, "onFlickAnimationEnd"));
+						this._ch.push(connect.connect(this.domNode, css3.name("animationStart"), this, "onFlickAnimationStart"));
+	
+						// Creation of keyframes takes a little time. If they are created
+						// in a lazy manner, a slight delay is noticeable when you start
+						// scrolling for the first time. This is to create keyframes up front.
+						for(var i = 0; i < 3; i++){
+							this.setKeyframes(null, null, i);
+						}
+					}
+					if(has("translate3d")){ // workaround for flicker issue on iPhone and Android 3.x/4.0
+						domStyle.set(this.containerNode, css3.name("transform"), "translate3d(0,0,0)");
+					}
+				}else{
+					this._ch.push(connect.connect(this.domNode, css3.name("transitionEnd"), this, "onFlickAnimationEnd"));
+					this._ch.push(connect.connect(this.domNode, css3.name("transitionStart"), this, "onFlickAnimationStart"));
+				}
+			}
+
+			this._speed = {x:0, y:0};
+			this._appFooterHeight = 0;
+			if(this.isTopLevel() && !this.noResize){
+				this.resize();
+			}
+			var _this = this;
+			setTimeout(function(){ 
+				// Why not using widget.defer() instead of setTimeout()? Because this module
+				// is not always mixed into a widget (ex. dojox/mobile/_ComboBoxMenu), and adding 
+				// a check to call either defer or setTimeout has been considered overkill.
+				_this.flashScrollBar();
+			}, 600);
+			
+			// #16363: while navigating among input field using TAB (desktop keyboard) or 
+			// NEXT (mobile soft keyboard), domNode.scrollTop gets modified (this holds even 
+			// if the text widget has selectOnFocus at false, that is even if dijit's _FormWidgetMixin._onFocus 
+			// does not trigger a global scrollIntoView). This messes up ScrollableView's own 
+			// scrolling machinery. To avoid this misbehavior:
+			if(win.global.addEventListener){ // all supported browsers but IE8
+				// (for IE8, using attachEvent is not a solution, because it only works in bubbling phase)
+				this._onScroll = function(e){
+					if(!_this.domNode || _this.domNode.style.display === 'none'){ return; }
+					var scrollTop = _this.domNode.scrollTop;
+					var scrollLeft = _this.domNode.scrollLeft; 
+					var pos;
+					if(scrollTop > 0 || scrollLeft > 0){ 
+						pos = _this.getPos(); 
+						// Reset to zero while compensating using our own scroll: 
+						_this.domNode.scrollLeft = 0; 
+						_this.domNode.scrollTop = 0; 
+						_this.scrollTo({x: pos.x - scrollLeft, y: pos.y - scrollTop}); // no animation 
+					}
+				};
+				win.global.addEventListener("scroll", this._onScroll, true);
+			}
+			// #17062: Ensure auto-scroll when navigating focusable fields
+			if(!this.disableTouchScroll && this.domNode.addEventListener){
+				this._onFocusScroll = function(e){
+					if(!_this.domNode || _this.domNode.style.display === 'none'){ return; }
+					var node = win.doc.activeElement;
+					var nodeRect, scrollableRect;
+					if(node){
+						nodeRect = node.getBoundingClientRect();
+						scrollableRect = _this.domNode.getBoundingClientRect();
+						if(nodeRect.height < _this.getDim().d.h){
+							// do not call scrollIntoView for elements with a height
+							// larger than the height of scrollable's content display
+							// area (it would be ergonomically harmful).
+							
+							if(nodeRect.top < (scrollableRect.top + _this.fixedHeaderHeight)){
+								// scrolling towards top (to bring into the visible area an element
+								// located above it).
+								_this.scrollIntoView(node, true);
+							}else if((nodeRect.top + nodeRect.height) > 
+								(scrollableRect.top + scrollableRect.height - _this.fixedFooterHeight)){
+								// scrolling towards bottom (to bring into the visible area an element
+								// located below it).
+								_this.scrollIntoView(node, false);
+							} // else do nothing (the focused node is already visible)
+						}
+					}
+				};
+				this.domNode.addEventListener("focus", this._onFocusScroll, true);
+			}
+		},
+
+		isTopLevel: function(){
+			// summary:
+			//		Returns true if this is a top-level widget.
+			// description:
+			//		Subclass may want to override.
+			return true;
+		},
+
+		cleanup: function(){
+			// summary:
+			//		Uninitialize the module.
+			if(this._ch){
+				for(var i = 0; i < this._ch.length; i++){
+					connect.disconnect(this._ch[i]);
+				}
+				this._ch = null;
+			}
+			if(this._onScroll && win.global.removeEventListener){ // all supported browsers but IE8
+				win.global.removeEventListener("scroll", this._onScroll, true);
+				this._onScroll = null;
+			}
+			
+			if(this._onFocusScroll && this.domNode.removeEventListener){
+				this.domNode.removeEventListener("focus", this._onFocusScroll, true);
+				this._onFocusScroll = null;
+			} 
+		},
+
+		findDisp: function(/*DomNode*/node){
+			// summary:
+			//		Finds the currently displayed view node from my sibling nodes.
+			if(!node.parentNode){ return null; }
+
+			// the given node is the first candidate
+			if(node.nodeType === 1 && domClass.contains(node, "mblSwapView") && node.style.display !== "none"){
+				return node;
+			}
+
+			var nodes = node.parentNode.childNodes;
+			for(var i = 0; i < nodes.length; i++){
+				var n = nodes[i];
+				if(n.nodeType === 1 && domClass.contains(n, "mblView") && n.style.display !== "none"){
+					return n;
+				}
+			}
+			return node;
+		},
+
+		getScreenSize: function(){
+			// summary:
+			//		Returns the dimensions of the browser window.
+			return {
+				h: win.global.innerHeight||win.doc.documentElement.clientHeight||win.doc.documentElement.offsetHeight,
+				w: win.global.innerWidth||win.doc.documentElement.clientWidth||win.doc.documentElement.offsetWidth
+			};
+		},
+
+		resize: function(e){
+			// summary:
+			//		Adjusts the height of the widget.
+			// description:
+			//		If the height property is 'inherit', the height is inherited
+			//		from its offset parent. If 'auto', the content height, which
+			//		could be smaller than the entire screen height, is used. If an
+			//		explicit height value (ex. "300px"), it is used as the new
+			//		height. If nothing is specified as the height property, from the
+			//		current top position of the widget to the bottom of the screen
+			//		will be the new height.
+
+			// moved from init() to support dynamically added fixed bars
+			this._appFooterHeight = (this._fixedAppFooter) ? this._fixedAppFooter.offsetHeight : 0;
+			if(this.isLocalHeader){
+				this.containerNode.style.marginTop = this.fixedHeaderHeight + "px";
+			}
+
+			// Get the top position. Same as dojo.position(node, true).y
+			var top = 0;
+			for(var n = this.domNode; n && n.tagName != "BODY"; n = n.offsetParent){
+				n = this.findDisp(n); // find the first displayed view node
+				if(!n){ break; }
+				top += n.offsetTop + domGeom.getBorderExtents(n).h;
+			}
+
+			// adjust the height of this view
+			var	h,
+				screenHeight = this.getScreenSize().h,
+				dh = screenHeight - top - this._appFooterHeight; // default height
+			if(this.height === "inherit"){
+				if(this.domNode.offsetParent){
+					h = domGeom.getContentBox(this.domNode.offsetParent).h - domGeom.getBorderExtents(this.domNode).h + "px";
+				}
+			}else if(this.height === "auto"){
+				var parent = this.domNode.offsetParent;
+				if(parent){
+					this.domNode.style.height = "0px";
+					var	parentRect = parent.getBoundingClientRect(),
+						scrollableRect = this.domNode.getBoundingClientRect(),
+						contentBottom = parentRect.bottom - this._appFooterHeight - this._parentPadBorderExtentsBottom;
+					if(scrollableRect.bottom >= contentBottom){ // use entire screen
+						dh = screenHeight - (scrollableRect.top - parentRect.top) - this._appFooterHeight - this._parentPadBorderExtentsBottom;
+					}else{ // stretch to fill predefined area
+						dh = contentBottom - scrollableRect.bottom;
+					}
+				}
+				// content could be smaller than entire screen height
+				var contentHeight = Math.max(this.domNode.scrollHeight, this.containerNode.scrollHeight);
+				h = (contentHeight ? Math.min(contentHeight, dh) : dh) + "px";
+			}else if(this.height){
+				h = this.height;
+			}
+			if(!h){
+				h = dh + "px";
+			}
+			if(h.charAt(0) !== "-" && // to ensure that h is not negative (e.g. "-10px")
+				h !== "default"){
+				this.domNode.style.height = h;
+			}
+
+			if(!this._conn){
+				// to ensure that the view is within a scrolling area when resized.
+				this.onTouchEnd();
+			}
+		},
+
+		onFlickAnimationStart: function(e){
+			event.stop(e);
+		},
+
+		onFlickAnimationEnd: function(e){
+			if(has("ios")){
+				this._keepInputCaretInActiveElement();
+			}
+			if(e){
+				var an = e.animationName;
+				if(an && an.indexOf("scrollableViewScroll2") === -1){
+					if(an.indexOf("scrollableViewScroll0") !== -1){ // scrollBarV
+						if(this._scrollBarNodeV){ domClass.remove(this._scrollBarNodeV, "mblScrollableScrollTo0"); }
+					}else if(an.indexOf("scrollableViewScroll1") !== -1){ // scrollBarH
+						if(this._scrollBarNodeH){ domClass.remove(this._scrollBarNodeH, "mblScrollableScrollTo1"); }
+					}else{ // fade or others
+						if(this._scrollBarNodeV){ this._scrollBarNodeV.className = ""; }
+						if(this._scrollBarNodeH){ this._scrollBarNodeH.className = ""; }
+					}
+					return;
+				}
+				if(this._useTransformTransition || this._useTopLeft){
+					var n = e.target;
+					if(n === this._scrollBarV || n === this._scrollBarH){
+						var cls = "mblScrollableScrollTo" + (n === this._scrollBarV ? "0" : "1");
+						if(domClass.contains(n, cls)){
+							domClass.remove(n, cls);
+						}else{
+							n.className = "";
+						}
+						return;
+					}
+				}
+				if(e.srcElement){
+					event.stop(e);
+				}
+			}
+			this.stopAnimation();
+			if(this._bounce){
+				var _this = this;
+				var bounce = _this._bounce;
+				setTimeout(function(){
+					_this.slideTo(bounce, 0.3, "ease-out");
+				}, 0);
+				_this._bounce = undefined;
+			}else{
+				this.hideScrollBar();
+				this.removeCover();
+			}
+		},
+
+		isFormElement: function(/*DOMNode*/node){
+			// summary:
+			//		Returns true if the given node is a form control.
+			if(node && node.nodeType !== 1){ node = node.parentNode; }
+			if(!node || node.nodeType !== 1){ return false; }
+			var t = node.tagName;
+			return (t === "SELECT" || t === "INPUT" || t === "TEXTAREA" || t === "BUTTON");
+		},
+
+		onTouchStart: function(e){
+			// summary:
+			//		User-defined function to handle touchStart events.
+			if(this.disableTouchScroll){ return; }
+			if(this._conn && (new Date()).getTime() - this.startTime < 500){
+				return; // ignore successive onTouchStart calls
+			}
+			if(!this._conn){
+				this._conn = [];
+				this._conn.push(connect.connect(win.doc, touch.move, this, "onTouchMove"));
+				this._conn.push(connect.connect(win.doc, touch.release, this, "onTouchEnd"));
+			}
+
+			this._aborted = false;
+			if(domClass.contains(this.containerNode, "mblScrollableScrollTo2")){
+				this.abort();
+			}else{ // reset scrollbar class especially for reseting fade-out animation
+				if(this._scrollBarNodeV){ this._scrollBarNodeV.className = ""; }
+				if(this._scrollBarNodeH){ this._scrollBarNodeH.className = ""; }
+			}
+			this.touchStartX = e.touches ? e.touches[0].pageX : e.clientX;
+			this.touchStartY = e.touches ? e.touches[0].pageY : e.clientY;
+			this.startTime = (new Date()).getTime();
+			this.startPos = this.getPos();
+			this._dim = this.getDim();
+			this._time = [0];
+			this._posX = [this.touchStartX];
+			this._posY = [this.touchStartY];
+			this._locked = false;
+
+			if(!this.isFormElement(e.target)){
+				this.propagatable ? e.preventDefault() : event.stop(e);
+			}
+		},
+
+		onTouchMove: function(e){
+			// summary:
+			//		User-defined function to handle touchMove events.
+			if(this._locked){ return; }
+			var x = e.touches ? e.touches[0].pageX : e.clientX;
+			var y = e.touches ? e.touches[0].pageY : e.clientY;
+			var dx = x - this.touchStartX;
+			var dy = y - this.touchStartY;
+			var to = {x:this.startPos.x + dx, y:this.startPos.y + dy};
+			var dim = this._dim;
+
+			dx = Math.abs(dx);
+			dy = Math.abs(dy);
+			if(this._time.length == 1){ // the first TouchMove after TouchStart
+				if(this.dirLock){
+					if(this._v && !this._h && dx >= this.threshold && dx >= dy ||
+						(this._h || this._f) && !this._v && dy >= this.threshold && dy >= dx){
+						this._locked = true;
+						return;
+					}
+				}
+				if(this._v && this._h){ // scrollDir="hv"
+					if(dy < this.threshold &&
+					   dx < this.threshold){
+						return;
+					}
+				}else{
+					if(this._v && dy < this.threshold ||
+					   (this._h || this._f) && dx < this.threshold){
+						return;
+					}
+				}
+				this.addCover();
+				this.showScrollBar();
+			}
+
+			var weight = this.weight;
+			if(this._v && this.constraint){
+				if(to.y > 0){ // content is below the screen area
+					to.y = Math.round(to.y * weight);
+				}else if(to.y < -dim.o.h){ // content is above the screen area
+					if(dim.c.h < dim.d.h){ // content is shorter than display
+						to.y = Math.round(to.y * weight);
+					}else{
+						to.y = -dim.o.h - Math.round((-dim.o.h - to.y) * weight);
+					}
+				}
+			}
+			if((this._h || this._f) && this.constraint){
+				if(to.x > 0){
+					to.x = Math.round(to.x * weight);
+				}else if(to.x < -dim.o.w){
+					if(dim.c.w < dim.d.w){
+						to.x = Math.round(to.x * weight);
+					}else{
+						to.x = -dim.o.w - Math.round((-dim.o.w - to.x) * weight);
+					}
+				}
+			}
+			this.scrollTo(to);
+
+			var max = 10;
+			var n = this._time.length; // # of samples
+			if(n >= 2){
+				// Check the direction of the finger move.
+				// If the direction has been changed, discard the old data.
+				var d0, d1;
+				if(this._v && !this._h){
+					d0 = this._posY[n - 1] - this._posY[n - 2];
+					d1 = y - this._posY[n - 1];
+				}else if(!this._v && this._h){
+					d0 = this._posX[n - 1] - this._posX[n - 2];
+					d1 = x - this._posX[n - 1];
+				}
+				if(d0 * d1 < 0){ // direction changed
+					// leave only the latest data
+					this._time = [this._time[n - 1]];
+					this._posX = [this._posX[n - 1]];
+					this._posY = [this._posY[n - 1]];
+					n = 1;
+				}
+			}
+			if(n == max){
+				this._time.shift();
+				this._posX.shift();
+				this._posY.shift();
+			}
+			this._time.push((new Date()).getTime() - this.startTime);
+			this._posX.push(x);
+			this._posY.push(y);
+		},
+
+		_keepInputCaretInActiveElement: function(){
+			var activeElement = win.doc.activeElement;
+			var initialValue;
+			if(activeElement && (activeElement.tagName == "INPUT" || activeElement.tagName == "TEXTAREA")){
+				initialValue = activeElement.value;
+				if(activeElement.type == "number" || activeElement.type == "week"){
+					if(initialValue){
+						activeElement.value = activeElement.value + 1;
+					}else{
+						activeElement.value = (activeElement.type == "week") ? "2013-W10" : 1;
+					}
+					activeElement.value = initialValue;
+				}else{
+					activeElement.value = activeElement.value + " ";
+					activeElement.value = initialValue;
+				}
+			}
+		},
+
+		_fingerMovedSinceTouchStart: function(){
+			// summary:
+			//		Return true if the "finger" has moved since the touchStart, false otherwise.
+			var n = this._time.length; // # of samples
+			if(n <= 1 || (n == 2 && Math.abs(this._posY[1] - this._posY[0]) < 4 && has('touch'))){
+				return false;
+			}else{
+				return true;
+			}
+		},
+
+		onTouchEnd: function(/*Event*/e){
+			// summary:
+			//		User-defined function to handle touchEnd events.
+			if(this._locked){ return; }
+			var speed = this._speed = {x:0, y:0};
+			var dim = this._dim;
+			var pos = this.getPos();
+			var to = {}; // destination
+			if(e){
+				if(!this._conn){ return; } // if we get onTouchEnd without onTouchStart, ignore it.
+				for(var i = 0; i < this._conn.length; i++){
+					connect.disconnect(this._conn[i]);
+				}
+				this._conn = null;
+
+				var clicked = false;
+				if(!this._aborted && !this._fingerMovedSinceTouchStart()){
+					clicked = true;
+				}
+				if(clicked){ // clicked, not dragged or flicked
+					this.hideScrollBar();
+					this.removeCover();
+					// need to send a synthetic click?
+					if(has("touch") && has("clicks-prevented") && !this.isFormElement(e.target)){
+						var elem = e.target;
+						if(elem.nodeType != 1){
+							elem = elem.parentNode;
+						}
+						setTimeout(function(){
+							dm._sendClick(elem, e);
+						});
+					}
+					return;
+				}
+				speed = this._speed = this.getSpeed();
+			}else{
+				if(pos.x == 0 && pos.y == 0){ return; } // initializing
+				dim = this.getDim();
+			}
+
+			if(this._v){
+				to.y = pos.y + speed.y;
+			}
+			if(this._h || this._f){
+				to.x = pos.x + speed.x;
+			}
+
+			if(this.adjustDestination(to, pos, dim) === false){ return; }
+			if(this.constraint){
+				if(this.scrollDir == "v" && dim.c.h < dim.d.h){ // content is shorter than display
+					this.slideTo({y:0}, 0.3, "ease-out"); // go back to the top
+					return;
+				}else if(this.scrollDir == "h" && dim.c.w < dim.d.w){ // content is narrower than display
+					this.slideTo({x:0}, 0.3, "ease-out"); // go back to the left
+					return;
+				}else if(this._v && this._h && dim.c.h < dim.d.h && dim.c.w < dim.d.w){
+					this.slideTo({x:0, y:0}, 0.3, "ease-out"); // go back to the top-left
+					return;
+				}
+			}
+
+			var duration, easing = "ease-out";
+			var bounce = {};
+			if(this._v && this.constraint){
+				if(to.y > 0){ // going down. bounce back to the top.
+					if(pos.y > 0){ // started from below the screen area. return quickly.
+						duration = 0.3;
+						to.y = 0;
+					}else{
+						to.y = Math.min(to.y, 20);
+						easing = "linear";
+						bounce.y = 0;
+					}
+				}else if(-speed.y > dim.o.h - (-pos.y)){ // going up. bounce back to the bottom.
+					if(pos.y < -dim.o.h){ // started from above the screen top. return quickly.
+						duration = 0.3;
+						to.y = dim.c.h <= dim.d.h ? 0 : -dim.o.h; // if shorter, move to 0
+					}else{
+						to.y = Math.max(to.y, -dim.o.h - 20);
+						easing = "linear";
+						bounce.y = -dim.o.h;
+					}
+				}
+			}
+			if((this._h || this._f) && this.constraint){
+				if(to.x > 0){ // going right. bounce back to the left.
+					if(pos.x > 0){ // started from right of the screen area. return quickly.
+						duration = 0.3;
+						to.x = 0;
+					}else{
+						to.x = Math.min(to.x, 20);
+						easing = "linear";
+						bounce.x = 0;
+					}
+				}else if(-speed.x > dim.o.w - (-pos.x)){ // going left. bounce back to the right.
+					if(pos.x < -dim.o.w){ // started from left of the screen top. return quickly.
+						duration = 0.3;
+						to.x = dim.c.w <= dim.d.w ? 0 : -dim.o.w; // if narrower, move to 0
+					}else{
+						to.x = Math.max(to.x, -dim.o.w - 20);
+						easing = "linear";
+						bounce.x = -dim.o.w;
+					}
+				}
+			}
+			this._bounce = (bounce.x !== undefined || bounce.y !== undefined) ? bounce : undefined;
+
+			if(duration === undefined){
+				var distance, velocity;
+				if(this._v && this._h){
+					velocity = Math.sqrt(speed.x*speed.x + speed.y*speed.y);
+					distance = Math.sqrt(Math.pow(to.y - pos.y, 2) + Math.pow(to.x - pos.x, 2));
+				}else if(this._v){
+					velocity = speed.y;
+					distance = to.y - pos.y;
+				}else if(this._h){
+					velocity = speed.x;
+					distance = to.x - pos.x;
+				}
+				if(distance === 0 && !e){ return; } // #13154
+				duration = velocity !== 0 ? Math.abs(distance / velocity) : 0.01; // time = distance / velocity
+			}
+			this.slideTo(to, duration, easing);
+		},
+
+		adjustDestination: function(/*Object*/to, /*Object*/pos, /*Object*/dim){
+			// summary:
+			//		A stub function to be overridden by subclasses.
+			// description:
+			//		This function is called from onTouchEnd(). The purpose is to give its
+			//		subclasses a chance to adjust the destination position. If this
+			//		function returns false, onTouchEnd() returns immediately without
+			//		performing scroll.
+			// to:
+			//		The destination position. An object with x and y.
+			// pos:
+			//		The current position. An object with x and y.
+			// dim:
+			//		Dimension information returned by getDim().			
+
+			// subclass may want to implement
+			return true; // Boolean
+		},
+
+		abort: function(){
+			// summary:
+			//		Aborts scrolling.
+			// description:
+			//		This function stops the scrolling animation that is currently
+			//		running. It is called when the user touches the screen while
+			//		scrolling.
+			this._aborted = true;
+			this.scrollTo(this.getPos());
+			this.stopAnimation();
+		},
+		_forceRendering: function(elt){
+			// tags:
+			//		private
+			//		There are issues with Android > 3: No acceleration and no way to stop the scrolling.
+			//		This workaround improves the scrolling behaviour.
+			if(has("android") >= 4.1){
+				var tmp = elt.style.display;
+				elt.style.display = "none";
+				elt.offsetHeight; // Accessing offsetHeight forces the rendering
+				elt.style.display = tmp;
+			}
+		},
+		stopAnimation: function(){
+			// summary:
+			//		Stops the currently running animation.
+
+			this._forceRendering(this.containerNode);
+			domClass.remove(this.containerNode, "mblScrollableScrollTo2");
+			if(this._scrollBarV){
+				this._scrollBarV.className = "";
+				this._forceRendering(this._scrollBarV);
+			}
+			if(this._scrollBarH){
+				this._scrollBarH.className = "";
+				this._forceRendering(this._scrollBarH);
+			}
+			if(this._useTransformTransition || this._useTopLeft){
+				this.containerNode.style[css3.name("transition")] = "";
+				if(this._scrollBarV) { this._scrollBarV.style[css3.name("transition")] = ""; }
+				if(this._scrollBarH) { this._scrollBarH.style[css3.name("transition")] = ""; }
+			}
+		},
+
+		scrollIntoView: function(/*DOMNode*/node, /*Boolean?*/alignWithTop, /*Number?*/duration){
+			// summary:
+			//		Scrolls the pane until the searching node is in the view.
+			// node:
+			//		A DOM node to be searched for view.
+			// alignWithTop:
+			//		If true, aligns the node at the top of the pane.
+			//		If false, aligns the node at the bottom of the pane.
+			// duration:
+			//		Duration of scrolling in seconds. (ex. 0.3)
+			//		If not specified, scrolls without animation.
+			// description:
+			//		Just like the scrollIntoView method of DOM elements, this
+			//		function causes the given node to scroll into view, aligning it
+			//		either at the top or bottom of the pane.
+
+			if(!this._v){ return; } // cannot scroll vertically
+
+			var c = this.containerNode,
+				h = this.getDim().d.h, // the height of ScrollableView's content display area
+				top = 0;
+
+			// Get the top position of node relative to containerNode
+			for(var n = node; n !== c; n = n.offsetParent){
+				if(!n || n.tagName === "BODY"){ return; } // exit if node is not a child of scrollableView
+				top += n.offsetTop;
+			}
+			// Calculate scroll destination position
+			var y = alignWithTop ? Math.max(h - c.offsetHeight, -top) : Math.min(0, h - top - node.offsetHeight);
+
+			// Scroll to destination position
+			(duration && typeof duration === "number") ? 
+				this.slideTo({y: y}, duration, "ease-out") : this.scrollTo({y: y});
+		},
+
+		getSpeed: function(){
+			// summary:
+			//		Returns an object that indicates the scrolling speed.
+			// description:
+			//		From the position and elapsed time information, calculates the
+			//		scrolling speed, and returns an object with x and y.
+			var x = 0, y = 0, n = this._time.length;
+			// if the user holds the mouse or finger more than 0.5 sec, do not move.
+			if(n >= 2 && (new Date()).getTime() - this.startTime - this._time[n - 1] < 500){
+				var dy = this._posY[n - (n > 3 ? 2 : 1)] - this._posY[(n - 6) >= 0 ? n - 6 : 0];
+				var dx = this._posX[n - (n > 3 ? 2 : 1)] - this._posX[(n - 6) >= 0 ? n - 6 : 0];
+				var dt = this._time[n - (n > 3 ? 2 : 1)] - this._time[(n - 6) >= 0 ? n - 6 : 0];
+				y = this.calcSpeed(dy, dt);
+				x = this.calcSpeed(dx, dt);
+			}
+			return {x:x, y:y};
+		},
+
+		calcSpeed: function(/*Number*/distance, /*Number*/time){
+			// summary:
+			//		Calculate the speed given the distance and time.
+			return Math.round(distance / time * 100) * 4;
+		},
+
+		scrollTo: function(/*Object*/to, /*Boolean?*/doNotMoveScrollBar, /*DomNode?*/node){
+			// summary:
+			//		Scrolls to the given position immediately without animation.
+			// to:
+			//		The destination position. An object with x and y.
+			//		ex. {x:0, y:-5}
+			// doNotMoveScrollBar:
+			//		If true, the scroll bar will not be updated. If not specified,
+			//		it will be updated.
+			// node:
+			//		A DOM node to scroll. If not specified, defaults to
+			//		this.containerNode.
+
+			// scroll events
+			var scrollEvent, beforeTopHeight, afterBottomHeight;
+			var doScroll = true;
+			if(!this._aborted && this._conn){ // No scroll event if the call to scrollTo comes from abort or onTouchEnd
+				if(!this._dim){
+					this._dim = this.getDim();
+				}
+				beforeTopHeight = (to.y > 0)?to.y:0;
+				afterBottomHeight = (this._dim.o.h + to.y < 0)?-1 * (this._dim.o.h + to.y):0;
+				scrollEvent = {bubbles: false,
+						cancelable: false,
+						x: to.x,
+						y: to.y,
+						beforeTop: beforeTopHeight > 0,
+						beforeTopHeight: beforeTopHeight,
+						afterBottom: afterBottomHeight > 0,
+						afterBottomHeight: afterBottomHeight};
+				// before scroll event
+				doScroll = this.onBeforeScroll(scrollEvent);
+			}
+			
+			if(doScroll){
+				var s = (node || this.containerNode).style;
+				if(has("css3-animations")){
+					if(!this._useTopLeft){
+						if(this._useTransformTransition){
+							s[css3.name("transition")] = "";	
+						}
+						s[css3.name("transform")] = this.makeTranslateStr(to);
+					}else{
+						s[css3.name("transition")] = "";
+						if(this._v){
+							s.top = to.y + "px";
+						}
+						if(this._h || this._f){
+							s.left = to.x + "px";
+						}
+					}
+				}else{
+					if(this._v){
+						s.top = to.y + "px";
+					}
+					if(this._h || this._f){
+						s.left = to.x + "px";
+					}
+				}
+				if(has("ios")){
+					this._keepInputCaretInActiveElement();
+				}
+				if(!doNotMoveScrollBar){
+					this.scrollScrollBarTo(this.calcScrollBarPos(to));
+				}
+				if(scrollEvent){
+					// After scroll event
+					this.onAfterScroll(scrollEvent);
+				}
+			}
+		},
+
+		onBeforeScroll: function(/*Event*/e){
+			// e: Event
+			//		the scroll event, that contains the following attributes:
+			//		x (x coordinate of the scroll destination),
+			//		y (y coordinate of the scroll destination),
+			//		beforeTop (a boolean that is true if the scroll detination is before the top of the scrollable),
+			//		beforeTopHeight (the number of pixels before the top of the scrollable for the scroll destination),
+			//		afterBottom (a boolean that is true if the scroll destination is after the bottom of the scrollable),
+			//		afterBottomHeight (the number of pixels after the bottom of the scrollable for the scroll destination)
+			// summary:
+			//		called before a scroll is initiated. If this method returns false,
+			//		the scroll is canceled.
+			// tags:
+			//		callback
+			return true;
+		},
+
+		onAfterScroll: function(/*Event*/e){
+			// e: Event
+			//		the scroll event, that contains the following attributes:
+			//		x (x coordinate of the scroll destination),
+			//		y (y coordinate of the scroll destination),
+			//		beforeTop (a boolean that is true if the scroll detination is before the top of the scrollable),
+			//		beforeTopHeight (the number of pixels before the top of the scrollable for the scroll destination),
+			//		afterBottom (a boolean that is true if the scroll destination is after the bottom of the scrollable),
+			//		afterBottomHeight (the number of pixels after the bottom of the scrollable for the scroll destination)
+			// summary:
+			//		called after a scroll has been performed.
+			// tags:
+			//		callback
+		},
+		
+		slideTo: function(/*Object*/to, /*Number*/duration, /*String*/easing){
+			// summary:
+			//		Scrolls to the given position with the slide animation.
+			// to:
+			//		The scroll destination position. An object with x and/or y.
+			//		ex. {x:0, y:-5}, {y:-29}, etc.
+			// duration:
+			//		Duration of scrolling in seconds. (ex. 0.3)
+			// easing:
+			//		The name of easing effect which webkit supports.
+			//		"ease", "linear", "ease-in", "ease-out", etc.
+
+			this._runSlideAnimation(this.getPos(), to, duration, easing, this.containerNode, 2);
+			this.slideScrollBarTo(to, duration, easing);
+		},
+
+		makeTranslateStr: function(/*Object*/to){
+			// summary:
+			//		Constructs a string value that is passed to the -webkit-transform property.
+			// to:
+			//		The destination position. An object with x and/or y.
+			// description:
+			//		Return value example: "translate3d(0px,-8px,0px)"
+
+			var y = this._v && typeof to.y == "number" ? to.y+"px" : "0px";
+			var x = (this._h||this._f) && typeof to.x == "number" ? to.x+"px" : "0px";
+			return has("translate3d") ?
+					"translate3d("+x+","+y+",0px)" : "translate("+x+","+y+")";
+		},
+
+		getPos: function(){
+			// summary:
+			//		Gets the top position in the midst of animation.
+			if(has("css3-animations")){
+				var s = win.doc.defaultView.getComputedStyle(this.containerNode, '');
+				if(!this._useTopLeft){
+					var m = s[css3.name("transform")];
+					if(m && m.indexOf("matrix") === 0){
+						var arr = m.split(/[,\s\)]+/);
+						// IE10 returns a matrix3d
+						var i = m.indexOf("matrix3d") === 0 ? 12 : 4;
+						return {y:arr[i+1] - 0, x:arr[i] - 0};
+					}
+					return {x:0, y:0};
+				}else{
+					return {x:parseInt(s.left) || 0, y:parseInt(s.top) || 0};
+				}
+			}else{
+				// this.containerNode.offsetTop does not work here,
+				// because it adds the height of the top margin.
+				var y = parseInt(this.containerNode.style.top) || 0;
+				return {y:y, x:this.containerNode.offsetLeft};
+			}
+		},
+
+		getDim: function(){
+			// summary:
+			//		Returns various internal dimensional information needed for calculation.
+
+			var d = {};
+			// content width/height
+			d.c = {h:this.containerNode.offsetHeight, w:this.containerNode.offsetWidth};
+
+			// view width/height
+			d.v = {h:this.domNode.offsetHeight + this._appFooterHeight, w:this.domNode.offsetWidth};
+
+			// display width/height
+			d.d = {h:d.v.h - this.fixedHeaderHeight - this.fixedFooterHeight - this._appFooterHeight, w:d.v.w};
+
+			// overflowed width/height
+			d.o = {h:d.c.h - d.v.h + this.fixedHeaderHeight + this.fixedFooterHeight + this._appFooterHeight, w:d.c.w - d.v.w};
+			return d;
+		},
+
+		showScrollBar: function(){
+			// summary:
+			//		Shows the scroll bar.
+			// description:
+			//		This function creates the scroll bar instance if it does not
+			//		exist yet, and calls resetScrollBar() to reset its length and
+			//		position.
+
+			if(!this.scrollBar){ return; }
+
+			var dim = this._dim;
+			if(this.scrollDir == "v" && dim.c.h <= dim.d.h){ return; }
+			if(this.scrollDir == "h" && dim.c.w <= dim.d.w){ return; }
+			if(this._v && this._h && dim.c.h <= dim.d.h && dim.c.w <= dim.d.w){ return; }
+
+			var createBar = function(self, dir){
+				var bar = self["_scrollBarNode" + dir];
+				if(!bar){
+					var wrapper = domConstruct.create("div", null, self.domNode);
+					var props = { position: "absolute", overflow: "hidden" };
+					if(dir == "V"){
+						props.right = "2px";
+						props.width = "5px";
+					}else{
+						props.bottom = (self.isLocalFooter ? self.fixedFooterHeight : 0) + 2 + "px";
+						props.height = "5px";
+					}
+					domStyle.set(wrapper, props);
+					wrapper.className = "mblScrollBarWrapper";
+					self["_scrollBarWrapper"+dir] = wrapper;
+
+					bar = domConstruct.create("div", null, wrapper);
+					domStyle.set(bar, css3.add({
+						opacity: 0.6,
+						position: "absolute",
+						backgroundColor: "#606060",
+						fontSize: "1px",
+						MozBorderRadius: "2px",
+						zIndex: 2147483647 // max of signed 32-bit integer
+					}, {
+						borderRadius: "2px",
+						transformOrigin: "0 0"
+					}));
+					domStyle.set(bar, dir == "V" ? {width: "5px"} : {height: "5px"});
+					self["_scrollBarNode" + dir] = bar;
+				}
+				return bar;
+			};
+			if(this._v && !this._scrollBarV){
+				this._scrollBarV = createBar(this, "V");
+			}
+			if(this._h && !this._scrollBarH){
+				this._scrollBarH = createBar(this, "H");
+			}
+			this.resetScrollBar();
+		},
+
+		hideScrollBar: function(){
+			// summary:
+			//		Hides the scroll bar.
+			// description:
+			//		If the fadeScrollBar property is true, hides the scroll bar with
+			//		the fade animation.
+
+			if(this.fadeScrollBar && has("css3-animations")){
+				if(!dm._fadeRule){
+					var node = domConstruct.create("style", null, win.doc.getElementsByTagName("head")[0]);
+					node.textContent =
+						".mblScrollableFadeScrollBar{"+
+						"  " + css3.name("animation-duration", true) + ": 1s;"+
+						"  " + css3.name("animation-name", true) + ": scrollableViewFadeScrollBar;}"+
+						"@" + css3.name("keyframes", true) + " scrollableViewFadeScrollBar{"+
+						"  from { opacity: 0.6; }"+
+						"  to { opacity: 0; }}";
+					dm._fadeRule = node.sheet.cssRules[1];
+				}
+			}
+			if(!this.scrollBar){ return; }
+			var f = function(bar, self){
+				domStyle.set(bar, css3.add({
+					opacity: 0
+				}, {
+					animationDuration: ""
+				}));
+				// do not use fade animation in case of using top/left on Android
+				// since it causes screen flicker during adress bar's fading out
+				if(!(self._useTopLeft && has('android'))){
+					bar.className = "mblScrollableFadeScrollBar";
+				}
+			};
+			if(this._scrollBarV){
+				f(this._scrollBarV, this);
+				this._scrollBarV = null;
+			}
+			if(this._scrollBarH){
+				f(this._scrollBarH, this);
+				this._scrollBarH = null;
+			}
+		},
+
+		calcScrollBarPos: function(/*Object*/to){
+			// summary:
+			//		Calculates the scroll bar position.
+			// description:
+			//		Given the scroll destination position, calculates the top and/or
+			//		the left of the scroll bar(s). Returns an object with x and y.
+			// to:
+			//		The scroll destination position. An object with x and y.
+			//		ex. {x:0, y:-5}			
+
+			var pos = {};
+			var dim = this._dim;
+			var f = function(wrapperH, barH, t, d, c){
+				var y = Math.round((d - barH - 8) / (d - c) * t);
+				if(y < -barH + 5){
+					y = -barH + 5;
+				}
+				if(y > wrapperH - 5){
+					y = wrapperH - 5;
+				}
+				return y;
+			};
+			if(typeof to.y == "number" && this._scrollBarV){
+				pos.y = f(this._scrollBarWrapperV.offsetHeight, this._scrollBarV.offsetHeight, to.y, dim.d.h, dim.c.h);
+			}
+			if(typeof to.x == "number" && this._scrollBarH){
+				pos.x = f(this._scrollBarWrapperH.offsetWidth, this._scrollBarH.offsetWidth, to.x, dim.d.w, dim.c.w);
+			}
+			return pos;
+		},
+
+		scrollScrollBarTo: function(/*Object*/to){
+			// summary:
+			//		Moves the scroll bar(s) to the given position without animation.
+			// to:
+			//		The destination position. An object with x and/or y.
+			//		ex. {x:2, y:5}, {y:20}, etc.
+
+			if(!this.scrollBar){ return; }
+			if(this._v && this._scrollBarV && typeof to.y == "number"){
+				if(has("css3-animations")){
+					if(!this._useTopLeft){
+						if(this._useTransformTransition){
+							this._scrollBarV.style[css3.name("transition")] = "";
+						}
+						this._scrollBarV.style[css3.name("transform")] = this.makeTranslateStr({y:to.y});
+					}else{
+						domStyle.set(this._scrollBarV, css3.add({
+							top: to.y + "px"
+						}, {
+							transition: ""
+						}));
+					}
+				}else{
+					this._scrollBarV.style.top = to.y + "px";
+				}
+			}
+			if(this._h && this._scrollBarH && typeof to.x == "number"){
+				if(has("css3-animations")){
+					if(!this._useTopLeft){
+						if(this._useTransformTransition){
+							this._scrollBarH.style[css3.name("transition")] = "";
+						}
+						this._scrollBarH.style[css3.name("transform")] = this.makeTranslateStr({x:to.x});
+					}else{
+						domStyle.set(this._scrollBarH, css3.add({
+							left: to.x + "px"
+						}, {
+							transition: ""
+						}));
+					}
+				}else{
+					this._scrollBarH.style.left = to.x + "px";
+				}
+			}
+		},
+
+		slideScrollBarTo: function(/*Object*/to, /*Number*/duration, /*String*/easing){
+			// summary:
+			//		Moves the scroll bar(s) to the given position with the slide animation.
+			// to:
+			//		The destination position. An object with x and y.
+			//		ex. {x:0, y:-5}
+			// duration:
+			//		Duration of the animation in seconds. (ex. 0.3)
+			// easing:
+			//		The name of easing effect which webkit supports.
+			//		"ease", "linear", "ease-in", "ease-out", etc.
+
+			if(!this.scrollBar){ return; }
+			var fromPos = this.calcScrollBarPos(this.getPos());
+			var toPos = this.calcScrollBarPos(to);
+			if(this._v && this._scrollBarV){
+				this._runSlideAnimation({y:fromPos.y}, {y:toPos.y}, duration, easing, this._scrollBarV, 0);
+			}
+			if(this._h && this._scrollBarH){
+				this._runSlideAnimation({x:fromPos.x}, {x:toPos.x}, duration, easing, this._scrollBarH, 1);
+			}
+		},
+
+		_runSlideAnimation: function(/*Object*/from, /*Object*/to, /*Number*/duration, /*String*/easing, /*DomNode*/node, /*Number*/idx){
+			// tags:
+			//		private
+			
+			// idx: 0:scrollbarV, 1:scrollbarH, 2:content
+			if(has("css3-animations")){
+				if(!this._useTopLeft){
+					if(this._useTransformTransition){
+						// for iOS6 (maybe others?): use -webkit-transform + -webkit-transition
+						if(to.x === undefined){ to.x = from.x; }
+						if(to.y === undefined){ to.y = from.y; }
+						 // make sure we actually change the transform, otherwise no webkitTransitionEnd is fired.
+						if(to.x !== from.x || to.y !== from.y){
+							domStyle.set(node, css3.add({}, {
+								transitionProperty: css3.name("transform"),
+								transitionDuration: duration + "s",
+								transitionTimingFunction: easing
+							}));
+							var t = this.makeTranslateStr(to);
+							setTimeout(function(){ // setTimeout is needed to prevent webkitTransitionEnd not fired
+								domStyle.set(node, css3.add({}, {
+									transform: t
+								}));
+							}, 0);
+							domClass.add(node, "mblScrollableScrollTo"+idx);
+						} else {
+							// transform not changed, just hide the scrollbar
+							this.hideScrollBar();
+							this.removeCover();
+						}
+					}else{
+						// use -webkit-transform + -webkit-animation
+						this.setKeyframes(from, to, idx);
+						domStyle.set(node, css3.add({}, {
+							animationDuration: duration + "s",
+							animationTimingFunction: easing
+						}));
+						domClass.add(node, "mblScrollableScrollTo"+idx);
+						if(idx == 2){
+							this.scrollTo(to, true, node);
+						}else{
+							this.scrollScrollBarTo(to);
+						}
+					}
+				}else{
+					domStyle.set(node, css3.add({}, {
+						transitionProperty: "top, left",
+						transitionDuration: duration + "s",
+						transitionTimingFunction: easing
+					}));
+					setTimeout(function(){ // setTimeout is needed to prevent webkitTransitionEnd not fired
+						domStyle.set(node, {
+							top: (to.y || 0) + "px",
+							left: (to.x || 0) + "px"
+						});
+					}, 0);
+					domClass.add(node, "mblScrollableScrollTo"+idx);
+				}
+			}else if(dojo.fx && dojo.fx.easing && duration){
+				// If you want to support non-webkit browsers,
+				// your application needs to load necessary modules as follows:
+				//
+				// | dojo.require("dojo.fx");
+				// | dojo.require("dojo.fx.easing");
+				//
+				// This module itself does not make dependency on them.
+				// TODO: for 2.0 the dojo global is going away.   Use require("dojo/fx") and require("dojo/fx/easing") instead.
+				var s = dojo.fx.slideTo({
+					node: node,
+					duration: duration*1000,
+					left: to.x,
+					top: to.y,
+					easing: (easing == "ease-out") ? dojo.fx.easing.quadOut : dojo.fx.easing.linear
+				}).play();
+				if(idx == 2){
+					connect.connect(s, "onEnd", this, "onFlickAnimationEnd");
+				}
+			}else{
+				// directly jump to the destination without animation
+				if(idx == 2){
+					this.scrollTo(to, false, node);
+					this.onFlickAnimationEnd();
+				}else{
+					this.scrollScrollBarTo(to);
+				}
+			}
+		},
+
+		resetScrollBar: function(){
+			// summary:
+			//		Resets the scroll bar length, position, etc.
+			var f = function(wrapper, bar, d, c, hd, v){
+				if(!bar){ return; }
+				var props = {};
+				props[v ? "top" : "left"] = hd + 4 + "px"; // +4 is for top or left margin
+				var t = (d - 8) <= 0 ? 1 : d - 8;
+				props[v ? "height" : "width"] = t + "px";
+				domStyle.set(wrapper, props);
+				var l = Math.round(d * d / c); // scroll bar length
+				l = Math.min(Math.max(l - 8, 5), t); // -8 is for margin for both ends
+				bar.style[v ? "height" : "width"] = l + "px";
+				domStyle.set(bar, {"opacity": 0.6});
+			};
+			var dim = this.getDim();
+			f(this._scrollBarWrapperV, this._scrollBarV, dim.d.h, dim.c.h, this.fixedHeaderHeight, true);
+			f(this._scrollBarWrapperH, this._scrollBarH, dim.d.w, dim.c.w, 0);
+			this.createMask();
+		},
+
+		createMask: function(){
+			// summary:
+			//		Creates a mask for a scroll bar edge.
+			// description:
+			//		This function creates a mask that hides corners of one scroll
+			//		bar edge to make it round edge. The other side of the edge is
+			//		always visible and round shaped with the border-radius style.
+			if(!(has("webkit")||has("svg"))){ return; }
+			//var ctx;
+			if(this._scrollBarWrapperV){
+				var h = this._scrollBarWrapperV.offsetHeight;
+				maskUtils.createRoundMask(this._scrollBarWrapperV, 0, 0, 0, 0, 5, h, 2, 2, 0.5);
+			}
+			if(this._scrollBarWrapperH){
+				var w = this._scrollBarWrapperH.offsetWidth;
+				maskUtils.createRoundMask(this._scrollBarWrapperH, 0, 0, 0, 0, w, 5, 2, 2, 0.5);
+			}
+		},
+
+		flashScrollBar: function(){
+			// summary:
+			//		Shows the scroll bar instantly.
+			// description:
+			//		This function shows the scroll bar, and then hides it 300ms
+			//		later. This is used to show the scroll bar to the user for a
+			//		short period of time when a hidden view is revealed.
+			if(this.disableFlashScrollBar || !this.domNode){ return; }
+			this._dim = this.getDim();
+			if(this._dim.d.h <= 0){ return; } // dom is not ready
+			this.showScrollBar();
+			var _this = this;
+			setTimeout(function(){
+				_this.hideScrollBar();
+			}, 300);
+		},
+
+		addCover: function(){
+			// summary:
+			//		Adds the transparent DIV cover.
+			// description:
+			//		The cover is to prevent DOM events from affecting the child
+			//		widgets such as a list widget. Without the cover, for example,
+			//		child widgets may receive a click event and respond to it
+			//		unexpectedly when the user flicks the screen to scroll.
+			//		Note that only the desktop browsers need the cover.
+
+			if(!has('touch') && !this.noCover){
+				if(!dm._cover){
+					dm._cover = domConstruct.create("div", null, win.doc.body);
+					dm._cover.className = "mblScrollableCover";
+					domStyle.set(dm._cover, {
+						backgroundColor: "#ffff00",
+						opacity: 0,
+						position: "absolute",
+						top: "0px",
+						left: "0px",
+						width: "100%",
+						height: "100%",
+						zIndex: 2147483647 // max of signed 32-bit integer
+					});
+					this._ch.push(connect.connect(dm._cover, touch.press, this, "onTouchEnd"));
+				}else{
+					dm._cover.style.display = "";
+				}
+				this.setSelectable(dm._cover, false);
+				this.setSelectable(this.domNode, false);
+			}
+		},
+
+		removeCover: function(){
+			// summary:
+			//		Removes the transparent DIV cover.
+
+			if(!has('touch') && dm._cover){
+				dm._cover.style.display = "none";
+				this.setSelectable(dm._cover, true);
+				this.setSelectable(this.domNode, true);
+			}
+		},
+
+		setKeyframes: function(/*Object*/from, /*Object*/to, /*Number*/idx){
+			// summary:
+			//		Programmatically sets key frames for the scroll animation.
+
+			if(!dm._rule){
+				dm._rule = [];
+			}
+			// idx: 0:scrollbarV, 1:scrollbarH, 2:content
+			if(!dm._rule[idx]){
+				var node = domConstruct.create("style", null, win.doc.getElementsByTagName("head")[0]);
+				node.textContent =
+					".mblScrollableScrollTo"+idx+"{" + css3.name("animation-name", true) + ": scrollableViewScroll"+idx+";}"+
+					"@" + css3.name("keyframes", true) + " scrollableViewScroll"+idx+"{}";
+				dm._rule[idx] = node.sheet.cssRules[1];
+			}
+			var rule = dm._rule[idx];
+			if(rule){
+				if(from){
+					rule.deleteRule(has("webkit")?"from":0);
+					(rule.insertRule||rule.appendRule).call(rule, "from { " + css3.name("transform", true) + ": "+this.makeTranslateStr(from)+"; }");
+				}
+				if(to){
+					if(to.x === undefined){ to.x = from.x; }
+					if(to.y === undefined){ to.y = from.y; }
+					rule.deleteRule(has("webkit")?"to":1);
+					(rule.insertRule||rule.appendRule).call(rule, "to { " + css3.name("transform", true) + ": "+this.makeTranslateStr(to)+"; }");
+				}
+			}
+		},
+
+		setSelectable: function(/*DomNode*/node, /*Boolean*/selectable){
+			// summary:
+			//		Sets the given node as selectable or unselectable.
+			 
+			// dojo.setSelectable has dependency on dojo.query. Redefine our own.
+			node.style.KhtmlUserSelect = selectable ? "auto" : "none";
+			node.style.MozUserSelect = selectable ? "" : "none";
+			node.onselectstart = selectable ? null : function(){return false;};
+			if(has("ie")){
+				node.unselectable = selectable ? "" : "on";
+				var nodes = node.getElementsByTagName("*");
+				for(var i = 0; i < nodes.length; i++){
+					nodes[i].unselectable = selectable ? "" : "on";
+				}
+			}
+		}
+	});
+
+	lang.setObject("dojox.mobile.scrollable", Scrollable);
+
+	return Scrollable;
+});
+
+},
+'dojox/mobile/_maskUtils':function(){
+define([
+	"dojo/_base/window",
+	"dojo/dom-style",
+	"./sniff"
+], function(win, domStyle, has){
+	
+	var cache = {};
+	
+	return {
+		// summary:
+		//		Utility methods to clip rounded corners of various elements (Switch, ScrollablePane, scrollbars in scrollable widgets).
+		//		Uses -webkit-mask-image on webkit, or SVG on other browsers.
+		
+		createRoundMask: function(/*DomNode*/node, x, y, r, b, w, h, rx, ry, e){
+			// summary:
+			//		Creates and sets a mask for the specified node.
+			
+			var tw = x + w + r;
+			var th = y + h + b;
+			
+			if(has("webkit")){			// use -webkit-mask-image
+				var id = ("DojoMobileMask" + x + y + w + h + rx + ry).replace(/\./g, "_");
+				if (!cache[id]) {
+					cache[id] = 1;
+					var ctx = win.doc.getCSSCanvasContext("2d", id, tw, th);
+					ctx.beginPath();
+					if (rx == ry) {
+						// round arc
+						if(rx == 2 && w == 5){
+							// optimized case for vertical scrollbar
+							ctx.fillStyle = "rgba(0,0,0,0.5)";
+							ctx.fillRect(1, 0, 3, 2);
+							ctx.fillRect(0, 1, 5, 1);
+							ctx.fillRect(0, h - 2, 5, 1);
+							ctx.fillRect(1, h - 1, 3, 2);
+							ctx.fillStyle = "rgb(0,0,0)";
+							ctx.fillRect(0, 2, 5, h - 4);
+						}else if(rx == 2 && h == 5){
+							// optimized case for horizontal scrollbar
+							ctx.fillStyle = "rgba(0,0,0,0.5)";
+							ctx.fillRect(0, 1, 2, 3);
+							ctx.fillRect(1, 0, 1, 5);
+							ctx.fillRect(w - 2, 0, 1, 5);
+							ctx.fillRect(w - 1, 1, 2, 3);
+							ctx.fillStyle = "rgb(0,0,0)";
+							ctx.fillRect(2, 0, w - 4, 5);
+						}else{
+							// general case
+							ctx.fillStyle = "#000000";
+							ctx.moveTo(x+rx, y);
+							ctx.arcTo(x, y, x, y+rx, rx);
+							ctx.lineTo(x, y+h - rx);
+							ctx.arcTo(x, y+h, x+rx, y+h, rx);
+							ctx.lineTo(x+w - rx, y+h);
+							ctx.arcTo(x+w, y+h, x+w, y+rx, rx);
+							ctx.lineTo(x+w, y+rx);
+							ctx.arcTo(x+w, y, x+w - rx, y, rx);
+						}
+					} else {
+						// elliptical arc
+						var pi = Math.PI;
+						ctx.scale(1, ry / rx);
+						ctx.moveTo(x+rx, y);
+						ctx.arc(x+rx, y+rx, rx, 1.5 * pi, 0.5 * pi, true);
+						ctx.lineTo(x+w - rx, y+2 * rx);
+						ctx.arc(x+w - rx, y+rx, rx, 0.5 * pi, 1.5 * pi, true);
+					}
+					ctx.closePath();
+					ctx.fill();
+				}
+				node.style.webkitMaskImage = "-webkit-canvas(" + id + ")";
+			}else if(has("svg")){		// add an SVG image to clip the corners.
+				if(node._svgMask){
+					node.removeChild(node._svgMask);
+				}
+				var bg = null;
+				for(var p = node.parentNode; p; p = p.parentNode){
+					bg = domStyle.getComputedStyle(p).backgroundColor;
+					if(bg && bg != "transparent" && !bg.match(/rgba\(.*,\s*0\s*\)/)){
+						break;
+					}
+				}
+				var svgNS = "http://www.w3.org/2000/svg";
+				var svg = win.doc.createElementNS(svgNS, "svg");
+				svg.setAttribute("width", tw);
+				svg.setAttribute("height", th);
+				svg.style.position = "absolute";
+				svg.style.pointerEvents = "none";
+				svg.style.opacity = "1";
+				svg.style.zIndex = "2147483647"; // max int
+				var path = win.doc.createElementNS(svgNS, "path");
+				e = e || 0;
+				rx += e;
+				ry += e;
+				// TODO: optimized cases for scrollbars as in webkit case?
+				var d = " M" + (x + rx - e) + "," + (y - e) + " a" + rx + "," + ry + " 0 0,0 " + (-rx) + "," + ry + " v" + (-ry) + " h" + rx + " Z" +
+						" M" + (x - e) + "," + (y + h - ry + e) + " a" + rx + "," + ry + " 0 0,0 " + rx + "," + ry + " h" + (-rx) + " v" + (-ry) + " z" +
+						" M" + (x + w - rx + e) + "," + (y + h + e) + " a" + rx + "," + ry + " 0 0,0 " + rx + "," + (-ry) + " v" + ry + " h" + (-rx) + " z" +
+						" M" + (x + w + e) + "," + (y + ry - e) + " a" + rx + "," + ry + " 0 0,0 " + (-rx) + "," + (-ry) + " h" + rx + " v" + ry + " z";
+				if(y > 0){
+					d += " M0,0 h" + tw + " v" + y + " h" + (-tw) + " z";
+				}
+				if(b > 0){
+					d += " M0," + (y + h) + " h" + tw + " v" + b + " h" + (-tw) + " z";
+				}
+				path.setAttribute("d", d);
+				path.setAttribute("fill", bg);
+				path.setAttribute("stroke", bg);
+				path.style.opacity = "1";
+				svg.appendChild(path); 
+				node._svgMask = svg;
+				node.appendChild(svg);
+			}
+		}
+	};
+});
+
+},
+'dojox/mobile/Button':function(){
+define([
+	"dojo/_base/array",
+	"dojo/_base/declare",
+	"dojo/dom-class",
+	"dojo/dom-construct",
+	"dijit/_WidgetBase",
+	"dijit/form/_ButtonMixin",
+	"dijit/form/_FormWidgetMixin",
+	"dojo/has",
+	"dojo/has!dojo-bidi?dojox/mobile/bidi/Button"
+	],
+	function(array, declare, domClass, domConstruct, WidgetBase, ButtonMixin, FormWidgetMixin, has, BidiButton){
+
+	var Button = declare(has("dojo-bidi") ? "dojox.mobile.NonBidiButton" : "dojox.mobile.Button", [WidgetBase, FormWidgetMixin, ButtonMixin], {
+		// summary:
+		//		Non-templated BUTTON widget with a thin API wrapper for click 
+		//		events and for setting the label.
+		//
+		//		Buttons can display a label, an icon, or both.
+		//		A label should always be specified (through innerHTML) or the label
+		//		attribute.  It can be hidden via showLabel=false.
+		// example:
+		//	|	<button data-dojo-type="dojox/mobile/Button" onClick="...">Hello world</button>
+
+		// baseClass: String
+		//		The name of the CSS class of this widget.
+		baseClass: "mblButton",
+
+		// _setTypeAttr: [private] Function 
+		//		Overrides the automatic assignment of type to nodes, because it causes
+		//		exception on IE. Instead, the type must be specified as this.type
+		//		when the node is created, as part of the original DOM.
+		_setTypeAttr: null,
+
+		// duration: Number
+		//		The duration of selection, in milliseconds, or -1 for no post-click CSS styling.
+		duration: 1000,
+
+		/*=====
+		// label: String
+		//		The label of the button.
+		label: "",
+		=====*/
+		
+		_onClick: function(e){
+			// tags:
+			//		private
+			var ret = this.inherited(arguments);
+			if(ret && this.duration >= 0){ // if its not a button with a state, then emulate press styles
+				var button = this.focusNode || this.domNode;
+				var newStateClasses = (this.baseClass+' '+this["class"]).split(" ");
+				newStateClasses = array.map(newStateClasses, function(c){ return c+"Selected"; });
+				domClass.add(button, newStateClasses);
+				this.defer(function(){
+					domClass.remove(button, newStateClasses);
+				}, this.duration);
+			}
+			return ret;
+		},
+
+		isFocusable: function(){ 
+			// Override of the method of dijit/_WidgetBase.
+			return false; 
+		},
+
+		buildRendering: function(){
+			if(!this.srcNodeRef){
+				this.srcNodeRef = domConstruct.create("button", {"type": this.type});
+			}else if(this._cv){
+				var n = this.srcNodeRef.firstChild;
+				if(n && n.nodeType === 3){
+					n.nodeValue = this._cv(n.nodeValue);
+				}
+			}
+			this.inherited(arguments);
+			this.focusNode = this.domNode;
+		},
+
+		postCreate: function(){
+			this.inherited(arguments);
+			this.connect(this.domNode, "onclick", "_onClick");
+		},
+
+		_setLabelAttr: function(/*String*/ content){
+			// tags:
+			//		private
+			this.inherited(arguments, [this._cv ? this._cv(content) : content]);
+		}
+	});
+
+	return has("dojo-bidi") ? declare("dojox.mobile.Button", [Button, BidiButton]) : Button;
+});
+
+},
+'dijit/form/_ButtonMixin':function(){
+define([
+	"dojo/_base/declare", // declare
+	"dojo/dom", // dom.setSelectable
+	"dojo/has",
+	"../registry"        // registry.byNode
+], function(declare, dom, has, registry){
+
+	// module:
+	//		dijit/form/_ButtonMixin
+
+	var ButtonMixin = declare("dijit.form._ButtonMixin" + (has("dojo-bidi") ? "_NoBidi" : ""), null, {
+		// summary:
+		//		A mixin to add a thin standard API wrapper to a normal HTML button
+		// description:
+		//		A label should always be specified (through innerHTML) or the label attribute.
+		//
+		//		Attach points:
+		//
+		//		- focusNode (required): this node receives focus
+		//		- valueNode (optional): this node's value gets submitted with FORM elements
+		//		- containerNode (optional): this node gets the innerHTML assignment for label
+		// example:
+		// |	<button data-dojo-type="dijit/form/Button" onClick="...">Hello world</button>
+		// example:
+		// |	var button1 = new Button({label: "hello world", onClick: foo});
+		// |	dojo.body().appendChild(button1.domNode);
+
+		// label: HTML String
+		//		Content to display in button.
+		label: "",
+
+		// type: [const] String
+		//		Type of button (submit, reset, button, checkbox, radio)
+		type: "button",
+
+		__onClick: function(/*Event*/ e){
+			// summary:
+			//		Internal function to divert the real click onto the hidden INPUT that has a native default action associated with it
+			// type:
+			//		private
+			e.stopPropagation();
+			e.preventDefault();
+			if(!this.disabled){
+				// cannot use on.emit since button default actions won't occur
+				this.valueNode.click(e);
+			}
+			return false;
+		},
+
+		_onClick: function(/*Event*/ e){
+			// summary:
+			//		Internal function to handle click actions
+			if(this.disabled){
+				e.stopPropagation();
+				e.preventDefault();
+				return false;
+			}
+			if(this.onClick(e) === false){
+				e.preventDefault();
+			}
+			cancelled = e.defaultPrevented;
+
+			// Signal Form/Dialog to submit/close.  For 2.0, consider removing this code and instead making the Form/Dialog
+			// listen for bubbled click events where evt.target.type == "submit" && !evt.defaultPrevented.
+			if(!cancelled && this.type == "submit" && !(this.valueNode || this.focusNode).form){
+				for(var node = this.domNode; node.parentNode; node = node.parentNode){
+					var widget = registry.byNode(node);
+					if(widget && typeof widget._onSubmit == "function"){
+						widget._onSubmit(e);
+						e.preventDefault(); // action has already occurred
+						cancelled = true;
+						break;
+					}
+				}
+			}
+
+			return !cancelled;
+		},
+
+		postCreate: function(){
+			this.inherited(arguments);
+			dom.setSelectable(this.focusNode, false);
+		},
+
+		onClick: function(/*Event*/ /*===== e =====*/){
+			// summary:
+			//		Callback for when button is clicked.
+			//		If type="submit", return true to perform submit, or false to cancel it.
+			// type:
+			//		callback
+			return true;		// Boolean
+		},
+
+		_setLabelAttr: function(/*String*/ content){
+			// summary:
+			//		Hook for set('label', ...) to work.
+			// description:
+			//		Set the label (text) of the button; takes an HTML string.
+			this._set("label", content);
+			var labelNode = this.containerNode || this.focusNode;
+			labelNode.innerHTML = content;
+		}
+	});
+
+	if(has("dojo-bidi")){
+		ButtonMixin = declare("dijit.form._ButtonMixin", ButtonMixin, {
+			_setLabelAttr: function(){
+				this.inherited(arguments);
+				var labelNode = this.containerNode || this.focusNode;
+				this.applyTextDir(labelNode);
+			}
+		});
+	}
+
+	return ButtonMixin;
+});
+
+},
+'app/views/details/details':function(){
+/*jslint nomen: true */
+/*jshint nomen: true */
+/*global _, define, console*/
+define([
+    'dojo/query!css3',
+    //query is the core of dojo dom query
+    // the return is NodeList that has full set of functions
+    // most of the function have same syntax as jquery see bellow this file for summary
+    'dojo/on',
+    'dojo/NodeList-manipulate',
+    // Load dojo/NodeList-manipulate to get JQuery syntax: see below this file for function syntax
+    'dojo/text!app/views/details/details.html',
+    'dojox/mobile/Heading'
+], function ($, on) {
+    'use strict';
+
+    var view, // set in init(params) to save in closure reference to this view controller instance
+        viewNode; // set in init(params) to save in closure reference to this view dom node
+
+
+
+    return {
+
+        init: function (params) {
+            // summary:
+            //      view life cycle init()
+            console.log(this.name + " view:init()");
+
+            //save the view node in clousure to use as scope for dom manipulatation and query
+            viewNode = this.domNode;
+            view = this;
+
+        },
+
+        beforeActivate: function (view, data) {
+            // summary:
+            //      view life cycle beforeActivate()
+            console.log(this.name + " view:beforeActivate(view,data)");
+        },
+
+        afterActivate: function (view, data) {
+            // summary:
+            //      view life cycle afterActivate()
+            console.log(this.name + " view:afterActivate(view,data)");
+        },
+
+        beforeDeactivate: function (view, data) {
+            // summary:
+            //      view life cycle beforeDeactivate()
+            console.log(this.name + " view:beforeDeactivate(view,data)");
+        },
+
+        afterDeactivate: function (view, data) {
+            // summary:
+            //      view life cycle afterDeactivate()
+            console.log(this.name + " view:afterDeactivate(view,data)");
+        },
+
+        destroy: function (params) {
+            // summary:
+            //      view life cycle destroy()
+            console.log(this.name + " view:destory()");
+        },
+        /*****
+         * Custom Code for View Controller
+         *****/
+
+        _formatterTmpl : function (value, key) {
+            // summary:
+            //      Use to format template properties using the convention ${foo:_formatterTmpl}
+            console.log(this.name + "_formatterTmpl(" + value + "," + "key" + ");");
+
+        },
+        doSomething: function (event) {
+            console.log('did something');
+            // summary:
+            //      Example of a custom view controller callback for event listener
+            console.log(this.name + "doSomething(" + event + ");");
+
+        }
+    };
+
+
+/*
+    - dojo/NodeList-manipulate
+    - Load dojo/NodeList-manipulate to get JQuery syntax:
+
+.html( value)
+.text(value)
+.val(value)
+.append(content)
+.appendTo(query)
+.prepend(content)
+.prependTo(query)
+.after(content)
+.insertAfter(query)
+.before(content)
+.insertBefore(query)
+.wrap(html)
+.wrapAll(html)
+.wrapInner(html)
+.replaceAll(query)
+.clone()
+
+*/
+
+/*  - dojo/query!css3
+    - NodeList functions dojo/query returns NodeList and supports chanining
+    - Read the docs or source for more info:
+        - (http://dojotoolkit.org/api/1.9/dojo/NodeList)
+
+.addClass(className) adds the specified class to every node in the list
+.addClassFx(cssClass, args) Animate the effects of adding a class to all nodes in this list. see dojox.fx.addClass
+.addContent(content, position) add a node, NodeList or some HTML as a string to every item in the list. Returns the original list.
+.adopt(queryOrListOrNode, position) places any/all elements in queryOrListOrNode at a position relative to the first element in this list.
+.after(content) Places the content after every node in the NodeList.
+.andSelf() Adds the nodes from the previous dojo/NodeList to the current dojo/NodeList.
+.anim(properties, duration, easing, onEnd, delay) Animate one or more CSS properties for all nodes in this list.
+.animateProperty(args) Animate all elements of this NodeList across the properties specified. syntax identical to dojo.animateProperty
+.append(content) appends the content to every node in the NodeList.
+.appendTo(query) appends nodes in this NodeList to the nodes matched by the query passed to appendTo.
+.at(index) Returns a new NodeList comprised of items in this NodeList at the given index or indices.
+.attr(property, value) gets or sets the DOM attribute for every element in the NodeList.
+.before(content) Places the content before every node in the NodeList.
+.children(query) Returns all immediate child elements for nodes in this dojo/NodeList. Optionally takes a query to filter the child elements.
+.clone() Clones all the nodes in this NodeList and returns them as a new NodeList.
+.closest(query, root) Returns closest parent that matches query, including current node in this dojo/NodeList if it matches the query.
+.concat(item) Returns a new NodeList comprised of items in this NodeList as well as items passed in as parameters
+.connect(methodName, objOrFunc, funcName) Attach event handlers to every item of the NodeList.
+.coords() Deprecated: Use position() for border-box x/y/w/h or marginBox() for margin-box w/h/l/t.
+.data(key, value) stash or get some arbitrary data on/from these nodes.
+.delegate(selector, eventName, fn) Monitor nodes in this NodeList for [bubbled] events on nodes that match selector. Calls fn(evt) for those events, where (inside of fn()), this == the node that matches the selector.
+.dtl(template, context) Renders the specified template in each of the NodeList entries.
+.empty() clears all content from each node in the list.
+.end() Ends use of the current NodeList by returning the previous NodeList that generated the current NodeList.
+.even() Returns the even nodes in this dojo/NodeList as a dojo/NodeList.
+.every(callback, thisObject) see dojo.every() and the Array.every docs.
+.fadeIn(args) fade in all elements of this NodeList via dojo.fadeIn
+.fadeOut(args) fade out all elements of this NodeList via dojo.fadeOut
+.filter(filter) "masks" the built-in javascript filter() method (supported in Dojo via dojo.filter) to support passing a simple string filter in addition to supporting filtering function objects.
+.first() Returns the first node in this dojo/NodeList as a dojo/NodeList.
+.forEach(callback, thisObj) see dojo.forEach().
+.html(value) allows setting the innerHTML of each node in the NodeList, if there is a value passed in, otherwise, reads the innerHTML value of the first node.
+.indexOf(value, fromIndex) see dojo.indexOf(). The primary difference is that the acted-on array is implicitly this NodeList
+.innerHTML(value) allows setting the innerHTML of each node in the NodeList, if there is a value passed in, otherwise, reads the innerHTML value of the first node.
+.insertAfter(query) The nodes in this NodeList will be placed after the nodes matched by the query passed to insertAfter.
+.insertBefore(query) The nodes in this NodeList will be placed after the nodes matched by the query passed to insertAfter.
+.instantiate(declaredClass, properties) Create a new instance of a specified class, using the specified properties and each node in the NodeList as a srcNodeRef.
+.last() Returns the last node in this dojo/NodeList as a dojo/NodeList.
+.lastIndexOf(value, fromIndex) see dojo.lastIndexOf(). The primary difference is that the acted-on array is implicitly this NodeList
+.map(func, obj) see dojo.map().
+.marginBox() Returns margin-box size of nodes
+.next(query) Returns the next element for nodes in this dojo/NodeList. Optionally takes a query to filter the next elements.
+.nextAll(query) Returns all sibling elements that come after the nodes in this dojo/NodeList. Optionally takes a query to filter the sibling elements.
+.odd() Returns the odd nodes in this dojo/NodeList as a dojo/NodeList.
+.on(eventName, listener) Listen for events on the nodes in the NodeList.
+.orphan(filter) removes elements in this list that match the filter from their parents and returns them as a new NodeList.
+.parent(query) Returns immediate parent elements for nodes in this dojo/NodeList. Optionally takes a query to filter the parent elements.
+.parents(query) Returns all parent elements for nodes in this dojo/NodeList. Optionally takes a query to filter the child elements.
+.place(queryOrNode, position) places elements of this node list relative to the first element matched by queryOrNode.
+.position() Returns border-box objects (x/y/w/h) of all elements in a node list as an Array (not a NodeList).
+.prepend(content) prepends the content to every node in the NodeList.
+.prependTo(query) prepends nodes in this NodeList to the nodes matched by the query passed to prependTo.
+.prev(query) Returns the previous element for nodes in this dojo/NodeList. Optionally takes a query to filter the previous elements.
+.prevAll(query) Returns all sibling elements that come before the nodes in this dojo/NodeList. Optionally takes a query to filter the sibling elements.
+.query(queryStr) Returns a new list whose members match the passed query, assuming elements of the current NodeList as the root for each search.
+.remove(filter) removes elements in this list that match the filter from their parents and returns them as a new NodeList.
+.removeAttr(name) Removes an attribute from each node in the list.
+.removeClass(className) removes the specified class from every node in the list
+.removeClassFx(cssClass, args) Animate the effect of removing a class to all nodes in this list. see dojox.fx.removeClass
+.removeData(key) Remove the data associated with these nodes.
+.replaceAll(query) replaces nodes matched by the query passed to replaceAll with the nodes in this NodeList.
+.replaceClass(addClassStr, removeClassStr) Replaces one or more classes on a node if not present.
+.replaceWith(content) Replaces each node in ths NodeList with the content passed to replaceWith.
+.siblings(query) Returns all sibling elements for nodes in this dojo/NodeList. Optionally takes a query to filter the sibling elements.
+.slice(begin, end) Returns a new NodeList, maintaining this one in place
+.slideTo(args) slide all elements of the node list to the specified place via dojo/fx.slideTo()
+.some(callback, thisObject) Takes the same structure of arguments and returns as dojo.some() with the caveat that the passed array is implicitly this NodeList.
+.splice(index, howmany, item) Returns a new NodeList, manipulating this NodeList based on the arguments passed, potentially splicing in new elements at an offset, optionally deleting elements
+.style(property, value) gets or sets the CSS property for every element in the NodeList
+.text(value) allows setting the text value of each node in the NodeList, if there is a value passed in, otherwise, returns the text value for all the nodes in the NodeList in one string.
+.toggleClass(className, condition) Adds a class to node if not present, or removes if present.
+.toggleClassFx(cssClass, force, args) Animate the effect of adding or removing a class to all nodes in this list. see dojox.fx.toggleClass
+.toString()
+.val(value) If a value is passed, allows seting the value property of form elements in this NodeList, or properly selecting/checking the right value for radio/checkbox/select elements.
+.wipeIn(args) wipe in all elements of this NodeList via dojo/fx.wipeIn()
+.wipeOut(args) wipe out all elements of this NodeList via dojo/fx.wipeOut()
+.wrap(html) Wrap each node in the NodeList with html passed to wrap.
+.wrapAll(html) Insert html where the first node in this NodeList lives, then place all nodes in this NodeList as the child of the html.
+.wrapInner(html) For each node in the NodeList, wrap all its children with the passed in html..
+*/
+
+});
+
+
+},
+'app/views/search/search':function(){
 /*jslint nomen: true */
 /*jshint nomen: true */
 /*global _, define, console*/
@@ -14168,7 +19174,8 @@ define([
     'dojox/mobile/ListItem',
     'dojo/NodeList-manipulate',
     // Load dojo/NodeList-manipulate to get JQuery syntax: see below this file for function syntax
-    'dojo/text!app/views/list/list.html'
+    'dojo/text!app/views/search/search.html',
+    'dojox/mobile/Heading'
 ], function ($, on) {
     'use strict';
 
@@ -14907,9 +19914,11 @@ define(["./_base/kernel", "require", "./has", "./_base/array", "./_base/config",
 });
 
 },
-'url:app/config.json':"{\n    //Mandatory\n    \"id\": \"App\",\n    //Optional\n    \"name\": \"requuest-App\",\n    //Optional\n    \"description\": \"Example dApp, Work Order Requests App\",\n    //Optional, but very useful for views properties\n    \"loaderConfig\": {\n        \"paths\": {\n            \"app\": \"../app\"\n        }\n    },\n    //Optional, but required when not using the parser, and its required by views\n    \"dependencies\": [\n        \"dojo/store/Observable\",\n        \"dojox/app/controllers/History\",\n        \"dojox/app/controllers/HistoryHash\",\n        /* On Mobile always add the 2 following modules dojox/mobule a dojox/mobile/deviceTheme */\n        \"dojox/mobile/common\",\n        /* For build to include css3/lite query selectorEngine */\n        \"dojo/selector/lite\",\n        //Need to inlclude dependency for model stores across views\n        \"dojo/store/Memory\",\n        \"dojo/store/JsonRest\"\n    ],\n    //Mandatory, they listen to App.emit events, they implement dojox/app/Controller\n    \"controllers\": [\n        //listens to \"app-init, app-load\"\n        \"dojox/app/controllers/Load\",\n        //listens to \"app-transition, app-domNode\"\n        \"dojox/app/controllers/Transition\",\n        //listens to \"app-initLayout,app-layoutVIew,app-resize\"\n        \"dojox/app/controllers/Layout\"\n    ],\n    //Mandatory, one or a set of views view1+view2+view3\n    \"defaultView\": \"home\",\n\n    //Optional, App level stings\n    \"nls\": \"app/nls/app_strings\",\n    //Mandatory, Specify Application child views\n    \"views\": {\n        \"home\":{\n            //Mandatory for defaultViews\n            \"template\": \"app/views/home/home.html\",\n            \"controller\" : \"app/views/home/home.js\",\n        },\n        \"list\":{\n            \"template\": \"app/views/list/list.html\",\n            \"controller\" : \"app/views/list/list.js\",\n            \"nls\": \"app/views/list/nls/list-strings\"\n        }\n    },\n    \"has\": {\n        \"html5history\": {\n            \"controllers\": [\n                \"dojox/app/controllers/History\"\n            ]\n        },\n        \"!html5history\": {\n            \"controllers\": [\n                \"dojox/app/controllers/HistoryHash\"\n            ]\n        }\n    }\n}\n",
-'url:app/views/home/home.html':"<div class=\"view mblView\">\n<h1 data-dojo-type=\"dojox/mobile/Heading\">\n    ${nls.app_name}\n</h1>\n<!-- Transition to a different view using ListItem 'startTransition' Event -->\n<ul data-dojo-type=\"dojox/mobile/EdgeToEdgeList\">\n  <li data-dojo-type=\"dojox/mobile/ListItem\"\n      data-dojo-props=\"clickable:true,target:'list',url:'#list'\">\n      ${nls.my_requests}\n  </li>\n</ul>\n</div>",
-'url:app/views/list/list.html':"<div class=\"view mblView\">\n<h1 data-dojo-type=\"dojox/mobile/Heading\" data-dojo-props=\"back: '${nls.back}'\">\n    ${nls.my_requests}\n</h1>\n</div>",
+'url:app/config.json':"{\n    //Mandatory\n    \"id\": \"App\",\n    //Optional\n    \"name\": \"requuest-App\",\n    //Optional\n    \"description\": \"Example dApp, Work Order Requests App\",\n    //Optional, but very useful for views properties\n    \"loaderConfig\": {\n        \"paths\": {\n            \"app\": \"../app\"\n        }\n    },\n    //Optional, but required when not using the parser, and its required by views\n    \"dependencies\": [\n        \"dojo/store/Observable\",\n        \"dojox/app/controllers/History\",\n        \"dojox/app/controllers/HistoryHash\",\n        /* On Mobile always add the 2 following modules dojox/mobule a dojox/mobile/deviceTheme */\n        \"dojox/mobile/common\",\n        /* For build to include css3/lite query selectorEngine */\n        \"dojo/selector/lite\",\n        //Need to inlclude dependency for model stores across views\n        \"dojo/store/Memory\",\n        \"dojo/store/JsonRest\"\n    ],\n    //Mandatory, they listen to App.emit events, they implement dojox/app/Controller\n    \"controllers\": [\n        //listens to \"app-init, app-load\"\n        \"dojox/app/controllers/Load\",\n        //listens to \"app-transition, app-domNode\"\n        \"dojox/app/controllers/Transition\",\n        //listens to \"app-initLayout,app-layoutVIew,app-resize\"\n        \"dojox/app/controllers/Layout\"\n    ],\n    //Optional, App levels stores shared with views\n    \"stores\": {\n        \"requests\":{\n            \"type\": \"dojo/store/Memory\",\n            \"observable\": true,\n            \"params\": { // parameters used to initialize the data store\n                \"data\": [{\n                            \"id\": 100,\n                            \"requestType\": \"software\",\n                            \"description\": \"Description text for id=100\",\n                            \"status\": \"open\",\n                            \"priority\": \"1-high\",\n                            \"requestedBy\": \"jsmith@gmail.com\",\n                            \"requestedFinishDate\": \"2013-06-20\",\n                            \"assignedTo\": \"jsmith@gmail.com\",\n                            \"actualFinishDate\": null,\n                            \"estimatedUnits\": 3,\n                            \"unitType\": \"hours\",\n                            \"createdDate\": \"2013-01-20T19:20:30\",\n                            \"updatedDate\": \"2013-01-21T15:21:30\"\n                        },\n                        {\n                            \"id\": 101,\n                            \"requestType\": \"service\",\n                            \"description\": \"Zippy Description text for id=101\",\n                            \"status\": \"open\",\n                            \"priority\": \"2-medium\",\n                            \"requestedBy\": \"jsmith@gmail.com\",\n                            \"requestedFinishDate\": \"2013-07-20\",\n                            \"assignedTo\": \"suestatler@gmail.com\",\n                            \"actualFinishDate\": null,\n                            \"estimatedUnits\": 0,\n                            \"unitType\": \"days\",\n                            \"createdDate\": \"2013-02-20T19:20:30\",\n                            \"updatedDate\": \"2013-03-21T15:21:30\",\n                        },\n                        {\n                            \"id\": 102,\n                            \"requestType\": \"consulting\",\n                            \"description\": \"A Description text for id=102\",\n                            \"status\": \"close\",\n                            \"priority\": \"2-medium\",\n                            \"requestedBy\": \"sdoe@gmail.com\",\n                            \"requestedFinishDate\": \"2013-03-20\",\n                            \"assignedTo\": \"jsmith@gmail.com\",\n                            \"actualFinishDate\": \"2013-02-21T15:21:30\",\n                            \"estimatedUnits\": 10,\n                            \"unitType\": \"days\",\n                            \"createdDate\": \"2013-01-20T19:20:30\",\n                            \"updatedDate\": \"2013-02-21T15:21:30\",\n                        }],\n                \"idProperty\":\"id\"\n            }\n        }/*,\"requests\":{\n            \"type\": \"dojo/store/JsonRest\",\n            \"observable\": true,\n            \"params\": {\n                \"target\": \"app/resources/data/rest/requests.json\"\n            }\n        },\"requests\":{\n            \"type\": \"dojo/store/JsonRest\",\n            \"observable\": true,\n            \"params\": {\n                \"target\": \"http://localhost:3000/items\"\n            }\n        }*/\n\n    },\n\n\n    //Mandatory, one or a set of views view1+view2+view3\n    \"defaultView\": \"home\",\n\n    //Optional, App level stings\n    \"nls\": \"app/nls/app_strings\",\n    \"transition\": \"slide\",\n    //Mandatory, Specify Application child views\n    \"views\": {\n        \"home\":{\n            //Mandatory for defaultViews\n            \"template\": \"app/views/home/home.html\",\n            \"controller\" : \"app/views/home/home.js\",\n        },\n        \"requestList\":{\n            \"template\": \"app/views/list/list.html\",\n            \"controller\" : \"app/views/list/list.js\",\n            \"nls\": \"app/views/list/nls/list-strings\"\n        },\n        \"requestItemDetails\":{\n            \"template\": \"app/views/details/details.html\",\n            \"controller\" : \"app/views/details/details.js\"\n        },\n        \"requestListSearch\":{\n            \"template\": \"app/views/search/search.html\",\n            \"controller\" : \"app/views/search/search.js\"\n        }\n    },\n    \"has\": {\n        \"html5history\": {\n            \"controllers\": [\n                \"dojox/app/controllers/History\"\n            ]\n        },\n        \"!html5history\": {\n            \"controllers\": [\n                \"dojox/app/controllers/HistoryHash\"\n            ]\n        }\n    }\n}\n",
+'url:app/views/home/home.html':"<div class=\"view mblView\">\n  <h1 data-dojo-type=\"dojox/mobile/Heading\">\n    ${nls.app_name}\n  </h1>\n  <!-- Transition to a different view using ListItem 'startTransition' Event -->\n  <ul data-dojo-type=\"dojox/mobile/EdgeToEdgeList\">\n    <li data-dojo-type=\"dojox/mobile/ListItem\"\n    data-dojo-props=\"clickable:true,target:'requestList'\">\n    ${nls.my_requests}\n  </li>\n</ul>\n</div>",
+'url:app/views/list/list.html':"<div class=\"view mblView\">\n  <h1 data-dojo-type=\"dojox/mobile/Heading\" data-dojo-props=\"back: '${nls.back}'\">\n    ${nls.my_requests}\n\n    <button data-dojo-type=\"dojox/mobile/ToolBarButton\" style=\"position: absolute; right: 0\"\n        data-dojo-attach-point=\"createButton\"\n        data-dojo-attach-point=\"add\">\n    ${nls.add}\n    </button>\n  </h1>\n\n  <button data-dojo-type=\"dojox/mobile/Button\"\n    data-dojo-attach-point=\"searchButton\">${nls.search}</button>\n  <!-- target and clickable are set in the ul/StoreList to be inherent by li/children being created see list.js for paramsToInherit: \"target,clickable\"-->\n  <ul data-dojo-type=\"dojox/mobile/EdgeToEdgeStoreList\"\n      id=\"requestsList\"\n      data-dojo-attach-point=\"requests\"\n      data-dojo-props=\"store: this.loadedStores.requests,\n      itemRenderer: this.RequestListItem,\n      itemMap:{description:'label'},\n      target: 'requestItemDetails',\n      clickable: true\">\n  </ul>\n  <!-- FIXME: We should use itemMap and then use event delegation with query selector on ul\n              Uncomment this when event delegation is implemented\n              bug #5 https://github.com/csantanapr/dapp-examples/issues/5\n  <ul data-dojo-type=\"dojox/mobile/EdgeToEdgeStoreList\"\n      data-dojo-attach-point=\"requests\"\n      data-dojo-props=\"store: this.loadedStores.requests,itemMap:{description:'label'}\">\n  </ul>\n   -->\n\n</div>",
+'url:app/views/details/details.html':"<div class=\"view mblView\">\n  <h1 data-dojo-type=\"dojox/mobile/Heading\" data-dojo-props=\"back: '${nls.back}'\">\n    ${nls.request_details}\n  </h1>\n</div>",
+'url:app/views/search/search.html':"<div class=\"view mblView\">\n  <h1 data-dojo-type=\"dojox/mobile/Heading\" data-dojo-props=\"back: '${nls.back}'\">\n    search here..\n  </h1>\n</div>",
 '*now':function(r){r(['dojo/i18n!*preload*app/nls/main*["ar","ca","cs","da","de","el","en","en-gb","en-us","es","es-es","fi","fi-fi","fr","fr-fr","he","he-il","hu","it","it-it","ja","ja-jp","ko","ko-kr","nl","nl-nl","nb","pl","pt","pt-br","pt-pt","ru","sk","sl","sv","th","tr","zh","zh-tw","zh-cn","ROOT"]']);}
 }});
 /*global define, console*/
