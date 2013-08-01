@@ -18974,15 +18974,23 @@ define([
     // the return is NodeList that has full set of functions
     // most of the function have same syntax as jquery see bellow this file for summary
     'dojo/on',
+    'dojo/when',
     'dojo/NodeList-manipulate',
     // Load dojo/NodeList-manipulate to get JQuery syntax: see below this file for function syntax
     'dojo/text!app/views/details/details.html',
-    'dojox/mobile/Heading'
-], function ($, on) {
+    'dojox/mobile/Heading',
+    'dojox/mobile/ToolBarButton',
+    'dojox/mobile/Button',
+    'dojox/mobile/FormLayout',
+    'dojox/mobile/TextBox',
+    'dojox/mobile/RoundRect',
+    'dojox/mobile/ExpandingTextArea'
+], function ($, on, when) {
     'use strict';
 
-    var view, // set in init(params) to save in closure reference to this view controller instance
-        viewNode; // set in init(params) to save in closure reference to this view dom node
+    var viewWidget, // set in init(params) to save in closure reference to this view controller instance
+        viewNode,   // set in init(params) to save in closure reference to this view dom node
+        _editMode = false;
 
 
 
@@ -18995,14 +19003,43 @@ define([
 
             //save the view node in clousure to use as scope for dom manipulatation and query
             viewNode = this.domNode;
-            view = this;
+            viewWidget = this;
 
         },
 
         beforeActivate: function (view, data) {
             // summary:
             //      view life cycle beforeActivate()
-            console.log(this.name + " view:beforeActivate(view,data)");
+
+            // get the id of the displayed contact from the params
+            var id = this.params.id,
+                promise = null;
+
+            // cancel button must be shown in edit mode only
+            viewWidget.cancelButton.domNode.style.display = "none";
+
+            promise = viewWidget.loadedStores.requestsListStore.get(id);
+            when(promise, function (request) {
+                viewWidget.reqid.set("value", request ? request.id : null);
+                viewWidget.requestType.set("value", request ? request.requestType : null);
+                //viewWidget._initFieldValue(request, "requestType", viewWidget.loadedStores.requestTypeStore);
+                viewWidget.description.set("value", request ? request.description : null);
+                viewWidget.status.set("value", request ? request.status : null);
+                //viewWidget._initFieldValue(request, "status", viewWidget.loadedStores.requestStatusStore);
+                viewWidget.priority.set("value", request ? request.priority : null);
+                //viewWidget._initFieldValue(request, "priority", viewWidget.loadedStores.requestPriorityStore);
+
+                viewWidget.requestedBy.set("value", request ? request.requestedBy : null);
+                viewWidget.requestedFinishDate.set("value", request ? request.requestedFinishDate : null);
+                viewWidget.assignedTo.set("value", request ? request.assignedTo : null);
+                viewWidget.actualFinishDate.set("value", request ? request.actualFinishDate : null);
+                viewWidget.estimatedUnits.set("value", request ? request.estimatedUnits : null);
+                viewWidget.unitType.set("value", request ? request.unitType : null);
+                //viewWidget._initFieldValue(request, "unitType", viewWidget.loadedStores.requestUnitTypeStore);
+                viewWidget.createdDate.set("value", request ? request.createdDate : null);
+                viewWidget.updatedDate.set("value", request ? request.updatedDate : null);
+            });
+
         },
 
         afterActivate: function (view, data) {
@@ -19044,6 +19081,16 @@ define([
             //      Example of a custom view controller callback for event listener
             console.log(this.name + "doSomething(" + event + ");");
 
+        },
+        _copyForm: function () {
+            // summary:
+            //      Copies the form data
+            console.log(this.name + " view:_copyForm()");
+        },
+        _deleteRequest: function () {
+            // summary:
+            //      I gues it's suppose to delete something
+            console.log(this.name + " view:_deleteRequest()");
         }
     };
 
@@ -19159,6 +19206,483 @@ define([
 
 });
 
+
+},
+'dojox/mobile/FormLayout':function(){
+define([
+	"dojo/_base/declare",
+	"dojo/dom-class",
+	"./Container"
+], function(declare, domClass, Container){
+
+	// module:
+	//		dojox/mobile/FormLayout
+
+	return declare("dojox.mobile.FormLayout", Container, {
+		// summary:
+		//		A responsive container to create mobile forms.
+		// description:
+		//		This container layouts form widgets according to the screen size.
+		//		Each row of a form is made of a <label> and a <fieldset> that contains one or more form widgets.
+		//		By default, if the width of the screen if greater than 500px, the <label> and the <fieldset> are positioned on the same line.
+		//		Otherwise they are stacked vertically. You can force how a <label> and its <fieldset> are positioned using the
+		//		'columns' property.
+		//		Form controls are: "dojox/mobile/Button", "dojox/mobile/CheckBox", "dojox/mobile/ComboBox",
+		//		"dojox/mobile/RadioButton", "dojox/mobile/Slider", "dojox/mobile/TextBox", "dojox/mobile/SearchBox",
+		//		"dojox/mobile/ExpandingTextArea", "dojox/mobile/ToggleButton".
+		// example:
+		// |	<div data-dojo-type="dojox/mobile/FormLayout" data-dojo-props="columns:'two', rightAlign:true">
+		// |		<div>
+		// |			<label>Name:</label>
+		// |			<fieldset>
+		// |				<input data-dojo-type="dojox/mobile/TextBox">
+		// |			</fieldset>
+		// |		</div>
+		// |		<div>
+		// |			<label>Make a choice:</label>
+		// |			<fieldset>
+		// |				<input type="radio" id="rb1" data-dojo-type="dojox/mobile/RadioButton" name="mobileRadio" checked><label for="rb1">Small</label>
+		// |				<input type="radio" id="rb2" data-dojo-type="dojox/mobile/RadioButton" name="mobileRadio" checked><label for="rb2">Medium</label>
+		// |				<input type="radio" id="rb3" data-dojo-type="dojox/mobile/RadioButton" name="mobileRadio" checked><label for="rb3">Large</label>
+		// |			</fieldset>
+		// |		</div>
+		// |	</div>
+
+
+		// columns: [const] "auto" | "single" | "two"
+		//		This property controls how a <label> and its <fieldset> are positioned. The <label> can be on the same line
+		//		than its <fieldset> (two columns) or on top of it (single column).
+		//		If set to "auto", the number of columns depends on the width of the screen: Two columns
+		//		if the width of the screen is larger than 500px, one column otherwise. The width of the screen is determined using CSS
+		//		Media Queries.
+		//		Setting this property to "single" or "two" allows to force the layout used whatever the width of the screen.
+		//		Default value for this property is "auto".
+		//		Note that changing the value of the property after the widget
+		//		creation has no effect.
+		columns: "auto",
+
+		// rightAlign: [const] Boolean
+		//		This property controls the horizontal position of control(s) in a <fieldset>. It applies only
+		//		to forms that have two columns (see 'columns' property).
+		//		Default value for this property is false.
+		//		Note that changing the value of the property after the widget
+		//		creation has no effect.
+		rightAlign: false,
+
+		/* internal properties */
+
+		// baseClass: String
+		//		The name of the CSS class of this widget.
+		baseClass: "mblFormLayout",
+
+		buildRendering: function(){
+			this.inherited(arguments);
+			if(this.columns == "auto"){
+				domClass.add(this.domNode, "mblFormLayoutAuto");
+			}else if(this.columns == "single"){
+				domClass.add(this.domNode, "mblFormLayoutSingleCol");
+			}else if(this.columns == "two"){
+				domClass.add(this.domNode, "mblFormLayoutTwoCol");
+			}
+			if(this.rightAlign){
+				domClass.add(this.domNode, "mblFormLayoutRightAlign");
+			}
+		}
+	});
+});
+
+},
+'dojox/mobile/Container':function(){
+define([
+	"dojo/_base/declare",
+	"dijit/_Container",
+	"./Pane"
+], function(declare, Container, Pane){
+
+	// module:
+	//		dojox/mobile/Container
+
+	return declare("dojox.mobile.Container", [Pane, Container], {
+		// summary:
+		//		A simple container-type widget.
+		// description:
+		//		Container is a simple general-purpose container widget.
+		//		It is a widget, but can be regarded as a simple `<div>` element.
+
+		// baseClass: String
+		//		The name of the CSS class of this widget.
+		baseClass: "mblContainer"
+	});
+});
+
+},
+'dojox/mobile/Pane':function(){
+define([
+	"dojo/_base/array",
+	"dojo/_base/declare",
+	"dijit/_Contained",
+	"dijit/_WidgetBase"
+], function(array, declare, Contained, WidgetBase){
+
+	// module:
+	//		dojox/mobile/Pane
+
+	return declare("dojox.mobile.Pane", [WidgetBase, Contained], {
+		// summary:
+		//		A simple pane widget.
+		// description:
+		//		Pane is a simple general-purpose pane widget.
+		//		It is a widget, but can be regarded as a simple `<div>` element.
+
+		// baseClass: String
+		//		The name of the CSS class of this widget.
+		baseClass: "mblPane",
+
+		buildRendering: function(){
+			this.inherited(arguments);
+			if(!this.containerNode){
+				// set containerNode so that getChildren() works
+				this.containerNode = this.domNode;
+			}
+		},
+
+		resize: function(){
+			// summary:
+			//		Calls resize() of each child widget.
+			array.forEach(this.getChildren(), function(child){
+				if(child.resize){ child.resize(); }
+			});
+		}
+	});
+});
+
+},
+'dojox/mobile/RoundRect':function(){
+define([
+	"dojo/_base/declare",
+	"dojo/dom-class",
+	"./Container"
+], function(declare, domClass, Container){
+
+	// module:
+	//		dojox/mobile/RoundRect
+
+	return declare("dojox.mobile.RoundRect", Container, {
+		// summary:
+		//		A simple round rectangle container.
+		// description:
+		//		RoundRect is a simple round rectangle container for any HTML
+		//		and/or widgets. You can achieve the same appearance by just
+		//		applying the -webkit-border-radius style to a div tag. However,
+		//		if you use RoundRect, you can get a round rectangle even on
+		//		non-CSS3 browsers such as (older) IE.
+
+		// shadow: [const] Boolean
+		//		If true, adds a shadow effect to the container element by adding
+		//		the CSS class "mblShadow" to widget's domNode. The default value
+		//		is false. Note that changing the value of the property after
+		//		the widget creation has no effect.
+		shadow: false,
+
+		/* internal properties */	
+		
+		// baseClass: String
+		//		The name of the CSS class of this widget.
+		baseClass: "mblRoundRect",
+
+		buildRendering: function(){
+			this.inherited(arguments);
+			if(this.shadow){
+				domClass.add(this.domNode, "mblShadow");
+			}
+		}
+	});
+});
+
+},
+'dojox/mobile/ExpandingTextArea':function(){
+define([
+	"dojo/_base/declare",
+	"dijit/form/_ExpandingTextAreaMixin",
+	"./TextArea"
+], function(declare, ExpandingTextAreaMixin, TextArea){
+
+	return declare("dojox.mobile.ExpandingTextArea", [TextArea, ExpandingTextAreaMixin], {
+		// summary:
+		//		Non-templated TEXTAREA widget with the capability to adjust its 
+		//		height according to the amount of data.
+		// description:
+		//		A textarea that dynamically expands/contracts (changing its height) as
+		//		the user types, to display all the text without requiring a vertical scroll bar.
+		//
+		//		Takes all the parameters (name, value, etc.) that a vanilla textarea takes.
+		//		Rows are not supported since this widget adjusts its height.
+		// example:
+		//	|	<textarea dojoType="dojox.mobile.ExpandingTextArea">...</textarea>
+
+		baseClass: "mblTextArea mblExpandingTextArea"
+	});
+});
+
+},
+'dijit/form/_ExpandingTextAreaMixin':function(){
+define([
+	"dojo/_base/declare", // declare
+	"dojo/dom-construct", // domConstruct.create
+	"dojo/has",
+	"dojo/_base/lang", // lang.hitch
+	"dojo/on",
+	"dojo/_base/window", // win.body
+	"../Viewport"
+], function(declare, domConstruct, has, lang, on, win, Viewport){
+
+	// module:
+	//		dijit/form/_ExpandingTextAreaMixin
+
+	// feature detection, true for mozilla and webkit
+	has.add("textarea-needs-help-shrinking", function(){
+		var body = win.body(),	// note: if multiple documents exist, doesn't matter which one we use
+			te = domConstruct.create('textarea', {
+			rows:"5",
+			cols:"20",
+			value: ' ',
+			style: {zoom:1, fontSize:"12px", height:"96px", overflow:'hidden', visibility:'hidden', position:'absolute', border:"5px solid white", margin:"0", padding:"0", boxSizing: 'border-box', MsBoxSizing: 'border-box', WebkitBoxSizing: 'border-box', MozBoxSizing: 'border-box' }
+		}, body, "last");
+		var needsHelpShrinking = te.scrollHeight >= te.clientHeight;
+		body.removeChild(te);
+		return needsHelpShrinking;
+	});
+
+	return declare("dijit.form._ExpandingTextAreaMixin", null, {
+		// summary:
+		//		Mixin for textarea widgets to add auto-expanding capability
+
+		_setValueAttr: function(){
+			this.inherited(arguments);
+			this.resize();
+		},
+
+		postCreate: function(){
+			this.inherited(arguments);
+			var textarea = this.textbox;
+			textarea.style.overflowY = "hidden";
+			this.own(on(textarea, "focus, resize", lang.hitch(this, "_resizeLater")));
+		},
+
+		startup: function(){ 
+			this.inherited(arguments);
+			this.own(Viewport.on("resize", lang.hitch(this, "_resizeLater")));
+			this._resizeLater();
+		},
+
+		_onInput: function(e){
+			this.inherited(arguments);
+			this.resize();
+		},
+
+		_estimateHeight: function(){
+			// summary:
+			//		Approximate the height when the textarea is invisible with the number of lines in the text.
+			//		Fails when someone calls setValue with a long wrapping line, but the layout fixes itself when the user clicks inside so . . .
+			//		In IE, the resize event is supposed to fire when the textarea becomes visible again and that will correct the size automatically.
+			//
+			var textarea = this.textbox;
+			// #rows = #newlines+1
+			textarea.rows = (textarea.value.match(/\n/g) || []).length + 1;
+		},
+
+		_resizeLater: function(){
+			this.defer("resize");
+		},
+
+		resize: function(){
+			// summary:
+			//		Resizes the textarea vertically (should be called after a style/value change)
+
+			var textarea = this.textbox;
+
+			function textareaScrollHeight(){
+				var empty = false;
+				if(textarea.value === ''){
+					textarea.value = ' ';
+					empty = true;
+				}
+				var sh = textarea.scrollHeight;
+				if(empty){ textarea.value = ''; }
+				return sh;
+			}
+
+			if(textarea.style.overflowY == "hidden"){ textarea.scrollTop = 0; }
+			if(this.busyResizing){ return; }
+			this.busyResizing = true;
+			if(textareaScrollHeight() || textarea.offsetHeight){
+				var newH = textareaScrollHeight() + Math.max(textarea.offsetHeight - textarea.clientHeight, 0);
+				var newHpx = newH + "px";
+				if(newHpx != textarea.style.height){
+					textarea.style.height = newHpx;
+					textarea.rows = 1; // rows can act like a minHeight if not cleared
+				}
+				if(has("textarea-needs-help-shrinking")){
+					var	origScrollHeight = textareaScrollHeight(),
+						newScrollHeight = origScrollHeight,
+						origMinHeight = textarea.style.minHeight,
+						decrement = 4, // not too fast, not too slow
+						thisScrollHeight,
+						origScrollTop = textarea.scrollTop;
+					textarea.style.minHeight = newHpx; // maintain current height
+					textarea.style.height = "auto"; // allow scrollHeight to change
+					while(newH > 0){
+						textarea.style.minHeight = Math.max(newH - decrement, 4) + "px";
+						thisScrollHeight = textareaScrollHeight();
+						var change = newScrollHeight - thisScrollHeight;
+						newH -= change;
+						if(change < decrement){
+							break; // scrollHeight didn't shrink
+						}
+						newScrollHeight = thisScrollHeight;
+						decrement <<= 1;
+					}
+					textarea.style.height = newH + "px";
+					textarea.style.minHeight = origMinHeight;
+					textarea.scrollTop = origScrollTop;
+				}
+				textarea.style.overflowY = textareaScrollHeight() > textarea.clientHeight ? "auto" : "hidden";
+				if(textarea.style.overflowY == "hidden"){ textarea.scrollTop = 0; }
+			}else{
+				// hidden content of unknown size
+				this._estimateHeight();
+			}
+			this.busyResizing = false;
+		}
+	});
+});
+
+},
+'dijit/Viewport':function(){
+define([
+	"dojo/Evented",
+	"dojo/on",
+	"dojo/domReady",
+	"dojo/sniff",	// has("ie"), has("ios")
+	"dojo/window" // getBox()
+], function(Evented, on, domReady, has, winUtils){
+
+	// module:
+	//		dijit/Viewport
+
+	/*=====
+	return {
+		// summary:
+		//		Utility singleton to watch for viewport resizes, avoiding duplicate notifications
+		//		which can lead to infinite loops.
+		// description:
+		//		Usage: Viewport.on("resize", myCallback).
+		//
+		//		myCallback() is called without arguments in case it's _WidgetBase.resize(),
+		//		which would interpret the argument as the size to make the widget.
+	};
+	=====*/
+
+	var Viewport = new Evented();
+
+	var focusedNode;
+
+	domReady(function(){
+		var oldBox = winUtils.getBox();
+		Viewport._rlh = on(window, "resize", function(){
+			var newBox = winUtils.getBox();
+			if(oldBox.h == newBox.h && oldBox.w == newBox.w){ return; }
+			oldBox = newBox;
+			Viewport.emit("resize");
+		});
+
+		// Also catch zoom changes on IE8, since they don't naturally generate resize events
+		if(has("ie") == 8){
+			var deviceXDPI = screen.deviceXDPI;
+			setInterval(function(){
+				if(screen.deviceXDPI != deviceXDPI){
+					deviceXDPI = screen.deviceXDPI;
+					Viewport.emit("resize");
+				}
+			}, 500);
+		}
+
+		// On iOS, keep track of the focused node so we can guess when the keyboard is/isn't being displayed.
+		if(has("ios")){
+			on(document, "focusin", function(evt){
+				focusedNode = evt.target;
+			});
+			on(document, "focusout", function(evt){
+				focusedNode = null;
+			});
+		}
+	});
+
+	Viewport.getEffectiveBox = function(/*Document*/ doc){
+		// summary:
+		//		Get the size of the viewport, or on mobile devices, the part of the viewport not obscured by the
+		//		virtual keyboard.
+
+		var box = winUtils.getBox(doc);
+
+		// Account for iOS virtual keyboard, if it's being shown.  Unfortunately no direct way to check or measure.
+		var tag = focusedNode && focusedNode.tagName && focusedNode.tagName.toLowerCase();
+		if(has("ios") && focusedNode && !focusedNode.readOnly && (tag == "textarea" || (tag == "input" &&
+			/^(color|email|number|password|search|tel|text|url)$/.test(focusedNode.type)))){
+
+			// Box represents the size of the viewport.  Some of the viewport is likely covered by the keyboard.
+			// Estimate height of visible viewport assuming viewport goes to bottom of screen, but is covered by keyboard.
+			box.h *= (orientation == 0 || orientation == 180 ? 0.66 : 0.40);
+
+			// Above measurement will be inaccurate if viewport was scrolled up so far that it ends before the bottom
+			// of the screen.   In this case, keyboard isn't covering as much of the viewport as we thought.
+			// We know the visible size is at least the distance from the top of the viewport to the focused node.
+			var rect = focusedNode.getBoundingClientRect();
+			box.h = Math.max(box.h, rect.top + rect.height);
+		}
+
+		return box;
+	};
+
+	return Viewport;
+});
+
+},
+'dojox/mobile/TextArea':function(){
+define([
+	"dojo/_base/declare",
+	"dojo/dom-construct",
+	"./TextBox"
+], function(declare, domConstruct, TextBox){
+
+	return declare("dojox.mobile.TextArea",TextBox, {
+		// summary:
+		//		Non-templated TEXTAREA widget.
+		// description:
+		//		A textarea widget that wraps an HTML TEXTAREA element.
+		//		Takes all the parameters (name, value, etc.) that a vanilla textarea takes.
+		// example:
+		// |	<textarea dojoType="dojox.mobile.TextArea">...</textarea>
+
+		baseClass: "mblTextArea",
+
+		postMixInProperties: function(){
+			 // Copy value from srcNodeRef, unless user specified a value explicitly (or there is no srcNodeRef)
+			// TODO: parser will handle this in 2.0
+			if(!this.value && this.srcNodeRef){
+				this.value = this.srcNodeRef.value;
+			}
+			this.inherited(arguments);
+		},
+
+		buildRendering: function(){
+			if(!this.srcNodeRef){
+				this.srcNodeRef = domConstruct.create("textarea", {});
+			}
+			this.inherited(arguments);
+		}
+	});
+});
 
 },
 'app/views/search/search':function(){
@@ -19914,10 +20438,10 @@ define(["./_base/kernel", "require", "./has", "./_base/array", "./_base/config",
 });
 
 },
-'url:app/config.json':"{\n    //Mandatory\n    \"id\": \"App\",\n    //Optional\n    \"name\": \"requuest-App\",\n    //Optional\n    \"description\": \"Example dApp, Work Order Requests App\",\n    //Optional, but very useful for views properties\n    \"loaderConfig\": {\n        \"paths\": {\n            \"app\": \"../app\"\n        }\n    },\n    //Optional, but required when not using the parser, and its required by views\n    \"dependencies\": [\n        \"dojo/store/Observable\",\n        \"dojox/app/controllers/History\",\n        \"dojox/app/controllers/HistoryHash\",\n        /* On Mobile always add the 2 following modules dojox/mobule a dojox/mobile/deviceTheme */\n        \"dojox/mobile/common\",\n        /* For build to include css3/lite query selectorEngine */\n        \"dojo/selector/lite\",\n        //Need to inlclude dependency for model stores across views\n        \"dojo/store/Memory\",\n        \"dojo/store/JsonRest\"\n    ],\n    //Mandatory, they listen to App.emit events, they implement dojox/app/Controller\n    \"controllers\": [\n        //listens to \"app-init, app-load\"\n        \"dojox/app/controllers/Load\",\n        //listens to \"app-transition, app-domNode\"\n        \"dojox/app/controllers/Transition\",\n        //listens to \"app-initLayout,app-layoutVIew,app-resize\"\n        \"dojox/app/controllers/Layout\"\n    ],\n    //Optional, App levels stores shared with views\n    \"stores\": {\n        \"requests\":{\n            \"type\": \"dojo/store/Memory\",\n            \"observable\": true,\n            \"params\": { // parameters used to initialize the data store\n                \"data\": [{\n                            \"id\": 100,\n                            \"requestType\": \"software\",\n                            \"description\": \"Description text for id=100\",\n                            \"status\": \"open\",\n                            \"priority\": \"1-high\",\n                            \"requestedBy\": \"jsmith@gmail.com\",\n                            \"requestedFinishDate\": \"2013-06-20\",\n                            \"assignedTo\": \"jsmith@gmail.com\",\n                            \"actualFinishDate\": null,\n                            \"estimatedUnits\": 3,\n                            \"unitType\": \"hours\",\n                            \"createdDate\": \"2013-01-20T19:20:30\",\n                            \"updatedDate\": \"2013-01-21T15:21:30\"\n                        },\n                        {\n                            \"id\": 101,\n                            \"requestType\": \"service\",\n                            \"description\": \"Zippy Description text for id=101\",\n                            \"status\": \"open\",\n                            \"priority\": \"2-medium\",\n                            \"requestedBy\": \"jsmith@gmail.com\",\n                            \"requestedFinishDate\": \"2013-07-20\",\n                            \"assignedTo\": \"suestatler@gmail.com\",\n                            \"actualFinishDate\": null,\n                            \"estimatedUnits\": 0,\n                            \"unitType\": \"days\",\n                            \"createdDate\": \"2013-02-20T19:20:30\",\n                            \"updatedDate\": \"2013-03-21T15:21:30\",\n                        },\n                        {\n                            \"id\": 102,\n                            \"requestType\": \"consulting\",\n                            \"description\": \"A Description text for id=102\",\n                            \"status\": \"close\",\n                            \"priority\": \"2-medium\",\n                            \"requestedBy\": \"sdoe@gmail.com\",\n                            \"requestedFinishDate\": \"2013-03-20\",\n                            \"assignedTo\": \"jsmith@gmail.com\",\n                            \"actualFinishDate\": \"2013-02-21T15:21:30\",\n                            \"estimatedUnits\": 10,\n                            \"unitType\": \"days\",\n                            \"createdDate\": \"2013-01-20T19:20:30\",\n                            \"updatedDate\": \"2013-02-21T15:21:30\",\n                        }],\n                \"idProperty\":\"id\"\n            }\n        }/*,\"requests\":{\n            \"type\": \"dojo/store/JsonRest\",\n            \"observable\": true,\n            \"params\": {\n                \"target\": \"app/resources/data/rest/requests.json\"\n            }\n        },\"requests\":{\n            \"type\": \"dojo/store/JsonRest\",\n            \"observable\": true,\n            \"params\": {\n                \"target\": \"http://localhost:3000/items\"\n            }\n        }*/\n\n    },\n\n\n    //Mandatory, one or a set of views view1+view2+view3\n    \"defaultView\": \"home\",\n\n    //Optional, App level stings\n    \"nls\": \"app/nls/app_strings\",\n    \"transition\": \"slide\",\n    //Mandatory, Specify Application child views\n    \"views\": {\n        \"home\":{\n            //Mandatory for defaultViews\n            \"template\": \"app/views/home/home.html\",\n            \"controller\" : \"app/views/home/home.js\",\n        },\n        \"requestList\":{\n            \"template\": \"app/views/list/list.html\",\n            \"controller\" : \"app/views/list/list.js\",\n            \"nls\": \"app/views/list/nls/list-strings\"\n        },\n        \"requestItemDetails\":{\n            \"template\": \"app/views/details/details.html\",\n            \"controller\" : \"app/views/details/details.js\"\n        },\n        \"requestListSearch\":{\n            \"template\": \"app/views/search/search.html\",\n            \"controller\" : \"app/views/search/search.js\"\n        }\n    },\n    \"has\": {\n        \"html5history\": {\n            \"controllers\": [\n                \"dojox/app/controllers/History\"\n            ]\n        },\n        \"!html5history\": {\n            \"controllers\": [\n                \"dojox/app/controllers/HistoryHash\"\n            ]\n        }\n    }\n}\n",
+'url:app/config.json':"{\n    //Mandatory\n    \"id\": \"App\",\n    //Optional\n    \"name\": \"requuest-App\",\n    //Optional\n    \"description\": \"Example dApp, Work Order Requests App\",\n    //Optional, but very useful for views properties\n    \"loaderConfig\": {\n        \"paths\": {\n            \"app\": \"../app\"\n        }\n    },\n    //Optional, but required when not using the parser, and its required by views\n    \"dependencies\": [\n        \"dojo/store/Observable\",\n        \"dojox/app/controllers/History\",\n        \"dojox/app/controllers/HistoryHash\",\n        /* On Mobile always add the 2 following modules dojox/mobule a dojox/mobile/deviceTheme */\n        \"dojox/mobile/common\",\n        /* For build to include css3/lite query selectorEngine */\n        \"dojo/selector/lite\",\n        //Need to inlclude dependency for model stores across views\n        \"dojo/store/Memory\",\n        \"dojo/store/JsonRest\"\n    ],\n    //Mandatory, they listen to App.emit events, they implement dojox/app/Controller\n    \"controllers\": [\n        //listens to \"app-init, app-load\"\n        \"dojox/app/controllers/Load\",\n        //listens to \"app-transition, app-domNode\"\n        \"dojox/app/controllers/Transition\",\n        //listens to \"app-initLayout,app-layoutVIew,app-resize\"\n        \"dojox/app/controllers/Layout\"\n    ],\n    //Optional, App levels stores shared with views\n    \"stores\": {\n        \"requestsListStore\":{\n            \"type\": \"dojo/store/Memory\",\n            \"observable\": true,\n            \"params\": { // parameters used to initialize the data store\n                \"data\": [{\n                            \"id\": 100,\n                            \"requestType\": \"software\",\n                            \"description\": \"Description text for id=100\",\n                            \"status\": \"open\",\n                            \"priority\": \"1-high\",\n                            \"requestedBy\": \"jsmith@gmail.com\",\n                            \"requestedFinishDate\": \"2013-06-20\",\n                            \"assignedTo\": \"jsmith@gmail.com\",\n                            \"actualFinishDate\": null,\n                            \"estimatedUnits\": 3,\n                            \"unitType\": \"hours\",\n                            \"createdDate\": \"2013-01-20T19:20:30\",\n                            \"updatedDate\": \"2013-01-21T15:21:30\"\n                        },\n                        {\n                            \"id\": 101,\n                            \"requestType\": \"service\",\n                            \"description\": \"Zippy Description text for id=101\",\n                            \"status\": \"open\",\n                            \"priority\": \"2-medium\",\n                            \"requestedBy\": \"jsmith@gmail.com\",\n                            \"requestedFinishDate\": \"2013-07-20\",\n                            \"assignedTo\": \"suestatler@gmail.com\",\n                            \"actualFinishDate\": null,\n                            \"estimatedUnits\": 0,\n                            \"unitType\": \"days\",\n                            \"createdDate\": \"2013-02-20T19:20:30\",\n                            \"updatedDate\": \"2013-03-21T15:21:30\",\n                        },\n                        {\n                            \"id\": 102,\n                            \"requestType\": \"consulting\",\n                            \"description\": \"A Description text for id=102\",\n                            \"status\": \"close\",\n                            \"priority\": \"2-medium\",\n                            \"requestedBy\": \"sdoe@gmail.com\",\n                            \"requestedFinishDate\": \"2013-03-20\",\n                            \"assignedTo\": \"jsmith@gmail.com\",\n                            \"actualFinishDate\": \"2013-02-21T15:21:30\",\n                            \"estimatedUnits\": 10,\n                            \"unitType\": \"days\",\n                            \"createdDate\": \"2013-01-20T19:20:30\",\n                            \"updatedDate\": \"2013-02-21T15:21:30\",\n                        }],\n                \"idProperty\":\"id\"\n            }\n        }/*,\"requests\":{\n            \"type\": \"dojo/store/JsonRest\",\n            \"observable\": true,\n            \"params\": {\n                \"target\": \"app/resources/data/rest/requests.json\"\n            }\n        },\"requests\":{\n            \"type\": \"dojo/store/JsonRest\",\n            \"observable\": true,\n            \"params\": {\n                \"target\": \"http://localhost:3000/items\"\n            }\n        }*/\n\n    },\n\n\n    //Mandatory, one or a set of views view1+view2+view3\n    \"defaultView\": \"home\",\n\n    //Optional, App level stings\n    \"nls\": \"app/nls/app_strings\",\n    \"transition\": \"slide\",\n    //Mandatory, Specify Application child views\n    \"views\": {\n        \"home\":{\n            //Mandatory for defaultViews\n            \"template\": \"app/views/home/home.html\",\n            \"controller\" : \"app/views/home/home.js\",\n        },\n        \"requestList\":{\n            \"template\": \"app/views/list/list.html\",\n            \"controller\" : \"app/views/list/list.js\",\n            \"nls\": \"app/views/list/nls/list-strings\"\n        },\n        \"requestItemDetails\":{\n            \"template\": \"app/views/details/details.html\",\n            \"controller\" : \"app/views/details/details.js\",\n            \"nls\": \"app/views/details/nls/details-strings\"\n        },\n        \"requestListSearch\":{\n            \"template\": \"app/views/search/search.html\",\n            \"controller\" : \"app/views/search/search.js\"\n        }\n    },\n    \"has\": {\n        \"html5history\": {\n            \"controllers\": [\n                \"dojox/app/controllers/History\"\n            ]\n        },\n        \"!html5history\": {\n            \"controllers\": [\n                \"dojox/app/controllers/HistoryHash\"\n            ]\n        }\n    }\n}\n",
 'url:app/views/home/home.html':"<div class=\"view mblView\">\n  <h1 data-dojo-type=\"dojox/mobile/Heading\">\n    ${nls.app_name}\n  </h1>\n  <!-- Transition to a different view using ListItem 'startTransition' Event -->\n  <ul data-dojo-type=\"dojox/mobile/EdgeToEdgeList\">\n    <li data-dojo-type=\"dojox/mobile/ListItem\"\n    data-dojo-props=\"clickable:true,target:'requestList'\">\n    ${nls.my_requests}\n  </li>\n</ul>\n</div>",
-'url:app/views/list/list.html':"<div class=\"view mblView\">\n  <h1 data-dojo-type=\"dojox/mobile/Heading\" data-dojo-props=\"back: '${nls.back}'\">\n    ${nls.my_requests}\n\n    <button data-dojo-type=\"dojox/mobile/ToolBarButton\" style=\"position: absolute; right: 0\"\n        data-dojo-attach-point=\"createButton\"\n        data-dojo-attach-point=\"add\">\n    ${nls.add}\n    </button>\n  </h1>\n\n  <button data-dojo-type=\"dojox/mobile/Button\"\n    data-dojo-attach-point=\"searchButton\">${nls.search}</button>\n  <!-- target and clickable are set in the ul/StoreList to be inherent by li/children being created see list.js for paramsToInherit: \"target,clickable\"-->\n  <ul data-dojo-type=\"dojox/mobile/EdgeToEdgeStoreList\"\n      id=\"requestsList\"\n      data-dojo-attach-point=\"requests\"\n      data-dojo-props=\"store: this.loadedStores.requests,\n      itemRenderer: this.RequestListItem,\n      itemMap:{description:'label'},\n      target: 'requestItemDetails',\n      clickable: true\">\n  </ul>\n  <!-- FIXME: We should use itemMap and then use event delegation with query selector on ul\n              Uncomment this when event delegation is implemented\n              bug #5 https://github.com/csantanapr/dapp-examples/issues/5\n  <ul data-dojo-type=\"dojox/mobile/EdgeToEdgeStoreList\"\n      data-dojo-attach-point=\"requests\"\n      data-dojo-props=\"store: this.loadedStores.requests,itemMap:{description:'label'}\">\n  </ul>\n   -->\n\n</div>",
-'url:app/views/details/details.html':"<div class=\"view mblView\">\n  <h1 data-dojo-type=\"dojox/mobile/Heading\" data-dojo-props=\"back: '${nls.back}'\">\n    ${nls.request_details}\n  </h1>\n</div>",
+'url:app/views/list/list.html':"<div class=\"view mblView\">\n  <h1 data-dojo-type=\"dojox/mobile/Heading\" data-dojo-props=\"back: '${nls.back}'\">\n    ${nls.requests}\n\n    <button data-dojo-type=\"dojox/mobile/ToolBarButton\" style=\"position: absolute; right: 0\"\n        data-dojo-attach-point=\"createButton\"\n        data-dojo-attach-point=\"add\">\n    ${nls.add}\n    </button>\n  </h1>\n\n  <button data-dojo-type=\"dojox/mobile/Button\"\n          data-dojo-attach-point=\"searchButton\">\n  ${nls.search}\n  </button>\n  <!-- target and clickable are set in the ul/StoreList to be inherent by li/children being created see list.js for paramsToInherit: \"target,clickable\"-->\n  <ul data-dojo-type=\"dojox/mobile/EdgeToEdgeStoreList\"\n      id=\"requestsList\"\n      data-dojo-attach-point=\"requests\"\n      data-dojo-props=\"store: this.loadedStores.requestsListStore,\n      itemRenderer: this.RequestListItem,\n      itemMap:{description:'label'},\n      target: 'requestItemDetails',\n      clickable: true\">\n  </ul>\n  <!-- FIXME: We should use itemMap and then use event delegation with query selector on ul\n              Uncomment this when event delegation is implemented\n              bug #5 https://github.com/csantanapr/dapp-examples/issues/5\n  <ul data-dojo-type=\"dojox/mobile/EdgeToEdgeStoreList\"\n      data-dojo-attach-point=\"requests\"\n      data-dojo-props=\"store: this.loadedStores.requestsListStore,itemMap:{description:'label'}\">\n  </ul>\n   -->\n\n</div>",
+'url:app/views/details/details.html':"<div class=\"view mblView\">\n  <h1 data-dojo-type=\"dojox/mobile/Heading\"\n      data-dojo-props=\"back: '${nls.back}'\">\n    ${nls.details}\n\n    <button data-dojo-type=\"dojox/mobile/ToolBarButton\"\n            data-dojo-attach-point=\"cancelButton\"\n            style=\"position: absolute; left: 0\">\n    ${nls.cancel}\n    </button>\n\n    <button data-dojo-type=\"dojox/mobile/ToolBarButton\"\n            data-dojo-attach-point=\"editButton\"\n            style=\"position: absolute; right: 0\">\n    ${nls.edit}\n    </button>\n  </h1>\n\n  <button data-dojo-type=\"dojox/mobile/Button\"\n          data-dojo-attach-point=\"copyButton\"\n          data-dojo-attach-event=\"onClick: _copyForm\">\n  ${nls.copy}\n  </button>\n  <div data-dojo-type=\"dojox/mobile/RoundRect\">\n    <div data-dojo-type=\"dojox/mobile/FormLayout\"\n         data-dojo-attach-point=\"formLayout\">\n\n      <fieldset>\n        <label for=\"reqid\">${nls.id}</label>\n        <input type=\"text\" id=\"reqid\" name=\"id\" data-dojo-type=\"dojox/mobile/TextBox\"\n             data-dojo-props=\"readOnly: true, placeHolder: '${nls.id}'\" data-dojo-attach-point=\"reqid\">\n        <button data-dojo-type=\"dojox/mobile/Button\"\n          data-dojo-attach-point=\"deleteButton\" data-dojo-attach-event=\"onClick: _deleteRequest\"\n          class=\"mblRedButton\">${nls.remove}\n        </button>\n      </fieldset>\n\n      <fieldset>\n        <label for=\"requestType\">${nls.requestType}</label>\n        <input id=\"requestType\" name=\"requestType\" data-dojo-type=\"dojox/mobile/TextBox\"\n               data-dojo-props=\"readOnly: true, placeHolder: '${nls.requestType}', usesOpener:true\" data-dojo-attach-point=\"requestType\">\n      </fieldset>\n\n      <fieldset>\n        <label for=\"description\">${nls.description}</label>\n        <textarea id=\"description\" name=\"description\" data-dojo-type=\"dojox/mobile/ExpandingTextArea\"\n             data-dojo-props=\"placeHolder: '${nls.description}'\" data-dojo-attach-point=\"description\"></textarea>\n      </fieldset>\n\n      <fieldset>\n      <label for=\"status\">${nls.status}</label>\n      <input id=\"status\" name=\"status\" data-dojo-type=\"dojox/mobile/TextBox\"\n           data-dojo-props=\"readOnly: true, placeHolder: '${nls.status}', usesOpener:true\" data-dojo-attach-point=\"status\">\n      </fieldset>\n\n      <fieldset>\n      <label for=\"priority\">${nls.priority}</label>\n      <input id=\"priority\" name=\"priority\" data-dojo-type=\"dojox/mobile/TextBox\"\n           data-dojo-props=\"readOnly: true, placeHolder: '${nls.priority}', usesOpener:true\" data-dojo-attach-point=\"priority\">\n      </fieldset>\n\n\n      <fieldset>\n        <label for=\"requestedBy\">${nls.requestedBy}</label>\n        <input id=\"requestedBy\" name=\"requestedBy\" data-dojo-type=\"dojox/mobile/TextBox\"\n             data-dojo-props=\"placeHolder: '${nls.requestedBy}'\" data-dojo-attach-point=\"requestedBy\">\n      </fieldset>\n\n\n      <fieldset>\n        <label for=\"requestedFinishDate\">${nls.requestedFinishDate}</label>\n        <input id=\"requestedFinishDate\" name=\"requestedFinishDate\" data-dojo-type=\"dojox/mobile/TextBox\"\n             data-dojo-props=\"readOnly: true, placeHolder: '${nls.requestedFinishDate}', usesOpener:true\" data-dojo-attach-point=\"requestedFinishDate\">\n      </fieldset>\n\n\n      <fieldset>\n        <label for=\"assignedTo\">${nls.assignedTo}</label>\n        <input id=\"assignedTo\" name=\"assignedTo\" data-dojo-type=\"dojox/mobile/TextBox\"\n             data-dojo-props=\"placeHolder: '${nls.assignedTo}'\" data-dojo-attach-point=\"assignedTo\">\n      </fieldset>\n\n\n      <fieldset>\n        <label for=\"actualFinishDate\">${nls.actualFinishDate}</label>\n        <input id=\"actualFinishDate\" name=\"actualFinishDate\" data-dojo-type=\"dojox/mobile/TextBox\"\n             data-dojo-props=\"placeHolder: '${nls.actualFinishDate}'\" data-dojo-attach-point=\"actualFinishDate\">\n      </fieldset>\n\n\n      <fieldset>\n        <label for=\"estimatedUnits\">${nls.estimatedUnits}</label>\n        <input id=\"estimatedUnits\" name=\"estimatedUnits\" data-dojo-type=\"dojox/mobile/TextBox\"\n             data-dojo-props=\"placeHolder: '${nls.estimatedUnits}'\" data-dojo-attach-point=\"estimatedUnits\">\n        <input id=\"unitType\" name=\"unitType\" data-dojo-type=\"dojox/mobile/TextBox\"\n             data-dojo-props=\"readOnly: true, placeHolder: '${nls.unitType}', usesOpener:true\" data-dojo-attach-point=\"unitType\">\n      </fieldset>\n\n\n        <fieldset>\n          <label for=\"createdDate\">${nls.createdDate}</label>\n          <input id=\"createdDate\" name=\"createdDate\" data-dojo-type=\"dojox/mobile/TextBox\"\n               data-dojo-props=\"placeHolder: '${nls.createdDate}'\" data-dojo-attach-point=\"createdDate\">\n\n        </fieldset>\n\n\n        <fieldset>\n        <label for=\"updatedDate\">${nls.updatedDate}</label>\n          <input id=\"updatedDate\" name=\"updatedDate\" data-dojo-type=\"dojox/mobile/TextBox\"\n               data-dojo-props=\"placeHolder: '${nls.updatedDate}'\" data-dojo-attach-point=\"updatedDate\">\n        </fieldset>\n\n      </div> <!-- end dojox/mobile/FormLayout -->\n    </div> <!-- end dojox.mobile.RoundRect\n</div>",
 'url:app/views/search/search.html':"<div class=\"view mblView\">\n  <h1 data-dojo-type=\"dojox/mobile/Heading\" data-dojo-props=\"back: '${nls.back}'\">\n    search here..\n  </h1>\n</div>",
 '*now':function(r){r(['dojo/i18n!*preload*app/nls/main*["ar","ca","cs","da","de","el","en","en-gb","en-us","es","es-es","fi","fi-fi","fr","fr-fr","he","he-il","hu","it","it-it","ja","ja-jp","ko","ko-kr","nl","nl-nl","nb","pl","pt","pt-br","pt-pt","ru","sk","sl","sv","th","tr","zh","zh-tw","zh-cn","ROOT"]']);}
 }});

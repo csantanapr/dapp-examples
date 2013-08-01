@@ -1,4 +1,4 @@
-Build started: Thu Aug 01 2013 14:05:28 GMT-0400 (EDT)
+Build started: Thu Aug 01 2013 18:49:32 GMT-0400 (EDT)
 Build application version: 1.7.0dev (23930)
 Messages:
 info(100) Assumed module uses legacy loader API.
@@ -1392,6 +1392,15 @@ app/main:
 	app/views/list/nls/list-strings
 	app/views/details/details
 	app/views/details/details.html
+	dojox/mobile/FormLayout
+	dojox/mobile/Container
+	dojox/mobile/Pane
+	dojox/mobile/RoundRect
+	dojox/mobile/ExpandingTextArea
+	dijit/form/_ExpandingTextAreaMixin
+	dijit/Viewport
+	dojox/mobile/TextArea
+	app/views/details/nls/details-strings
 	app/views/search/search
 	app/views/search/search.html
 	dojo/i18n
@@ -1401,4 +1410,4 @@ app/main:
 Process finished normally
 	errors: 0
 	warnings: 57
-	build time: 9.545 seconds
+	build time: 8.964 seconds
