@@ -2,9 +2,10 @@
 Shows a simple App of 3 views for work orders requests using the dApp Framework
 
 ## Install
-1. Clone the repository using `git clone --recursive https://github.com/csantanapr/dapp-examples.git`
-2. Run `build.sh`, which will create an web optimized build in `dist/www`.
-3. Run `cordova.sh` builds a Native App using your web code using [Apache Cordova/PhoneGap](http://cordova.io)
+1. Clone the repository using `git clone --recursive https://github.com/csantanapr/dapp-examples.git` then `cd dapp-examples/dapp-request`
+2. Install dependencies `npm install` or `sudo npm install`
+3. Run `build.sh`, which will create an web optimized build in `dist/www`.
+4. Run `cordova.sh` builds a Native App using your web code using [Apache Cordova/PhoneGap](http://cordova.io)
 
 ## App Requirements
 The client provided wireframes and some documentation for the desire functionality of the App.

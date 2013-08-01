@@ -6,6 +6,9 @@ date1=$(date +"%s")
 # Base directory for this entire project
 BASEDIR=$(cd $(dirname $0) && pwd)
 
+#Update path for dependencies
+PATH="${BASEDIR}/node_modules/.bin::${PATH}"
+
 # Source directory for unbuilt code
 SRCDIR="$BASEDIR/src"
 
@@ -102,13 +105,37 @@ rm -f $DIST_WWW_DIR/app/nls/*.uncompressed.js
 #json
 cp -a "$TMP_BUILD_DIR/app/resources/data/rest" "$DIST_WWW_DIR/app/resources/data"
 
+##############Copy View 1 stuff (Optional)####################################
+#Just in case there are static files specific to view1 and not other views1
+#Showing this as an example, normal case images should go in views/app/images/
+mkdir -p "$DIST_WWW_DIR/app/views/view1"
+#images
+cp -a "$TMP_BUILD_DIR/app/views/view1/images" "$DIST_WWW_DIR/app/views/view1/"
+
 ##############Copy Dojo stuff###########################
+mkdir -p "$DIST_WWW_DIR/dojo"
+mkdir -p "$DIST_WWW_DIR/dojox/mobile/themes/android"
+mkdir -p "$DIST_WWW_DIR/dojox/mobile/themes/iphone"
+mkdir -p "$DIST_WWW_DIR/dojox/mobile/themes/blackberry"
+mkdir -p "$DIST_WWW_DIR/dojox/mobile/themes/holodark"
+mkdir -p "$DIST_WWW_DIR/dojox/mobile/themes/windows"
 mkdir -p "$DIST_WWW_DIR/dojox/mobile/themes/custom"
 
 #css dojo
+cp -a "$TMP_BUILD_DIR/dojox/mobile/themes/android/android.css"       "$DIST_WWW_DIR/dojox/mobile/themes/android/"
+cp -a "$TMP_BUILD_DIR/dojox/mobile/themes/iphone/iphone.css"         "$DIST_WWW_DIR/dojox/mobile/themes/iphone/"
+cp -a "$TMP_BUILD_DIR/dojox/mobile/themes/iphone/ipad.css"           "$DIST_WWW_DIR/dojox/mobile/themes/iphone/"
+cp -a "$TMP_BUILD_DIR/dojox/mobile/themes/blackberry/blackberry.css" "$DIST_WWW_DIR/dojox/mobile/themes/blackberry/"
+cp -a "$TMP_BUILD_DIR/dojox/mobile/themes/holodark/holodark.css"     "$DIST_WWW_DIR/dojox/mobile/themes/holodark/"
+cp -a "$TMP_BUILD_DIR/dojox/mobile/themes/windows/windows.css"       "$DIST_WWW_DIR/dojox/mobile/themes/windows/"
 cp -a "$TMP_BUILD_DIR/dojox/mobile/themes/custom/custom.css"         "$DIST_WWW_DIR/dojox/mobile/themes/custom/"
 
 #images dojo
+cp -a "$TMP_BUILD_DIR/dojox/mobile/themes/android/images"      "$DIST_WWW_DIR/dojox/mobile/themes/android/"
+cp -a "$TMP_BUILD_DIR/dojox/mobile/themes/iphone/images"       "$DIST_WWW_DIR/dojox/mobile/themes/iphone/"
+cp -a "$TMP_BUILD_DIR/dojox/mobile/themes/blackberry/images"   "$DIST_WWW_DIR/dojox/mobile/themes/blackberry/"
+cp -a "$TMP_BUILD_DIR/dojox/mobile/themes/holodark/images"     "$DIST_WWW_DIR/dojox/mobile/themes/holodark/"
+cp -a "$TMP_BUILD_DIR/dojox/mobile/themes/windows/images"      "$DIST_WWW_DIR/dojox/mobile/themes/windows/"
 cp -a "$TMP_BUILD_DIR/dojox/mobile/themes/custom/images"       "$DIST_WWW_DIR/dojox/mobile/themes/custom/"
 
 #js dojo layer
