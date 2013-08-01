@@ -3,11 +3,14 @@
     ${nls.my_requests}
   </h1>
 
+  <!-- target and clickable are set in the ul/StoreList to be inherent by li/children being created see list.js for paramsToInherit: "target,clickable"-->
   <ul data-dojo-type="dojox/mobile/EdgeToEdgeStoreList"
        data-dojo-attach-point="requests"
        data-dojo-props="store: this.loadedStores.requests,
        itemRenderer: this.RequestListItem,
-       itemMap:{description:'label'}">
+       itemMap:{description:'label'},
+       target: 'details',
+       clickable: true">
   </ul>
   <!-- FIXME: We should use itemMap and then use event delegation with query selector on ul
               Uncomment this when event delegation is implemented
