@@ -19,9 +19,10 @@
       data-dojo-attach-point="requests"
       data-dojo-props="store: this.loadedStores.requestsListStore,
       itemRenderer: this.RequestListItem,
-      itemMap:{description:'label'},
+      itemMap:{description:'label'}, labelProperty:'description',
       target: 'requestItemDetails',
-      clickable: true">
+      clickable: true"
+      data-dojo-mixins="dojox/mobile/FilteredListMixin">
   </ul>
   <!-- FIXME: We should use itemMap and then use event delegation with query selector on ul
               Uncomment this when event delegation is implemented
