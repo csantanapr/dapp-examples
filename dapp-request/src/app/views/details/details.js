@@ -38,18 +38,77 @@ define([
             viewNode = this.domNode;
             viewWidget = this;
 
+            this._hideEditUIComponents();
+
         },
 
-        beforeActivate: function (view, data) {
+        beforeActivate: function (previousView, data) {
             // summary:
             //      view life cycle beforeActivate()
+            console.log(this.name + " view:beforeActivate(" + previousView.name + ",data)");
 
             // get the id of the displayed contact from the params
-            var id = this.params.id,
-                promise = null;
+            this._renderItem(this.params.id);
+
+        },
+
+        afterActivate: function (previousView, data) {
+            // summary:
+            //      view life cycle afterActivate()
+            console.log(this.name + " view:afterActivate(" + previousView.name + ",data)");
+
+        },
+
+        beforeDeactivate: function (nextView, data) {
+            // summary:
+            //      view life cycle beforeDeactivate()
+            console.log(this.name + " view:beforeDeactivate(" + nextView.name + ",data)");
+
+        },
+
+        afterDeactivate: function (nextView, data) {
+            // summary:
+            //      view life cycle afterDeactivate()
+            console.log(this.name + " view:afterDeactivate(" + nextView.name + ",data)");
+
+        },
+
+        destroy: function (params) {
+            // summary:
+            //      view life cycle destroy()
+            console.log(this.name + " view:destory()");
+        },
+        /*****
+         * Custom Code for View Controller
+         *****/
+        _copyForm: function () {
+            // summary:
+            //      Copies the form data
+            console.log(this.name + " view:_copyForm()");
+        },
+        _deleteRequest: function () {
+            // summary:
+            //      I gues it's suppose to delete something
+            console.log(this.name + " view:_deleteRequest()");
+        },
+        _hideEditUIComponents: function () {
+            // summary:
+            //      Hides all ui componets that allow user to edit item
 
             // cancel button must be shown in edit mode only
             viewWidget.cancelButton.domNode.style.display = "none";
+            // delete button must be shown in edit mode only
+            viewWidget.deleteButton.domNode.style.display = "none";
+            // copy button must be shown in edit mode only
+            viewWidget.copyButton.domNode.style.display = "none";
+
+        },
+        _renderItem: function (id) {
+            // summary:
+            //      Fetch data and render ui
+            var promise = null;
+
+
 
             promise = viewWidget.loadedStores.requestsListStore.get(id);
             when(promise, function (request) {
@@ -72,58 +131,6 @@ define([
                 viewWidget.createdDate.set("value", request ? request.createdDate : null);
                 viewWidget.updatedDate.set("value", request ? request.updatedDate : null);
             });
-
-        },
-
-        afterActivate: function (view, data) {
-            // summary:
-            //      view life cycle afterActivate()
-            console.log(this.name + " view:afterActivate(view,data)");
-        },
-
-        beforeDeactivate: function (view, data) {
-            // summary:
-            //      view life cycle beforeDeactivate()
-            console.log(this.name + " view:beforeDeactivate(view,data)");
-        },
-
-        afterDeactivate: function (view, data) {
-            // summary:
-            //      view life cycle afterDeactivate()
-            console.log(this.name + " view:afterDeactivate(view,data)");
-        },
-
-        destroy: function (params) {
-            // summary:
-            //      view life cycle destroy()
-            console.log(this.name + " view:destory()");
-        },
-        /*****
-         * Custom Code for View Controller
-         *****/
-
-        _formatterTmpl : function (value, key) {
-            // summary:
-            //      Use to format template properties using the convention ${foo:_formatterTmpl}
-            console.log(this.name + "_formatterTmpl(" + value + "," + "key" + ");");
-
-        },
-        doSomething: function (event) {
-            console.log('did something');
-            // summary:
-            //      Example of a custom view controller callback for event listener
-            console.log(this.name + "doSomething(" + event + ");");
-
-        },
-        _copyForm: function () {
-            // summary:
-            //      Copies the form data
-            console.log(this.name + " view:_copyForm()");
-        },
-        _deleteRequest: function () {
-            // summary:
-            //      I gues it's suppose to delete something
-            console.log(this.name + " view:_deleteRequest()");
         }
     };
 

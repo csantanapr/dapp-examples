@@ -29,10 +29,6 @@
         <label for="reqid">${nls.id}</label>
         <input type="text" id="reqid" name="id" data-dojo-type="dojox/mobile/TextBox"
              data-dojo-props="readOnly: true, placeHolder: '${nls.id}'" data-dojo-attach-point="reqid">
-        <button data-dojo-type="dojox/mobile/Button"
-          data-dojo-attach-point="deleteButton" data-dojo-attach-event="onClick: _deleteRequest"
-          class="mblRedButton">${nls.remove}
-        </button>
       </fieldset>
 
       <fieldset>
@@ -112,5 +108,12 @@
         </fieldset>
 
       </div> <!-- end dojox/mobile/FormLayout -->
-    </div> <!-- end dojox.mobile.RoundRect
+    </div> <!-- end dojox.mobile.RoundRect -->
+
+    <button data-dojo-type="dojox/mobile/Button"
+          data-dojo-attach-point="deleteButton" data-dojo-attach-event="onClick: _deleteRequest"
+          class="mblRedButton">${nls.remove}
+    </button>
+
+
 </div>
