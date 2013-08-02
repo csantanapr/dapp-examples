@@ -45,12 +45,12 @@ diff=$(($date2-$date1))
 echo "Cordova build completed: $(($diff / 60)) minutes and $(($diff % 60)) seconds"
 
 # To Run local web server
-cordova serve ios
+#cordova serve ios
 #cordova serve android
 
 # To Run on Simulator
 #echo "Quit Simulator or Ctrl + C to exit"
-#cordova emulate ios
+cordova emulate ios
 #cordova emulate android
 
 # To Run on Physical Device
