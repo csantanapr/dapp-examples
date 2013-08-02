@@ -58,6 +58,7 @@ define([
             viewNode = this.domNode;
             viewWidget = this;
 
+            /* hide for now
             //TODO: split this code into sub methods
             this.createButton.on("click", lang.hitch(this, function () {
                 viewWidget.requests.deselectAll();
@@ -65,12 +66,15 @@ define([
                     target: "requestItemDetails"
                 });
             }));
+*/
 
+            /* TODO: remove when we have advance search implemented
             this.searchButton.on("click", lang.hitch(this, function () {
                 this.app.transitionToView(this.domNode, {
                     target: "requestListSearch"
                 });
             }));
+*/
 
             if (this.params && this.params.id) {
                 this.selectItemById(this.params.id);

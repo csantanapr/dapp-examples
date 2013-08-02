@@ -99,7 +99,7 @@ define([
 
             // edit button must be hidding in edit mode
             viewWidget.editButton.domNode.style.display = "none";
-
+            viewWidget.backButton.domNode.style.display = "none";
 
         },
         _showUIComponents: function () {
@@ -149,6 +149,7 @@ define([
         _EditClick : function (event) {
             this.app.transitionToView(event.target, {
                 'target': 'requestItemDetailsEdit',
+                'transition': 'fade',
                 'params': {
                     'id' : this.params.id
                 }
@@ -157,8 +158,7 @@ define([
         _CancelClick: function (event) {
             this.app.transitionToView(event.target, {
                 'target': 'requestItemDetails',
-                'transitionDir': -1,
-                'transition': "none"
+                'transition': 'fade'
             }, event);
         }
     };

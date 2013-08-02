@@ -2,17 +2,22 @@
   <h1 data-dojo-type="dojox/mobile/Heading" data-dojo-props="back: '${nls.back}'">
     ${nls.requests}
 
+    <!--//TODO: hide for now until we have add function implemented
     <button data-dojo-type="dojox/mobile/ToolBarButton" style="position: absolute; right: 0"
         data-dojo-attach-point="createButton"
         data-dojo-attach-point="add">
     ${nls.add}
     </button>
+    -->
   </h1>
 
+  <!-- hide for now until advance search is implemented
   <button data-dojo-type="dojox/mobile/Button"
           data-dojo-attach-point="searchButton">
   ${nls.search}
   </button>
+  -->
+
   <!-- target and clickable are set in the ul/StoreList to be inherent by li/children being created see list.js for paramsToInherit: "target,clickable"-->
   <ul data-dojo-type="dojox/mobile/EdgeToEdgeStoreList"
       id="requestsList"
