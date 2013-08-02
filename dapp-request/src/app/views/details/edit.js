@@ -1,54 +1,34 @@
-/*jslint nomen: true todo: true */
-/*jshint nomen: true todo: true */
+/*jslint nomen: true */
+/*jshint nomen: true */
 /*global _, define, console*/
 define([
-    'dojo/_base/declare',
-    'dojox/mobile/ListItem',
     'dojo/query!css3',
     //query is the core of dojo dom query
     // the return is NodeList that has full set of functions
     // most of the function have same syntax as jquery see bellow this file for summary
     'dojo/on',
-    'dojo/_base/lang',
-    'dijit/registry',
-    'dojo/_base/array',
+    'dojo/when',
     'dojo/NodeList-manipulate',
     // Load dojo/NodeList-manipulate to get JQuery syntax: see below this file for function syntax
-    'dojo/text!app/views/list/list.html',
+    'dojo/text!app/views/details/details.html',
     'dojox/mobile/Heading',
-    'dojox/mobile/EdgeToEdgeStoreList',
-    'dojox/mobile/EdgeToEdgeList',
-    'dojox/mobile/FilteredListMixin',
     'dojox/mobile/ToolBarButton',
-    'dojox/mobile/Button'
-], function (declare, ListItem, $, on, lang, registry, array) {
+    'dojox/mobile/Button',
+    'dojox/mobile/FormLayout',
+    'dojox/mobile/TextBox',
+    'dojox/mobile/RoundRect',
+    'dojox/mobile/ExpandingTextArea'
+], function ($, on, when) {
     'use strict';
 
     var viewWidget, // set in init(params) to save in closure reference to this view controller instance
-        viewNode,
-        RequestListItem = declare(ListItem, {
-            paramsToInherit: "target,clickable",
-            postMixInProperties: function () {
-                //TODO: Talk to dojo expert about this. calling this cause an error
-                //"TypeError: 'caller', 'callee', and 'arguments' properties may not be accessed on strict mode functions or the arguments objects for calls to them
-                //at inherited [as __inherited] (http://localhost:8080/dojo/_base/declare.js:98:16)
-                //this.inherited(arguments);
-                var store_item_id = this.id;
-                this.id = "request_" + this.id; //FIXME: really ugly hack to get unique dom node id,  this might be a bug on dojo EdgeToEdgeStoreList to generating a dynamic id
-                this.transitionOptions = {
-                    params: {
-                        "id" : store_item_id
-                    },
-                    transition: "slide"
-                };
-
-            }
-        });
+        viewNode,   // set in init(params) to save in closure reference to this view dom node
+        _editMode = false;
 
 
 
     return {
-        RequestListItem: RequestListItem,
+
         init: function (params) {
             // summary:
             //      view life cycle init()
@@ -58,48 +38,41 @@ define([
             viewNode = this.domNode;
             viewWidget = this;
 
-            //TODO: split this code into sub methods
-            this.createButton.on("click", lang.hitch(this, function () {
-                viewWidget.requests.deselectAll();
-                this.app.transitionToView(this.domNode, {
-                    target: "requestItemDetails"
-                });
-            }));
+            this._hideUIComponents();
+            this._showUIComponents();
 
-            this.searchButton.on("click", lang.hitch(this, function () {
-                this.app.transitionToView(this.domNode, {
-                    target: "requestListSearch"
-                });
-            }));
-
-            if (this.params && this.params.id) {
-                this.selectItemById(this.params.id);
-            }
 
         },
 
-        beforeActivate: function (view, data) {
+        beforeActivate: function (previousView, data) {
             // summary:
             //      view life cycle beforeActivate()
-            console.log(this.name + " view:beforeActivate(view,data)");
+            console.log(this.name + " view:beforeActivate(" + previousView.name + ",data)");
+
+            // get the id of the displayed contact from the params
+            this._renderItem(this.params.id);
+
         },
 
-        afterActivate: function (view, data) {
+        afterActivate: function (previousView, data) {
             // summary:
             //      view life cycle afterActivate()
-            console.log(this.name + " view:afterActivate(view,data)");
+            console.log(this.name + " view:afterActivate(" + previousView.name + ",data)");
+
         },
 
-        beforeDeactivate: function (view, data) {
+        beforeDeactivate: function (nextView, data) {
             // summary:
             //      view life cycle beforeDeactivate()
-            console.log(this.name + " view:beforeDeactivate(view,data)");
+            console.log(this.name + " view:beforeDeactivate(" + nextView.name + ",data)");
+
         },
 
-        afterDeactivate: function (view, data) {
+        afterDeactivate: function (nextView, data) {
             // summary:
             //      view life cycle afterDeactivate()
-            console.log(this.name + " view:afterDeactivate(view,data)");
+            console.log(this.name + " view:afterDeactivate(" + nextView.name + ",data)");
+
         },
 
         destroy: function (params) {
@@ -110,29 +83,83 @@ define([
         /*****
          * Custom Code for View Controller
          *****/
-
-        _formatterTmpl : function (value, key) {
+        _copyForm: function () {
             // summary:
-            //      Use to format template properties using the convention ${foo:_formatterTmpl}
-            console.log(this.name + "_formatterTmpl(" + value + "," + "key" + ");");
+            //      Copies the form data
+            console.log(this.name + " view:_copyForm()");
+        },
+        _deleteRequest: function () {
+            // summary:
+            //      I gues it's suppose to delete something
+            console.log(this.name + " view:_deleteRequest()");
+        },
+        _hideUIComponents: function () {
+            // summary:
+            //      hide all ui componets related to read/view mode
+
+            // edit button must be hidding in edit mode
+            viewWidget.editButton.domNode.style.display = "none";
+
 
         },
-        doSomething: function (event) {
-            console.log('did something');
+        _showUIComponents: function () {
             // summary:
-            //      Example of a custom view controller callback for event listener
-            console.log(this.name + "doSomething(" + event + ");");
+            //      Show all ui componets that allow user to edit item
+
+            // cancel button must be shown in read/view mode only
+            viewWidget.cancelButton.domNode.style.display = "";
+            // delete button must be shown in read/view mode only
+            viewWidget.deleteButton.domNode.style.display = "";
+            // copy button must be shown in read/view mode only
+            viewWidget.copyButton.domNode.style.display = "";
 
         },
-        selectItemById: function (itemId) {
-            var requests = registry.byId("requestsList");
-            array.some(requests.getChildren(), function (child) {
-                if (child.id === itemId) {
-                    requests.selectItem(child);
-                    return true;
-                }
-                return false;
+        _renderItem: function (id) {
+            // summary:
+            //      Fetch data and render ui
+            var promise = null;
+            if (!id) {
+                // no item passed in
+                return promise;
+            }
+
+
+            promise = viewWidget.loadedStores.requestsListStore.get(id);
+            return when(promise, function (request) {
+                viewWidget.reqid.set("value", request ? request.id : null);
+                viewWidget.requestType.set("value", request ? request.requestType : null);
+                //viewWidget._initFieldValue(request, "requestType", viewWidget.loadedStores.requestTypeStore);
+                viewWidget.description.set("value", request ? request.description : null);
+                viewWidget.status.set("value", request ? request.status : null);
+                //viewWidget._initFieldValue(request, "status", viewWidget.loadedStores.requestStatusStore);
+                viewWidget.priority.set("value", request ? request.priority : null);
+                //viewWidget._initFieldValue(request, "priority", viewWidget.loadedStores.requestPriorityStore);
+
+                viewWidget.requestedBy.set("value", request ? request.requestedBy : null);
+                viewWidget.requestedFinishDate.set("value", request ? request.requestedFinishDate : null);
+                viewWidget.assignedTo.set("value", request ? request.assignedTo : null);
+                viewWidget.actualFinishDate.set("value", request ? request.actualFinishDate : null);
+                viewWidget.estimatedUnits.set("value", request ? request.estimatedUnits : null);
+                viewWidget.unitType.set("value", request ? request.unitType : null);
+                //viewWidget._initFieldValue(request, "unitType", viewWidget.loadedStores.requestUnitTypeStore);
+                viewWidget.createdDate.set("value", request ? request.createdDate : null);
+                viewWidget.updatedDate.set("value", request ? request.updatedDate : null);
             });
+        },
+        _EditClick : function (event) {
+            this.app.transitionToView(event.target, {
+                'target': 'requestItemDetailsEdit',
+                'params': {
+                    'id' : this.params.id
+                }
+            }, event);
+        },
+        _CancelClick: function (event) {
+            this.app.transitionToView(event.target, {
+                'target': 'requestItemDetails',
+                'transitionDir': -1,
+                'transition': "none"
+            }, event);
         }
     };
 
@@ -247,3 +274,4 @@ define([
 */
 
 });
+

@@ -48,7 +48,9 @@ var profile = {
         miniExclude: function (filename, mid) {
             'use strict';
             var list = {
-                'app/package': true
+                'app/package': true,
+                'app/build/discoverAppConfig' : true,
+                'app/build/buildControlApp': true
             };
             if (list[mid]) {
                 return true;

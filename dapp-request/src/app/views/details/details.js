@@ -8,6 +8,7 @@ define([
     // most of the function have same syntax as jquery see bellow this file for summary
     'dojo/on',
     'dojo/when',
+    'dojo/dom-class',
     'dojo/NodeList-manipulate',
     // Load dojo/NodeList-manipulate to get JQuery syntax: see below this file for function syntax
     'dojo/text!app/views/details/details.html',
@@ -18,7 +19,7 @@ define([
     'dojox/mobile/TextBox',
     'dojox/mobile/RoundRect',
     'dojox/mobile/ExpandingTextArea'
-], function ($, on, when) {
+], function ($, on, when, domClass) {
     'use strict';
 
     var viewWidget, // set in init(params) to save in closure reference to this view controller instance
@@ -38,7 +39,11 @@ define([
             viewNode = this.domNode;
             viewWidget = this;
 
-            this._hideEditUIComponents();
+            //add class to identify view
+            domClass.add(viewNode, this.name);
+
+            this._hideUIComponents();
+            this._showUIComponents();
 
         },
 
@@ -91,7 +96,7 @@ define([
             //      I gues it's suppose to delete something
             console.log(this.name + " view:_deleteRequest()");
         },
-        _hideEditUIComponents: function () {
+        _hideUIComponents: function () {
             // summary:
             //      Hides all ui componets that allow user to edit item
 
@@ -103,15 +108,26 @@ define([
             viewWidget.copyButton.domNode.style.display = "none";
 
         },
+        _showUIComponents: function () {
+            // summary:
+            //      Show all ui componets that allow user to edit item
+
+            // edit button must be hidding in edit mode
+            viewWidget.editButton.domNode.style.display = "";
+
+        },
         _renderItem: function (id) {
             // summary:
             //      Fetch data and render ui
             var promise = null;
-
+            if (!id) {
+                // no item passed in
+                return promise;
+            }
 
 
             promise = viewWidget.loadedStores.requestsListStore.get(id);
-            when(promise, function (request) {
+            return when(promise, function (request) {
                 viewWidget.reqid.set("value", request ? request.id : null);
                 viewWidget.requestType.set("value", request ? request.requestType : null);
                 //viewWidget._initFieldValue(request, "requestType", viewWidget.loadedStores.requestTypeStore);
@@ -131,6 +147,20 @@ define([
                 viewWidget.createdDate.set("value", request ? request.createdDate : null);
                 viewWidget.updatedDate.set("value", request ? request.updatedDate : null);
             });
+        },
+        _EditClick : function (event) {
+            this.app.transitionToView(event.target, {
+                'target': 'requestItemDetailsEdit',
+                'params': {
+                    'id' : this.params.id
+                }
+            }, event);
+        },
+        _CancelClick: function (event) {
+            this.app.transitionToView(event.target, {
+                'target': 'requestItemDetails',
+                'transition': 'flip'
+            }, event);
         }
     };
 

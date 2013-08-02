@@ -10,7 +10,7 @@
  *
  * Look to `util/build/buildControlDefault.js` for more information on available options and their default values.
  */
-require(["dojox/app/build/buildControlApp"], function (bc) {'use strict'; });
+require(["app/build/buildControlApp"], function (bc) {'use strict'; });
 
 var profile = {
     // `basePath` is relative to the directory containing this profile file; in this case, it is being set to the

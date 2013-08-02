@@ -3,99 +3,99 @@
       data-dojo-props="back: '${nls.back}'">
     ${nls.details}
 
+
     <button data-dojo-type="dojox/mobile/ToolBarButton"
             data-dojo-attach-point="cancelButton"
-            style="position: absolute; left: 0">
+            style="position: absolute; left: 0"
+            data-dojo-attach-event="onClick:_CancelClick">
     ${nls.cancel}
     </button>
 
+
     <button data-dojo-type="dojox/mobile/ToolBarButton"
             data-dojo-attach-point="editButton"
-            style="position: absolute; right: 0">
+            style="position: absolute; right: 0"
+            data-dojo-attach-event="onClick:_EditClick">
     ${nls.edit}
     </button>
   </h1>
 
-  <button data-dojo-type="dojox/mobile/Button"
-          data-dojo-attach-point="copyButton"
-          data-dojo-attach-event="onClick: _copyForm">
-  ${nls.copy}
-  </button>
+
   <div data-dojo-type="dojox/mobile/RoundRect">
     <div data-dojo-type="dojox/mobile/FormLayout"
          data-dojo-attach-point="formLayout">
 
       <fieldset>
         <label for="reqid">${nls.id}</label>
-        <input type="text" id="reqid" name="id" data-dojo-type="dojox/mobile/TextBox"
+        <input type="text" name="id" data-dojo-type="dojox/mobile/TextBox"
              data-dojo-props="readOnly: true, placeHolder: '${nls.id}'" data-dojo-attach-point="reqid">
       </fieldset>
 
       <fieldset>
         <label for="requestType">${nls.requestType}</label>
-        <input id="requestType" name="requestType" data-dojo-type="dojox/mobile/TextBox"
+        <input name="requestType" data-dojo-type="dojox/mobile/TextBox"
                data-dojo-props="readOnly: true, placeHolder: '${nls.requestType}', usesOpener:true" data-dojo-attach-point="requestType">
       </fieldset>
 
       <fieldset>
         <label for="description">${nls.description}</label>
-        <textarea id="description" name="description" data-dojo-type="dojox/mobile/ExpandingTextArea"
+        <textarea name="description" data-dojo-type="dojox/mobile/ExpandingTextArea"
              data-dojo-props="placeHolder: '${nls.description}'" data-dojo-attach-point="description"></textarea>
       </fieldset>
 
       <fieldset>
       <label for="status">${nls.status}</label>
-      <input id="status" name="status" data-dojo-type="dojox/mobile/TextBox"
+      <input name="status" data-dojo-type="dojox/mobile/TextBox"
            data-dojo-props="readOnly: true, placeHolder: '${nls.status}', usesOpener:true" data-dojo-attach-point="status">
       </fieldset>
 
       <fieldset>
       <label for="priority">${nls.priority}</label>
-      <input id="priority" name="priority" data-dojo-type="dojox/mobile/TextBox"
+      <input name="priority" data-dojo-type="dojox/mobile/TextBox"
            data-dojo-props="readOnly: true, placeHolder: '${nls.priority}', usesOpener:true" data-dojo-attach-point="priority">
       </fieldset>
 
 
       <fieldset>
         <label for="requestedBy">${nls.requestedBy}</label>
-        <input id="requestedBy" name="requestedBy" data-dojo-type="dojox/mobile/TextBox"
+        <input name="requestedBy" data-dojo-type="dojox/mobile/TextBox"
              data-dojo-props="placeHolder: '${nls.requestedBy}'" data-dojo-attach-point="requestedBy">
       </fieldset>
 
 
       <fieldset>
         <label for="requestedFinishDate">${nls.requestedFinishDate}</label>
-        <input id="requestedFinishDate" name="requestedFinishDate" data-dojo-type="dojox/mobile/TextBox"
+        <input name="requestedFinishDate" data-dojo-type="dojox/mobile/TextBox"
              data-dojo-props="readOnly: true, placeHolder: '${nls.requestedFinishDate}', usesOpener:true" data-dojo-attach-point="requestedFinishDate">
       </fieldset>
 
 
       <fieldset>
         <label for="assignedTo">${nls.assignedTo}</label>
-        <input id="assignedTo" name="assignedTo" data-dojo-type="dojox/mobile/TextBox"
+        <input name="assignedTo" data-dojo-type="dojox/mobile/TextBox"
              data-dojo-props="placeHolder: '${nls.assignedTo}'" data-dojo-attach-point="assignedTo">
       </fieldset>
 
 
       <fieldset>
         <label for="actualFinishDate">${nls.actualFinishDate}</label>
-        <input id="actualFinishDate" name="actualFinishDate" data-dojo-type="dojox/mobile/TextBox"
+        <input name="actualFinishDate" data-dojo-type="dojox/mobile/TextBox"
              data-dojo-props="placeHolder: '${nls.actualFinishDate}'" data-dojo-attach-point="actualFinishDate">
       </fieldset>
 
 
       <fieldset>
         <label for="estimatedUnits">${nls.estimatedUnits}</label>
-        <input id="estimatedUnits" name="estimatedUnits" data-dojo-type="dojox/mobile/TextBox"
+        <input name="estimatedUnits" data-dojo-type="dojox/mobile/TextBox"
              data-dojo-props="placeHolder: '${nls.estimatedUnits}'" data-dojo-attach-point="estimatedUnits">
-        <input id="unitType" name="unitType" data-dojo-type="dojox/mobile/TextBox"
+        <input name="unitType" data-dojo-type="dojox/mobile/TextBox"
              data-dojo-props="readOnly: true, placeHolder: '${nls.unitType}', usesOpener:true" data-dojo-attach-point="unitType">
       </fieldset>
 
 
         <fieldset>
           <label for="createdDate">${nls.createdDate}</label>
-          <input id="createdDate" name="createdDate" data-dojo-type="dojox/mobile/TextBox"
+          <input name="createdDate" data-dojo-type="dojox/mobile/TextBox"
                data-dojo-props="placeHolder: '${nls.createdDate}'" data-dojo-attach-point="createdDate">
 
         </fieldset>
@@ -103,7 +103,7 @@
 
         <fieldset>
         <label for="updatedDate">${nls.updatedDate}</label>
-          <input id="updatedDate" name="updatedDate" data-dojo-type="dojox/mobile/TextBox"
+          <input name="updatedDate" data-dojo-type="dojox/mobile/TextBox"
                data-dojo-props="placeHolder: '${nls.updatedDate}'" data-dojo-attach-point="updatedDate">
         </fieldset>
 
@@ -113,6 +113,11 @@
     <button data-dojo-type="dojox/mobile/Button"
           data-dojo-attach-point="deleteButton" data-dojo-attach-event="onClick: _deleteRequest"
           class="mblRedButton">${nls.remove}
+    </button>
+    <button data-dojo-type="dojox/mobile/Button"
+          data-dojo-attach-point="copyButton"
+          data-dojo-attach-event="onClick: _copyForm">
+    ${nls.copy}
     </button>
 
 

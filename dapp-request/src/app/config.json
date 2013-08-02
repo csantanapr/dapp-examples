@@ -108,7 +108,7 @@
 
     //Optional, App level stings
     "nls": "app/nls/app_strings",
-    "transition": "slide",
+    //"transition": "slide",
     //Mandatory, Specify Application child views
     "views": {
         "home":{
@@ -125,6 +125,11 @@
             "template": "app/views/details/details.html",
             "controller" : "app/views/details/details.js",
             "nls": "app/views/details/nls/details-strings"
+        },
+        "requestItemDetailsEdit":{
+            "template": "app/views/details/details.html",
+            "controller" : "app/views/details/edit.js",
+            "nls": "app/views/details/nls/details-strings",
         },
         "requestListSearch":{
             "template": "app/views/search/search.html",
