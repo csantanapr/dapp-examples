@@ -7,6 +7,11 @@ Shows a simple App of 3 views for work orders requests using the dApp Framework
 3. Run `build.sh`, which will create an web optimized build in `dist/www`.
 4. Run `cordova.sh` builds a Native App using your web code using [Apache Cordova/PhoneGap](http://cordova.io)
 
+## Demo
+- Run from your smartphone [Request App](http://csantanapr.github.io/dapp-examples/dapp-request/dist/www/index.html)
+or use the following QR Code:
+- ![QR](http://chart.apis.google.com/chart?cht=qr&chs=350x350&chld=L&choe=UTF-8&chl=http%3A%2F%2Fcsantanapr.github.io%2Fdapp-examples%2Fdapp-request%2Fdist%2Fwww%2Findex.html)
+
 ## App Requirements
 The client provided wireframes and some documentation for the desire functionality of the App.
 
