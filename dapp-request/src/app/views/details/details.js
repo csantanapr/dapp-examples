@@ -39,7 +39,7 @@ define([
             viewNode = this.domNode;
             viewWidget = this;
 
-            //add class to identify view
+            //add class to identify view for css rules
             domClass.add(viewNode, this.name);
 
             this._hideUIComponents();
@@ -148,15 +148,6 @@ define([
                 viewWidget.createdDate.set("value", request ? request.createdDate : null);
                 viewWidget.updatedDate.set("value", request ? request.updatedDate : null);
             });
-        },
-        _EditClick : function (event) {
-            this.app.transitionToView(event.target, {
-                'target': 'requestItemDetailsEdit',
-                'transition': 'fade',
-                'params': {
-                    'id' : this.params.id
-                }
-            }, event);
         },
         _CancelClick: function (event) {
             this.app.transitionToView(event.target, {

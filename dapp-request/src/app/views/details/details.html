@@ -19,7 +19,14 @@
     <button data-dojo-type="dojox/mobile/ToolBarButton"
             data-dojo-attach-point="editButton"
             style="position: absolute; right: 0"
-            data-dojo-attach-event="onClick:_EditClick">
+            data-dojo-props="target: 'requestItemDetailsEdit',
+            transitionOptions : {
+                    'params': {
+                        'id' : this.params.id
+                    },
+                    'transition': 'fade'
+                  }
+            ">
     ${nls.edit}
     </button>
   </h1>

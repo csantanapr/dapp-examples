@@ -1,4 +1,4 @@
-Build started: Fri Aug 02 2013 14:56:03 GMT-0400 (EDT)
+Build started: Mon Aug 05 2013 10:50:48 GMT-0400 (EDT)
 Build application version: 1.7.0dev (23930)
 Messages:
 info(100) Assumed module uses legacy loader API.
@@ -1412,4 +1412,4 @@ app/main:
 Process finished normally
 	errors: 0
 	warnings: 58
-	build time: 10.118 seconds
+	build time: 59.492 seconds
