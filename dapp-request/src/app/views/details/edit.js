@@ -8,6 +8,7 @@ define([
     // most of the function have same syntax as jquery see bellow this file for summary
     'dojo/on',
     'dojo/when',
+    'dojo/dom-class',
     'dojo/NodeList-manipulate',
     // Load dojo/NodeList-manipulate to get JQuery syntax: see below this file for function syntax
     'dojo/text!app/views/details/details.html',
@@ -18,12 +19,12 @@ define([
     'dojox/mobile/TextBox',
     'dojox/mobile/RoundRect',
     'dojox/mobile/ExpandingTextArea'
-], function ($, on, when) {
+], function ($, on, when, domClass) {
     'use strict';
 
     var viewWidget, // set in init(params) to save in closure reference to this view controller instance
-        viewNode,   // set in init(params) to save in closure reference to this view dom node
-        _editMode = false;
+        viewNode;   // set in init(params) to save in closure reference to this view dom node
+
 
 
 
@@ -37,6 +38,9 @@ define([
             //save the view node in clousure to use as scope for dom manipulatation and query
             viewNode = this.domNode;
             viewWidget = this;
+
+            //add class to identify view for css rules
+            domClass.add(viewNode, this.name);
 
             this._hideUIComponents();
             this._showUIComponents();
@@ -98,8 +102,7 @@ define([
             //      hide all ui componets related to read/view mode
 
             // edit button must be hidding in edit mode
-            viewWidget.editButton.domNode.style.display = "none";
-            viewWidget.backButton.domNode.style.display = "none";
+
 
         },
         _showUIComponents: function () {
@@ -145,15 +148,6 @@ define([
                 viewWidget.createdDate.set("value", request ? request.createdDate : null);
                 viewWidget.updatedDate.set("value", request ? request.updatedDate : null);
             });
-        },
-        _EditClick : function (event) {
-            this.app.transitionToView(event.target, {
-                'target': 'requestItemDetailsEdit',
-                'transition': 'fade',
-                'params': {
-                    'id' : this.params.id
-                }
-            }, event);
         },
         _CancelClick: function (event) {
             this.app.transitionToView(event.target, {

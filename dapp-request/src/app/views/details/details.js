@@ -23,8 +23,8 @@ define([
     'use strict';
 
     var viewWidget, // set in init(params) to save in closure reference to this view controller instance
-        viewNode,   // set in init(params) to save in closure reference to this view dom node
-        _editMode = false;
+        viewNode;   // set in init(params) to save in closure reference to this view dom node
+
 
 
 
@@ -113,8 +113,7 @@ define([
             //      Show all ui componets that allow user to edit item
 
             // edit button must be hidding in edit mode
-            viewWidget.editButton.domNode.style.display = "";
-            viewWidget.backButton.domNode.style.display = "";
+
 
         },
         _renderItem: function (id) {

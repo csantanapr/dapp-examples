@@ -1,13 +1,7 @@
 <div class="view mblView">
-  <h1 data-dojo-type="dojox/mobile/Heading">
+  <h1 data-dojo-type="dojox/mobile/Heading"
+      data-dojo-props="back: '${nls.back}' ">
     ${nls.details}
-    <button data-dojo-type="dojox/mobile/ToolBarButton"
-            data-dojo-attach-point="backButton"
-            style="position: absolute; left: 0"
-            data-dojo-props="arrow: 'left'"
-            onclick="history.back();">
-    ${nls.back}
-    </button>
     <button data-dojo-type="dojox/mobile/ToolBarButton"
             data-dojo-attach-point="cancelButton"
             style="position: absolute; left: 0"
@@ -15,10 +9,10 @@
     ${nls.cancel}
     </button>
 
-
-    <button data-dojo-type="dojox/mobile/ToolBarButton"
+    <!-- class editButton use in css files-->
+    <button class="editButton"
+            data-dojo-type="dojox/mobile/ToolBarButton"
             data-dojo-attach-point="editButton"
-            style="position: absolute; right: 0"
             data-dojo-props="target: 'requestItemDetailsEdit',
             transitionOptions : {
                     'params': {
