@@ -127,9 +127,9 @@
             "nls": "app/views/details/nls/details-strings"
         },
         "requestItemDetailsEdit":{
-            "template": "app/views/details/details.html",
-            "controller" : "app/views/details/edit.js",
-            "nls": "app/views/details/nls/details-strings",
+            "template": "app/views/edit/edit.html",
+            "controller" : "app/views/edit/edit.js",
+            "nls": "app/views/details/nls/details-strings", //shares strings with details view
         },
         "requestListSearch":{
             "template": "app/views/search/search.html",

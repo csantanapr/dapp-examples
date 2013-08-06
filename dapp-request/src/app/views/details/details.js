@@ -22,15 +22,11 @@ define([
 ], function ($, on, when, domClass) {
     'use strict';
 
-    var viewWidget, // set in init(params) to save in closure reference to this view controller instance
-        viewNode;   // set in init(params) to save in closure reference to this view dom node
-
-
-
-
+    var viewWidget, // set in init() to save in closure reference to this view controller instance
+        viewNode;   // set in init() to save in closure reference to this view dom node
     return {
 
-        init: function (params) {
+        init: function () {
             // summary:
             //      view life cycle init()
             console.log(this.name + " view:init()");
@@ -41,10 +37,6 @@ define([
 
             //add class to identify view for css rules
             domClass.add(viewNode, this.name);
-
-            this._hideUIComponents();
-            this._showUIComponents();
-
         },
 
         beforeActivate: function (previousView, data) {
@@ -78,7 +70,7 @@ define([
 
         },
 
-        destroy: function (params) {
+        destroy: function () {
             // summary:
             //      view life cycle destroy()
             console.log(this.name + " view:destory()");
@@ -86,36 +78,6 @@ define([
         /*****
          * Custom Code for View Controller
          *****/
-        _copyForm: function () {
-            // summary:
-            //      Copies the form data
-            console.log(this.name + " view:_copyForm()");
-        },
-        _deleteRequest: function () {
-            // summary:
-            //      I gues it's suppose to delete something
-            console.log(this.name + " view:_deleteRequest()");
-        },
-        _hideUIComponents: function () {
-            // summary:
-            //      Hides all ui componets that allow user to edit item
-
-            // cancel button must be shown in edit mode only
-            viewWidget.cancelButton.domNode.style.display = "none";
-            // delete button must be shown in edit mode only
-            viewWidget.deleteButton.domNode.style.display = "none";
-            // copy button must be shown in edit mode only
-            viewWidget.copyButton.domNode.style.display = "none";
-
-        },
-        _showUIComponents: function () {
-            // summary:
-            //      Show all ui componets that allow user to edit item
-
-            // edit button must be hidding in edit mode
-
-
-        },
         _renderItem: function (id) {
             // summary:
             //      Fetch data and render ui
@@ -147,12 +109,6 @@ define([
                 viewWidget.createdDate.set("value", request ? request.createdDate : null);
                 viewWidget.updatedDate.set("value", request ? request.updatedDate : null);
             });
-        },
-        _CancelClick: function (event) {
-            this.app.transitionToView(event.target, {
-                'target': 'requestItemDetails',
-                'transition': 'fade'
-            }, event);
         }
     };
 

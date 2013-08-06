@@ -1,8 +1,8 @@
 /* This css file should only contain layout or structure rules not asthectic, they belong in *_theme.css */
 
-.requestItemDetailsEdit .editButton {
-    display: none;
-}
 .requestItemDetails .editButton {
+    float: right;
+}
+.requestItemDetailsEdit .saveButton {
     float: right;
 }

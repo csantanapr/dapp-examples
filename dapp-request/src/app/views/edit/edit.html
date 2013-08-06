@@ -1,21 +1,21 @@
 <div class="view mblView">
-  <h1 data-dojo-type="dojox/mobile/Heading"
-      data-dojo-props="back: '${nls.back}' ">
+  <h1 data-dojo-type="dojox/mobile/Heading">
     ${nls.details}
 
-    <!-- class editButton use in css files-->
-    <button class="editButton"
+    <!-- class cancelButton use in css files-->
+    <button data-dojo-type="dojox/mobile/ToolBarButton"
+            data-dojo-attach-point="cancelButton"
+            data-dojo-props="back: true"
+            >
+    ${nls.cancel}
+    </button>
+
+    <!-- class saveButton use in css files-->
+    <button class="saveButton"
             data-dojo-type="dojox/mobile/ToolBarButton"
-            data-dojo-attach-point="editButton"
-            data-dojo-props="target: 'requestItemDetailsEdit',
-            transitionOptions : {
-                    'params': {
-                        'id' : ${params.id}
-                    },
-                    'transition': 'fade'
-                  }
-            ">
-    ${nls.edit}
+            data-dojo-attach-point="saveButton"
+            data-dojo-props="back: true"> <!-- Do a back for now until save function is implemented -->
+    ${nls.save}
     </button>
   </h1>
 
@@ -108,4 +108,16 @@
 
       </div> <!-- end dojox/mobile/FormLayout -->
     </div> <!-- end dojox.mobile.RoundRect -->
+
+    <button data-dojo-type="dojox/mobile/Button"
+          data-dojo-attach-point="deleteButton" data-dojo-attach-event="onClick: _deleteRequest"
+          class="mblRedButton">${nls.remove}
+    </button>
+    <button data-dojo-type="dojox/mobile/Button"
+          data-dojo-attach-point="copyButton"
+          data-dojo-attach-event="onClick: _copyForm">
+    ${nls.copy}
+    </button>
+
+
 </div>

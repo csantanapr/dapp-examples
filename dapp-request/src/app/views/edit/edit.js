@@ -11,7 +11,7 @@ define([
     'dojo/dom-class',
     'dojo/NodeList-manipulate',
     // Load dojo/NodeList-manipulate to get JQuery syntax: see below this file for function syntax
-    'dojo/text!app/views/details/details.html',
+    'dojo/text!app/views/edit/edit.html',
     'dojox/mobile/Heading',
     'dojox/mobile/ToolBarButton',
     'dojox/mobile/Button',
@@ -22,12 +22,8 @@ define([
 ], function ($, on, when, domClass) {
     'use strict';
 
-    var viewWidget, // set in init(params) to save in closure reference to this view controller instance
-        viewNode;   // set in init(params) to save in closure reference to this view dom node
-
-
-
-
+    var viewWidget, // set in init() to save in closure reference to this view controller instance
+        viewNode;   // set in init() to save in closure reference to this view dom node
     return {
 
         init: function (params) {
@@ -41,10 +37,6 @@ define([
 
             //add class to identify view for css rules
             domClass.add(viewNode, this.name);
-
-            this._hideUIComponents();
-            this._showUIComponents();
-
 
         },
 
@@ -79,7 +71,7 @@ define([
 
         },
 
-        destroy: function (params) {
+        destroy: function () {
             // summary:
             //      view life cycle destroy()
             console.log(this.name + " view:destory()");
@@ -96,26 +88,6 @@ define([
             // summary:
             //      I gues it's suppose to delete something
             console.log(this.name + " view:_deleteRequest()");
-        },
-        _hideUIComponents: function () {
-            // summary:
-            //      hide all ui componets related to read/view mode
-
-            // edit button must be hidding in edit mode
-
-
-        },
-        _showUIComponents: function () {
-            // summary:
-            //      Show all ui componets that allow user to edit item
-
-            // cancel button must be shown in read/view mode only
-            viewWidget.cancelButton.domNode.style.display = "";
-            // delete button must be shown in read/view mode only
-            viewWidget.deleteButton.domNode.style.display = "";
-            // copy button must be shown in read/view mode only
-            viewWidget.copyButton.domNode.style.display = "";
-
         },
         _renderItem: function (id) {
             // summary:
@@ -148,12 +120,6 @@ define([
                 viewWidget.createdDate.set("value", request ? request.createdDate : null);
                 viewWidget.updatedDate.set("value", request ? request.updatedDate : null);
             });
-        },
-        _CancelClick: function (event) {
-            this.app.transitionToView(event.target, {
-                'target': 'requestItemDetails',
-                'transition': 'fade'
-            }, event);
         }
     };
 
