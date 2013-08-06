@@ -1,6 +1,6 @@
 /*jslint nomen: true */
 /*jshint nomen: true */
-/*global _, define, console*/
+/*global _, define, console, history*/
 define([
     'dojo/query!css3',
     //query is the core of dojo dom query
@@ -84,11 +84,6 @@ define([
             //      Copies the form data
             console.log(this.name + " view:_copyForm()");
         },
-        _deleteRequest: function () {
-            // summary:
-            //      I gues it's suppose to delete something
-            console.log(this.name + " view:_deleteRequest()");
-        },
         _renderItem: function (id) {
             // summary:
             //      Fetch data and render ui
@@ -119,6 +114,24 @@ define([
                 //viewWidget._initFieldValue(request, "unitType", viewWidget.loadedStores.requestUnitTypeStore);
                 viewWidget.createdDate.set("value", request ? request.createdDate : null);
                 viewWidget.updatedDate.set("value", request ? request.updatedDate : null);
+            });
+        },
+        _deleteRequest: function (event) {
+            // summary:
+            //      Fetch data and render ui
+            var promise = null,
+                id = viewWidget.params.id,
+                transition = 'slide';
+            if (!id) {
+                // no item passed in
+                return promise;
+            }
+            promise = viewWidget.loadedStores.requestsListStore.remove(id);
+
+            when(promise, function () {
+                // we want to be back to list, which is 2 levels back
+                history.go(-2);
+
             });
         }
     };

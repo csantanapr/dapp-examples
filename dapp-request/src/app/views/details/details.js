@@ -1,6 +1,6 @@
 /*jslint nomen: true */
 /*jshint nomen: true */
-/*global _, define, console*/
+/*global _, define, console, history*/
 define([
     'dojo/query!css3',
     //query is the core of dojo dom query
@@ -54,6 +54,19 @@ define([
             //      view life cycle afterActivate()
             console.log(this.name + " view:afterActivate(" + previousView.name + ",data)");
 
+            if (this.editButton) {
+                if (this.editButton.transitionOptions) {
+                    if (this.editButton.transitionOptions.params) {
+                        this.editButton.transitionOptions.params.id = this.params.id;
+                    } else {
+                        this.editButton.transitionOptions.params = { 'id': this.params.id};
+                    }
+                } else {
+                    this.editButton.transitionOptions = {
+                        params: { 'id': this.params.id}
+                    };
+                }
+            }
         },
 
         beforeDeactivate: function (nextView, data) {
