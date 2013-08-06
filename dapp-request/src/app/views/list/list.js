@@ -24,7 +24,7 @@ define([
 ], function (declare, ListItem, $, on, lang, registry, array) {
     'use strict';
 
-    var viewWidget, // set in init(params) to save in closure reference to this view controller instance
+    var viewWidget, // set in init() to save in closure reference to this view controller instance
         viewNode,
         RequestListItem = declare(ListItem, {
             paramsToInherit: "target,clickable",
@@ -49,7 +49,7 @@ define([
 
     return {
         RequestListItem: RequestListItem,
-        init: function (params) {
+        init: function () {
             // summary:
             //      view life cycle init()
             console.log(this.name + " view:init()");
@@ -82,31 +82,31 @@ define([
 
         },
 
-        beforeActivate: function (view, data) {
+        beforeActivate: function (previousView, data) {
             // summary:
             //      view life cycle beforeActivate()
             console.log(this.name + " view:beforeActivate(view,data)");
         },
 
-        afterActivate: function (view, data) {
+        afterActivate: function (previousView, data) {
             // summary:
             //      view life cycle afterActivate()
             console.log(this.name + " view:afterActivate(view,data)");
         },
 
-        beforeDeactivate: function (view, data) {
+        beforeDeactivate: function (nextView, data) {
             // summary:
             //      view life cycle beforeDeactivate()
             console.log(this.name + " view:beforeDeactivate(view,data)");
         },
 
-        afterDeactivate: function (view, data) {
+        afterDeactivate: function (nextView, data) {
             // summary:
             //      view life cycle afterDeactivate()
             console.log(this.name + " view:afterDeactivate(view,data)");
         },
 
-        destroy: function (params) {
+        destroy: function () {
             // summary:
             //      view life cycle destroy()
             console.log(this.name + " view:destory()");

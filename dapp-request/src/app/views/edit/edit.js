@@ -26,7 +26,7 @@ define([
         viewNode;   // set in init() to save in closure reference to this view dom node
     return {
 
-        init: function (params) {
+        init: function () {
             // summary:
             //      view life cycle init()
             console.log(this.name + " view:init()");
