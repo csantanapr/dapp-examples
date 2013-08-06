@@ -23,7 +23,8 @@ define([
     'use strict';
 
     var viewWidget, // set in init() to save in closure reference to this view controller instance
-        viewNode;   // set in init() to save in closure reference to this view dom node
+        viewNode,   // set in init() to save in closure reference to this view dom node
+        itemToEdit; // model to save and edit
     return {
 
         init: function () {
@@ -46,7 +47,7 @@ define([
             console.log(this.name + " view:beforeActivate(" + previousView.name + ",data)");
 
             // get the id of the displayed contact from the params
-            this._renderItem(this.params.id);
+            itemToEdit = this._renderItem(this.params.id);
 
         },
 
@@ -95,7 +96,7 @@ define([
 
 
             promise = viewWidget.loadedStores.requestsListStore.get(id);
-            return when(promise, function (request) {
+            when(promise, function (request) {
                 viewWidget.reqid.set("value", request ? request.id : null);
                 viewWidget.requestType.set("value", request ? request.requestType : null);
                 //viewWidget._initFieldValue(request, "requestType", viewWidget.loadedStores.requestTypeStore);
@@ -115,6 +116,23 @@ define([
                 viewWidget.createdDate.set("value", request ? request.createdDate : null);
                 viewWidget.updatedDate.set("value", request ? request.updatedDate : null);
             });
+            return promise;
+        },
+        _saveRequest: function (request) {
+            // set back the values on the request object
+            viewWidget._setRequestValue(viewWidget.description, request, "description");
+            viewWidget._setRequestValue(viewWidget.requestType, request, "requestType");
+            viewWidget._setRequestValue(viewWidget.status, request, "status");
+            viewWidget._setRequestValue(viewWidget.priority, request, "priority");
+            viewWidget._setRequestValue(viewWidget.requestedBy, request, "requestedBy");
+            viewWidget._setRequestValue(viewWidget.requestedFinishDate, request, "requestedFinishDate");
+            viewWidget._setRequestValue(viewWidget.actualFinishDate, request, "actualFinishDate");
+            viewWidget._setRequestValue(viewWidget.estimatedUnits, request, "estimatedUnits");
+            viewWidget._setRequestValue(viewWidget.unitType, request, "unitType");
+            viewWidget._setRequestValue(viewWidget.createdDate, request, "createdDate");
+            viewWidget._setRequestValue(viewWidget.updatedDate, request, "updatedDate");
+
+            return request;
         },
         _deleteRequest: function (event) {
             // summary:
@@ -133,6 +151,26 @@ define([
                 history.go(-2);
 
             });
+        },
+        _saveForm: function () {
+            var id = viewWidget.reqid.get("value"),
+                itemStore = viewWidget.loadedStores.requestsListStore;
+
+            when(itemToEdit, function (request) {
+                if (request) {
+                    // save the updated item into the store
+                    itemStore.put(viewWidget._saveRequest(request));
+                } else {
+                    // not found do not update
+                    console.log("item not found");
+                }
+            });
+        },
+        _setRequestValue: function (widget, request, reqfield) {
+            var value = widget.get("value");
+            if (value !== undefined) {
+                request[reqfield] = value;
+            }
         }
     };
 
