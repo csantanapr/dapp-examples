@@ -14,8 +14,9 @@
     //Optional, but required when not using the parser, and its required by views
     "dependencies": [
         "dojo/store/Observable",
-        "dojox/app/controllers/History",
+        //"dojox/app/controllers/History",
         "dojox/app/controllers/HistoryHash",
+        "app/views/controllers/CustomHistory",
         /* On Mobile always add the 2 following modules dojox/mobule a dojox/mobile/deviceTheme */
         "dojox/mobile/common",
         /* For build to include css3/lite query selectorEngine */
@@ -109,6 +110,7 @@
     //Optional, App level stings
     "nls": "app/nls/app_strings",
     //"transition": "slide",
+    "defaultTransition" : "slide",
     //Mandatory, Specify Application child views
     "views": {
         "home":{
@@ -139,7 +141,8 @@
     "has": {
         "html5history": {
             "controllers": [
-                "dojox/app/controllers/History"
+                //"dojox/app/controllers/History"
+                "app/views/controllers/CustomHistory"
             ]
         },
         "!html5history": {

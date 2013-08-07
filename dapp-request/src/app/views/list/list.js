@@ -38,8 +38,7 @@ define([
                 this.transitionOptions = {
                     params: {
                         "id" : store_item_id
-                    },
-                    transition: "slide"
+                    }
                 };
 
             }
