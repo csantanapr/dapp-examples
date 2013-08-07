@@ -17,14 +17,14 @@ define([
 ], function ($, on) {
     'use strict';
 
-    var view, // set in init(params) to save in closure reference to this view controller instance
-        viewNode; // set in init(params) to save in closure reference to this view dom node
+    var view, // set in init() to save in closure reference to this view controller instance
+        viewNode; // set in init() to save in closure reference to this view dom node
 
 
 
     return {
 
-        init: function (params) {
+        init: function () {
             // summary:
             //      view life cycle init()
             console.log(this.name + " view:init()");
@@ -35,31 +35,35 @@ define([
 
         },
 
-        beforeActivate: function (view, data) {
+        beforeActivate: function (previousView, data) {
             // summary:
             //      view life cycle beforeActivate()
-            console.log(this.name + " view:beforeActivate(view,data)");
+            console.log(this.name + " view:beforeActivate(" + (previousView ? previousView.name : "") + ",data)");
+
         },
 
-        afterActivate: function (view, data) {
+        afterActivate: function (previousView, data) {
             // summary:
             //      view life cycle afterActivate()
-            console.log(this.name + " view:afterActivate(view,data)");
+            console.log(this.name + " view:afterActivate(" + (previousView ? previousView.name : "") + ",data)");
+
         },
 
-        beforeDeactivate: function (view, data) {
+        beforeDeactivate: function (nextView, data) {
             // summary:
             //      view life cycle beforeDeactivate()
-            console.log(this.name + " view:beforeDeactivate(view,data)");
+            console.log(this.name + " view:beforeDeactivate(" + (nextView ? nextView.name : "") + ",data)");
+
         },
 
-        afterDeactivate: function (view, data) {
+        afterDeactivate: function (nextView, data) {
             // summary:
             //      view life cycle afterDeactivate()
-            console.log(this.name + " view:afterDeactivate(view,data)");
+            console.log(this.name + " view:afterDeactivate(" + (nextView ? nextView.name : "") + ",data)");
+
         },
 
-        destroy: function (params) {
+        destroy: function () {
             // summary:
             //      view life cycle destroy()
             console.log(this.name + " view:destory()");

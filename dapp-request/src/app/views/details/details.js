@@ -42,7 +42,7 @@ define([
         beforeActivate: function (previousView, data) {
             // summary:
             //      view life cycle beforeActivate()
-            console.log(this.name + " view:beforeActivate(" + previousView.name + ",data)");
+            console.log(this.name + " view:beforeActivate(" + (previousView ? previousView.name : "") + ",data)");
 
             // get the id of the displayed contact from the params
             this._renderItem(this.params.id);
@@ -52,7 +52,7 @@ define([
         afterActivate: function (previousView, data) {
             // summary:
             //      view life cycle afterActivate()
-            console.log(this.name + " view:afterActivate(" + previousView.name + ",data)");
+            console.log(this.name + " view:afterActivate(" + (previousView ? previousView.name : "") + ",data)");
 
             if (this.editButton) {
                 if (this.editButton.transitionOptions) {
@@ -72,14 +72,14 @@ define([
         beforeDeactivate: function (nextView, data) {
             // summary:
             //      view life cycle beforeDeactivate()
-            console.log(this.name + " view:beforeDeactivate(" + nextView.name + ",data)");
+            console.log(this.name + " view:beforeDeactivate(" + (nextView ? nextView.name : "") + ",data)");
 
         },
 
         afterDeactivate: function (nextView, data) {
             // summary:
             //      view life cycle afterDeactivate()
-            console.log(this.name + " view:afterDeactivate(" + nextView.name + ",data)");
+            console.log(this.name + " view:afterDeactivate(" + (nextView ? nextView.name : "") + ",data)");
 
         },
 
