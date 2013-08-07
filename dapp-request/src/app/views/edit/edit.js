@@ -84,7 +84,19 @@ define([
         _copyForm: function () {
             // summary:
             //      Copies the form data
+            var itemStore = viewWidget.loadedStores.requestsListStore;
             console.log(this.name + " view:_copyForm()");
+
+            when(itemToEdit, function (request) {
+                when(viewWidget._saveRequest(request), function (newItem) {
+                    delete newItem.id; //delete id so the store knows this is a new item to create and assigned a new id
+                    newItem.description = "Copy of " + newItem.description; //update description to reflect new one
+                    itemStore.add(newItem);
+                    if (win.global.history && win.global.history.back) {
+                        win.global.history.back();
+                    }
+                });
+            });
         },
         _renderItem: function (id) {
             // summary:
