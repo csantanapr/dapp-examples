@@ -15,6 +15,7 @@ define({
         createdDate: "Created Date",
         save: "Save",
         copy: "Copy",
+        duplicate: "Duplicate",
         updatedDate: "Updated Date",
         home: "Home",
         work: "Work",

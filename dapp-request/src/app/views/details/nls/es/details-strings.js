@@ -14,6 +14,7 @@ define({
     createdDate: "Fecha de creación",
     save: "Guardar",
     copy: "Copiar",
+    duplicate: "Duplicar",
     updatedDate: "Fecha actualización",
     home: "Casa",
     work: "Trabajo",
