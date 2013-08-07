@@ -1,4 +1,4 @@
-Build started: Tue Aug 06 2013 18:03:21 GMT-0400 (EDT)
+Build started: Wed Aug 07 2013 13:48:48 GMT-0400 (EDT)
 Build application version: 1.7.0dev (23930)
 Messages:
 info(100) Assumed module uses legacy loader API.
@@ -1317,10 +1317,10 @@ app/main:
 	dojo/request/default
 	app/config.json
 	dojo/store/Observable
-	dojox/app/controllers/History
-	dojox/app/Controller
 	dojox/app/controllers/HistoryHash
+	dojox/app/Controller
 	dojo/hash
+	app/views/controllers/CustomHistory
 	dojox/mobile/common
 	dojo/touch
 	dijit/registry
@@ -1413,4 +1413,4 @@ app/main:
 Process finished normally
 	errors: 0
 	warnings: 58
-	build time: 11.174 seconds
+	build time: 41.254 seconds
