@@ -9,6 +9,7 @@ define([
     'dojo/on',
     'dojo/when',
     'dojo/dom-class',
+    'dojo/_base/window',
     'dojo/NodeList-manipulate',
     // Load dojo/NodeList-manipulate to get JQuery syntax: see below this file for function syntax
     'dojo/text!app/views/edit/edit.html',
@@ -19,7 +20,7 @@ define([
     'dojox/mobile/TextBox',
     'dojox/mobile/RoundRect',
     'dojox/mobile/ExpandingTextArea'
-], function ($, on, when, domClass) {
+], function ($, on, when, domClass, win) {
     'use strict';
 
     var viewWidget, // set in init() to save in closure reference to this view controller instance
@@ -148,7 +149,10 @@ define([
 
             when(promise, function () {
                 // we want to be back to list, which is 2 levels back
-                history.go(-2);
+                if (win.global.history && win.global.history.go) {
+
+                    win.global.history.go(-2);
+                }
 
             });
         },
