@@ -151,6 +151,9 @@ define([
                 // we want to be back to list, which is 2 levels back
                 if (win.global.history && win.global.history.go) {
                     win.global.history.go(-2);
+                    // FIXME: I would prefer to call app transition, but this doesn't clean the history stack
+                    // this breaks the back button on the list, making it go back to edit view, instead of home
+                    // viewWidget.app.transitionToView(event.target, { target: 'requestList', reverse: 'true' });
                 }
 
             });
