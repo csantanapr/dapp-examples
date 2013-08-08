@@ -9,3 +9,12 @@
 .dateOpener .doneButton {
     float: right;
 }
+
+/* FIXME: For some reason dojox/mobile/FormLayout is braking the form using this media query */
+@media (min-width: 500px) {
+    .mblFormLayout.mblFormLayoutAuto > fieldset > label, .mblFormLayout.mblFormLayoutAuto > fieldset > input{
+        display: inline-block;
+        vertical-align: baseline;
+        padding: 1px;
+    }
+}
