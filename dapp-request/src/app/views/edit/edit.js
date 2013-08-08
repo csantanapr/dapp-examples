@@ -19,7 +19,11 @@ define([
     'dojox/mobile/FormLayout',
     'dojox/mobile/TextBox',
     'dojox/mobile/RoundRect',
-    'dojox/mobile/ExpandingTextArea'
+    'dojox/mobile/ExpandingTextArea',
+    'dojox/mobile/Opener',
+    'dojox/mobile/DatePicker',
+    'dojox/mobile/SpinWheelDatePicker',
+    'dojox/mobile/ValuePickerDatePicker'
 ], function ($, on, when, domClass, win) {
     'use strict';
 
@@ -39,6 +43,7 @@ define([
 
             //add class to identify view for css rules
             domClass.add(viewNode, this.name);
+            this.attachHandlers();
 
         },
 
@@ -132,7 +137,9 @@ define([
             return promise;
         },
         _saveRequest: function (request) {
-            // set back the values on the request object
+            // summary:
+            //      Gets value from the form on the html and updates the input request
+
             viewWidget._setRequestValue(viewWidget.description, request, "description");
             viewWidget._setRequestValue(viewWidget.requestType, request, "requestType");
             viewWidget._setRequestValue(viewWidget.status, request, "status");
@@ -149,7 +156,8 @@ define([
         },
         _deleteRequest: function (event) {
             // summary:
-            //      Fetch data and render ui
+            //      Deletes the item being edited and returns back to the list
+
             var promise = null,
                 id = viewWidget.params.id,
                 transition = 'slide';
@@ -165,6 +173,8 @@ define([
             });
         },
         _saveForm: function () {
+            // summary:
+            //      Updates the itemtoEdit with values from form and sends put to store with new values
             var id = viewWidget.reqid.get("value"),
                 itemStore = viewWidget.loadedStores.requestsListStore;
 
@@ -179,10 +189,55 @@ define([
             });
         },
         _setRequestValue: function (widget, request, reqfield) {
+            // summary:
+            //  Only updates the request from widget if value is defined
+
             var value = widget.get("value");
             if (value !== undefined) {
                 request[reqfield] = value;
             }
+        },
+        attachHandlers: function () {
+            // summary:
+            //      Attach listeners to form inputs on click
+
+            on(this.requestedFinishDate, "click", viewWidget._showDateOpener.bind(this.requestedFinishDate));
+            on(this.actualFinishDate, "click", viewWidget._showDateOpener.bind(this.actualFinishDate));
+        },
+        _showDateOpener: function (event) {
+            // summary:
+            //      Show DateOpener
+
+            var DateTextBox = this;
+            console.log("_showDateOpener(event)");
+            viewWidget.opener.onHide = function () {
+                console.log("hiding opener");
+            };
+            viewWidget.opener.onShow = function () {
+                console.log("showing opener");
+            };
+            viewWidget.opener.show(event.target);
+            viewWidget.opener.formWidget = DateTextBox;
+        },
+        _doneOpener : function (event) {
+            // summary:
+            //  Done selecting new date
+
+            var opener = viewWidget.opener,
+                formWidget = viewWidget.opener.formWidget,
+                datePicker = viewWidget.datePicker;
+
+            console.log("done opener");
+
+            formWidget.set("value", datePicker.get("value"));
+            opener.hide();
+        },
+        _cancelOpener : function (event) {
+            // summary:
+            //      Cancel date editing
+
+            console.log("cancel opener");
+            viewWidget.opener.hide();
         }
     };
 

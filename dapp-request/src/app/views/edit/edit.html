@@ -65,7 +65,7 @@
       <fieldset>
         <label for="requestedFinishDate">${nls.requestedFinishDate}</label>
         <input name="requestedFinishDate" data-dojo-type="dojox/mobile/TextBox"
-             data-dojo-props="readOnly: true, placeHolder: '${nls.requestedFinishDate}', usesOpener:true" data-dojo-attach-point="requestedFinishDate">
+             data-dojo-props="placeHolder: '${nls.requestedFinishDate}', usesOpener:true" data-dojo-attach-point="requestedFinishDate">
       </fieldset>
 
 
@@ -95,15 +95,17 @@
         <fieldset>
           <label for="createdDate">${nls.createdDate}</label>
           <input name="createdDate" data-dojo-type="dojox/mobile/TextBox"
-               data-dojo-props="placeHolder: '${nls.createdDate}'" data-dojo-attach-point="createdDate">
+               data-dojo-props="readOnly: true, placeHolder: '${nls.createdDate}'" data-dojo-attach-point="createdDate">
 
         </fieldset>
 
 
         <fieldset>
-        <label for="updatedDate">${nls.updatedDate}</label>
-          <input name="updatedDate" data-dojo-type="dojox/mobile/TextBox"
-               data-dojo-props="placeHolder: '${nls.updatedDate}'" data-dojo-attach-point="updatedDate">
+          <label for="updatedDate">${nls.updatedDate}</label>
+          <input name="updatedDate"
+                 data-dojo-type="dojox/mobile/TextBox"
+                data-dojo-props="readOnly: true, placeHolder: '${nls.updatedDate}'"
+                data-dojo-attach-point="updatedDate">
         </fieldset>
 
       </div> <!-- end dojox/mobile/FormLayout -->
@@ -121,5 +123,20 @@
           data-dojo-attach-event="onClick: _deleteRequest"
           class="mblRedButton">${nls.remove}
     </button>
-
+    <div data-dojo-type="dojox/mobile/Opener"
+         data-dojo-attach-point="opener">
+      <h1 data-dojo-type="dojox/mobile/Heading">
+        Date Picker
+        <button data-dojo-type="dojox/mobile/ToolBarButton"
+                data-dojo-attach-event="onClick: _doneOpener">
+          Done
+        </button>
+        <button data-dojo-type="dojox/mobile/ToolBarButton"
+                data-dojo-attach-event="onClick: _cancelOpener">
+          Cancel
+        </button>
+      </h1>
+      <div data-dojo-type="dojox/mobile/DatePicker"
+           data-dojo-attach-point="datePicker"></div>
+    </div>
 </div>
