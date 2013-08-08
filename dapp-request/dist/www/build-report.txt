@@ -1,4 +1,4 @@
-Build started: Wed Aug 07 2013 13:48:48 GMT-0400 (EDT)
+Build started: Wed Aug 07 2013 21:58:29 GMT-0400 (EDT)
 Build application version: 1.7.0dev (23930)
 Messages:
 info(100) Assumed module uses legacy loader API.
@@ -1404,13 +1404,33 @@ app/main:
 	app/views/details/nls/details-strings
 	app/views/edit/edit
 	app/views/edit/edit.html
+	dojox/mobile/Opener
+	dojox/mobile/Tooltip
+	dijit/place
+	dojox/mobile/Overlay
+	dojox/mobile/lazyLoadUtils
+	dojox/mobile/DatePicker
+	dojox/mobile/_PickerChooser
+	dojox/mobile/SpinWheelDatePicker
+	dojox/mobile/_DatePickerMixin
+	dojo/date
+	dojo/date/locale
+	dojo/cldr/supplemental
+	dojo/i18n
+	dojo/regexp
+	dojo/cldr/nls/gregorian
+	dojox/mobile/SpinWheel
+	dojox/mobile/_PickerBase
+	dojox/mobile/SpinWheelSlot
+	dojox/mobile/ValuePickerDatePicker
+	dojox/mobile/ValuePicker
+	dojox/mobile/ValuePickerSlot
 	app/views/search/search
 	app/views/search/search.html
-	dojo/i18n
 
 
 
 Process finished normally
 	errors: 0
 	warnings: 58
-	build time: 41.254 seconds
+	build time: 9.322 seconds

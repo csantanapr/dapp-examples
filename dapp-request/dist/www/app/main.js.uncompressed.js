@@ -19740,7 +19740,11 @@ define([
     'dojox/mobile/FormLayout',
     'dojox/mobile/TextBox',
     'dojox/mobile/RoundRect',
-    'dojox/mobile/ExpandingTextArea'
+    'dojox/mobile/ExpandingTextArea',
+    'dojox/mobile/Opener',
+    'dojox/mobile/DatePicker',
+    'dojox/mobile/SpinWheelDatePicker',
+    'dojox/mobile/ValuePickerDatePicker'
 ], function ($, on, when, domClass, win) {
     'use strict';
 
@@ -19760,6 +19764,7 @@ define([
 
             //add class to identify view for css rules
             domClass.add(viewNode, this.name);
+            this.attachHandlers();
 
         },
 
@@ -19853,7 +19858,9 @@ define([
             return promise;
         },
         _saveRequest: function (request) {
-            // set back the values on the request object
+            // summary:
+            //      Gets value from the form on the html and updates the input request
+
             viewWidget._setRequestValue(viewWidget.description, request, "description");
             viewWidget._setRequestValue(viewWidget.requestType, request, "requestType");
             viewWidget._setRequestValue(viewWidget.status, request, "status");
@@ -19870,7 +19877,8 @@ define([
         },
         _deleteRequest: function (event) {
             // summary:
-            //      Fetch data and render ui
+            //      Deletes the item being edited and returns back to the list
+
             var promise = null,
                 id = viewWidget.params.id,
                 transition = 'slide';
@@ -19886,6 +19894,8 @@ define([
             });
         },
         _saveForm: function () {
+            // summary:
+            //      Updates the itemtoEdit with values from form and sends put to store with new values
             var id = viewWidget.reqid.get("value"),
                 itemStore = viewWidget.loadedStores.requestsListStore;
 
@@ -19900,10 +19910,55 @@ define([
             });
         },
         _setRequestValue: function (widget, request, reqfield) {
+            // summary:
+            //  Only updates the request from widget if value is defined
+
             var value = widget.get("value");
             if (value !== undefined) {
                 request[reqfield] = value;
             }
+        },
+        attachHandlers: function () {
+            // summary:
+            //      Attach listeners to form inputs on click
+
+            on(this.requestedFinishDate, "click", viewWidget._showDateOpener.bind(this.requestedFinishDate));
+            on(this.actualFinishDate, "click", viewWidget._showDateOpener.bind(this.actualFinishDate));
+        },
+        _showDateOpener: function (event) {
+            // summary:
+            //      Show DateOpener
+
+            var DateTextBox = this;
+            console.log("_showDateOpener(event)");
+            viewWidget.opener.onHide = function () {
+                console.log("hiding opener");
+            };
+            viewWidget.opener.onShow = function () {
+                console.log("showing opener");
+            };
+            viewWidget.opener.show(event.target);
+            viewWidget.opener.formWidget = DateTextBox;
+        },
+        _doneOpener : function (event) {
+            // summary:
+            //  Done selecting new date
+
+            var opener = viewWidget.opener,
+                formWidget = viewWidget.opener.formWidget,
+                datePicker = viewWidget.datePicker;
+
+            console.log("done opener");
+
+            formWidget.set("value", datePicker.get("value"));
+            opener.hide();
+        },
+        _cancelOpener : function (event) {
+            // summary:
+            //      Cancel date editing
+
+            console.log("cancel opener");
+            viewWidget.opener.hide();
         }
     };
 
@@ -20021,200 +20076,2421 @@ define([
 
 
 },
-'app/views/search/search':function(){
-/*jslint nomen: true */
-/*jshint nomen: true */
-/*global _, define, console*/
+'dojox/mobile/Opener':function(){
 define([
-    'dojo/query!css3',
-    //query is the core of dojo dom query
-    // the return is NodeList that has full set of functions
-    // most of the function have same syntax as jquery see bellow this file for summary
-    'dojo/on',
-    'dojox/mobile/ListItem',
-    'dojo/NodeList-manipulate',
-    // Load dojo/NodeList-manipulate to get JQuery syntax: see below this file for function syntax
-    'dojo/text!app/views/search/search.html',
-    'dojox/mobile/Heading'
-], function ($, on) {
-    'use strict';
+	"dojo/_base/declare",
+	"dojo/_base/Deferred",
+	"dojo/_base/lang",
+	"dojo/_base/window",
+	"dojo/dom-class",
+	"dojo/dom-construct",
+	"dojo/dom-style",
+	"dojo/dom-geometry",
+	"./Tooltip",
+	"./Overlay",
+	"./lazyLoadUtils"
+], function(declare, Deferred, lang, win, domClass, domConstruct, domStyle, domGeometry, Tooltip, Overlay, lazyLoadUtils){
 
-    var view, // set in init(params) to save in closure reference to this view controller instance
-        viewNode; // set in init(params) to save in closure reference to this view dom node
+	var isOverlay = domClass.contains(win.doc.documentElement, "dj_phone");
+	
+	var cls = declare("dojox.mobile.Opener", isOverlay ? Overlay : Tooltip, {
+		// summary:
+		//		A non-templated popup widget that will use either Tooltip or 
+		//		Overlay depending on screen size.
+
+		// lazy: String
+		//		If true, the content of the widget, which includes dojo markup,
+		//		is instantiated lazily. That is, only when the widget is opened
+		//		by the user, the required modules are loaded and the content
+		//		widgets are instantiated.
+		lazy: false,
+
+		// requires: String
+		//		Comma-separated required module names to be lazily loaded. This
+		//		is effective only when lazy=true. All the modules specified with
+		//		dojoType and their depending modules are automatically loaded
+		//		when the widget is opened. However, if you need other extra
+		//		modules to be loaded, use this parameter.
+		requires: "",
+
+		buildRendering: function(){
+			this.inherited(arguments);
+			this.cover = domConstruct.create('div', {
+				onclick: lang.hitch(this, '_onBlur'), 'class': 'mblOpenerUnderlay',
+				style: { position: isOverlay ? 'absolute' : 'fixed', backgroundColor:'transparent', overflow:'hidden', zIndex:'-1' }
+			}, this.domNode, 'first');
+		},
+
+		onShow: function(/*DomNode*/node){},
+		onHide: function(/*DomNode*/node, /*Anything*/v){},
+
+		show: function(node, positions){
+			if(this.lazy){
+				this.lazy = false;
+				var _this = this;
+				return Deferred.when(lazyLoadUtils.instantiateLazyWidgets(this.domNode, this.requires), function(){
+					return _this.show(node, positions);
+				});
+			}
+			this.node = node;
+			this.onShow(node);
+			domStyle.set(this.cover, { top:'0px', left:'0px', width:'0px', height:'0px' }); // move cover temporarily to calculate domNode vertical position correctly
+			this._resizeCover(domGeometry.position(this.domNode, false)); // must be before this.inherited(arguments) for Tooltip sizing
+			return this.inherited(arguments);
+		},
+
+		hide: function(/*Anything*/ val){
+			this.inherited(arguments);
+			this.onHide(this.node, val);
+		},
+		
+		_reposition: function(){
+			// tags:
+			//		private
+			var popupPos = this.inherited(arguments);
+			this._resizeCover(popupPos);
+			return popupPos;
+		},
+
+		_resizeCover: function(popupPos){
+			// tags:
+			//		private
+			if(isOverlay){
+				if(parseInt(domStyle.get(this.cover, 'top')) != -popupPos.y || parseInt(domStyle.get(this.cover, 'height')) != popupPos.y){
+					var x = Math.max(popupPos.x, 0); // correct onorientationchange values
+					domStyle.set(this.cover, { top:-popupPos.y+'px', left:-x+'px', width:popupPos.w+x+'px', height:popupPos.y+'px' });
+				}
+			}else{
+				domStyle.set(this.cover, { 
+					width:Math.max(win.doc.documentElement.scrollWidth || win.body().scrollWidth || win.doc.documentElement.clientWidth)+'px', 
+					height:Math.max(win.doc.documentElement.scrollHeight || win.body().scrollHeight || win.doc.documentElement.clientHeight)+'px' 
+				});
+			}			
+		},
+
+		_onBlur: function(e){
+			// tags:
+			//		private
+			var ret = this.onBlur(e);
+			if(ret !== false){ // only exactly false prevents hide()
+				this.hide(e);
+			}
+			return ret;
+		}
+	});
+	cls.prototype.baseClass += " mblOpener"; // add to either mblOverlay or mblTooltip
+	return cls;
+});
+
+},
+'dojox/mobile/Tooltip':function(){
+define([
+	"dojo/_base/array", // array.forEach
+	"dijit/registry",
+	"dojo/_base/declare",
+	"dojo/_base/lang",
+	"dojo/dom-class",
+	"dojo/dom-construct",
+	"dojo/dom-geometry",
+	"dojo/dom-style",
+	"dijit/place",
+	"dijit/_WidgetBase",
+	"dojo/has",
+	"dojo/has!dojo-bidi?dojox/mobile/bidi/Tooltip"
+], function(array, registry, declare, lang, domClass, domConstruct, domGeometry, domStyle, place, WidgetBase, has, BidiTooltip){
+
+	var Tooltip = declare(has("dojo-bidi") ? "dojox.mobile.NonBidiTooltip" : "dojox.mobile.Tooltip", WidgetBase, {
+		// summary:
+		//		A non-templated popup bubble widget
+
+		baseClass: "mblTooltip mblTooltipHidden",
+
+		buildRendering: function(){
+			// create the helper nodes here in case the user overwrote domNode.innerHTML
+			this.inherited(arguments);
+			this.anchor = domConstruct.create("div", {"class":"mblTooltipAnchor"}, this.domNode, "first");
+			this.arrow = domConstruct.create("div", {"class":"mblTooltipArrow"}, this.anchor);
+			this.innerArrow = domConstruct.create("div", {"class":"mblTooltipInnerArrow"}, this.anchor);
+			if(!this.containerNode){
+				// set containerNode so that getChildren() works
+				this.containerNode = this.domNode;
+			}
+		},
+
+		show: function(/*DomNode*/ aroundNode, /*Array*/positions){
+			// summary:
+			//		Pop up the tooltip and point to aroundNode using the best position
+			// positions:
+			//		Ordered list of positions to try matching up.
+			//
+			//		- before-centered: places drop down before the aroundNode
+			//		- after-centered: places drop down after the aroundNode
+			//		- above-centered: drop down goes above aroundNode
+			//		- below-centered: drop down goes below aroundNode
+
+			var domNode = this.domNode;
+			var connectorClasses = {
+				"MRM": "mblTooltipAfter",
+				"MLM": "mblTooltipBefore",
+				"BMT": "mblTooltipBelow",
+				"TMB": "mblTooltipAbove",
+				"BLT": "mblTooltipBelow",
+				"TLB": "mblTooltipAbove",
+				"BRT": "mblTooltipBelow",
+				"TRB": "mblTooltipAbove",
+				"TLT": "mblTooltipBefore",
+				"TRT": "mblTooltipAfter",
+				"BRB": "mblTooltipAfter",
+				"BLB": "mblTooltipBefore"
+			};
+			domClass.remove(domNode, ["mblTooltipAfter","mblTooltipBefore","mblTooltipBelow","mblTooltipAbove"]);
+			array.forEach(registry.findWidgets(domNode), function(widget){
+				if(widget.height == "auto" && typeof widget.resize == "function"){
+					if(!widget._parentPadBorderExtentsBottom){
+						widget._parentPadBorderExtentsBottom = domGeometry.getPadBorderExtents(domNode).b;
+					}
+					widget.resize();
+				}
+			});
+			// Convert before/after to before-centered/after-centered for compatibility
+			// TODO remove this 1.7->1.8 compatibility code in 2.0
+			if(positions){
+				positions = array.map(positions, function(pos){
+					return {after: "after-centered", before: "before-centered"}[pos] || pos;
+				});
+			}
+			var best = place.around(domNode, aroundNode, positions || ["below-centered", "above-centered", "after-centered", "before-centered"], this.isLeftToRight());
+			var connectorClass = connectorClasses[best.corner + best.aroundCorner.charAt(0)] || "";
+			domClass.add(domNode, connectorClass);
+			var pos = domGeometry.position(aroundNode, true);
+			domStyle.set(this.anchor, (connectorClass == "mblTooltipAbove" || connectorClass == "mblTooltipBelow")
+				? { top: "", left: Math.max(0, pos.x - best.x + (pos.w >> 1) - (this.arrow.offsetWidth >> 1)) + "px" }
+				: { left: "", top: Math.max(0, pos.y - best.y + (pos.h >> 1) - (this.arrow.offsetHeight >> 1)) + "px" }
+			);
+			domClass.replace(domNode, "mblTooltipVisible", "mblTooltipHidden");
+			this.resize = lang.hitch(this, "show", aroundNode, positions); // orientation changes
+			return best;
+		},
+
+		hide: function(){
+			// summary:
+			//		Pop down the tooltip
+			this.resize = undefined;
+			domClass.replace(this.domNode, "mblTooltipHidden", "mblTooltipVisible");
+		},
+
+		onBlur: function(/*Event*/e){
+			return true; // touching outside the overlay area does call hide() by default
+		},
+
+		destroy: function(){
+			if(this.anchor){
+				this.anchor.removeChild(this.innerArrow);
+				this.anchor.removeChild(this.arrow);
+				this.domNode.removeChild(this.anchor);
+				this.anchor = this.arrow = this.innerArrow = undefined;
+			}
+			this.inherited(arguments);
+		}
+	});
+	
+	return has("dojo-bidi") ? declare("dojox.mobile.Tooltip", [Tooltip, BidiTooltip]) : Tooltip;		
+});
+
+},
+'dijit/place':function(){
+define([
+	"dojo/_base/array", // array.forEach array.map array.some
+	"dojo/dom-geometry", // domGeometry.position
+	"dojo/dom-style", // domStyle.getComputedStyle
+	"dojo/_base/kernel", // kernel.deprecated
+	"dojo/_base/window", // win.body
+	"./Viewport", // getEffectiveBox
+	"./main"	// dijit (defining dijit.place to match API doc)
+], function(array, domGeometry, domStyle, kernel, win, Viewport, dijit){
+
+	// module:
+	//		dijit/place
 
 
+	function _place(/*DomNode*/ node, choices, layoutNode, aroundNodeCoords){
+		// summary:
+		//		Given a list of spots to put node, put it at the first spot where it fits,
+		//		of if it doesn't fit anywhere then the place with the least overflow
+		// choices: Array
+		//		Array of elements like: {corner: 'TL', pos: {x: 10, y: 20} }
+		//		Above example says to put the top-left corner of the node at (10,20)
+		// layoutNode: Function(node, aroundNodeCorner, nodeCorner, size)
+		//		for things like tooltip, they are displayed differently (and have different dimensions)
+		//		based on their orientation relative to the parent.	 This adjusts the popup based on orientation.
+		//		It also passes in the available size for the popup, which is useful for tooltips to
+		//		tell them that their width is limited to a certain amount.	 layoutNode() may return a value expressing
+		//		how much the popup had to be modified to fit into the available space.	 This is used to determine
+		//		what the best placement is.
+		// aroundNodeCoords: Object
+		//		Size of aroundNode, ex: {w: 200, h: 50}
 
-    return {
+		// get {x: 10, y: 10, w: 100, h:100} type obj representing position of
+		// viewport over document
+		var view = Viewport.getEffectiveBox(node.ownerDocument);
 
-        init: function (params) {
-            // summary:
-            //      view life cycle init()
-            console.log(this.name + " view:init()");
+		// This won't work if the node is inside a <div style="position: relative">,
+		// so reattach it to <body>.	 (Otherwise, the positioning will be wrong
+		// and also it might get cutoff.)
+		if(!node.parentNode || String(node.parentNode.tagName).toLowerCase() != "body"){
+			win.body(node.ownerDocument).appendChild(node);
+		}
 
-            //save the view node in clousure to use as scope for dom manipulatation and query
-            viewNode = this.domNode;
-            view = this;
+		var best = null;
+		array.some(choices, function(choice){
+			var corner = choice.corner;
+			var pos = choice.pos;
+			var overflow = 0;
 
-        },
+			// calculate amount of space available given specified position of node
+			var spaceAvailable = {
+				w: {
+					'L': view.l + view.w - pos.x,
+					'R': pos.x - view.l,
+					'M': view.w
+				}[corner.charAt(1)],
+				h: {
+					'T': view.t + view.h - pos.y,
+					'B': pos.y - view.t,
+					'M': view.h
+				}[corner.charAt(0)]
+			};
 
-        beforeActivate: function (view, data) {
-            // summary:
-            //      view life cycle beforeActivate()
-            console.log(this.name + " view:beforeActivate(view,data)");
-        },
+			// Clear left/right position settings set earlier so they don't interfere with calculations,
+			// specifically when layoutNode() (a.k.a. Tooltip.orient()) measures natural width of Tooltip
+			var s = node.style;
+			s.left = s.right = "auto";
 
-        afterActivate: function (view, data) {
-            // summary:
-            //      view life cycle afterActivate()
-            console.log(this.name + " view:afterActivate(view,data)");
-        },
+			// configure node to be displayed in given position relative to button
+			// (need to do this in order to get an accurate size for the node, because
+			// a tooltip's size changes based on position, due to triangle)
+			if(layoutNode){
+				var res = layoutNode(node, choice.aroundCorner, corner, spaceAvailable, aroundNodeCoords);
+				overflow = typeof res == "undefined" ? 0 : res;
+			}
 
-        beforeDeactivate: function (view, data) {
-            // summary:
-            //      view life cycle beforeDeactivate()
-            console.log(this.name + " view:beforeDeactivate(view,data)");
-        },
+			// get node's size
+			var style = node.style;
+			var oldDisplay = style.display;
+			var oldVis = style.visibility;
+			if(style.display == "none"){
+				style.visibility = "hidden";
+				style.display = "";
+			}
+			var bb = domGeometry.position(node);
+			style.display = oldDisplay;
+			style.visibility = oldVis;
 
-        afterDeactivate: function (view, data) {
-            // summary:
-            //      view life cycle afterDeactivate()
-            console.log(this.name + " view:afterDeactivate(view,data)");
-        },
+			// coordinates and size of node with specified corner placed at pos,
+			// and clipped by viewport
+			var
+				startXpos = {
+					'L': pos.x,
+					'R': pos.x - bb.w,
+					'M': Math.max(view.l, Math.min(view.l + view.w, pos.x + (bb.w >> 1)) - bb.w) // M orientation is more flexible
+				}[corner.charAt(1)],
+				startYpos = {
+					'T': pos.y,
+					'B': pos.y - bb.h,
+					'M': Math.max(view.t, Math.min(view.t + view.h, pos.y + (bb.h >> 1)) - bb.h)
+				}[corner.charAt(0)],
+				startX = Math.max(view.l, startXpos),
+				startY = Math.max(view.t, startYpos),
+				endX = Math.min(view.l + view.w, startXpos + bb.w),
+				endY = Math.min(view.t + view.h, startYpos + bb.h),
+				width = endX - startX,
+				height = endY - startY;
 
-        destroy: function (params) {
-            // summary:
-            //      view life cycle destroy()
-            console.log(this.name + " view:destory()");
-        },
-        /*****
-         * Custom Code for View Controller
-         *****/
+			overflow += (bb.w - width) + (bb.h - height);
 
-        _formatterTmpl : function (value, key) {
-            // summary:
-            //      Use to format template properties using the convention ${foo:_formatterTmpl}
-            console.log(this.name + "_formatterTmpl(" + value + "," + "key" + ");");
+			if(best == null || overflow < best.overflow){
+				best = {
+					corner: corner,
+					aroundCorner: choice.aroundCorner,
+					x: startX,
+					y: startY,
+					w: width,
+					h: height,
+					overflow: overflow,
+					spaceAvailable: spaceAvailable
+				};
+			}
 
-        },
-        doSomething: function (event) {
-            console.log('did something');
-            // summary:
-            //      Example of a custom view controller callback for event listener
-            console.log(this.name + "doSomething(" + event + ");");
+			return !overflow;
+		});
 
-        }
-    };
+		// In case the best position is not the last one we checked, need to call
+		// layoutNode() again.
+		if(best.overflow && layoutNode){
+			layoutNode(node, best.aroundCorner, best.corner, best.spaceAvailable, aroundNodeCoords);
+		}
+
+		// And then position the node.  Do this last, after the layoutNode() above
+		// has sized the node, due to browser quirks when the viewport is scrolled
+		// (specifically that a Tooltip will shrink to fit as though the window was
+		// scrolled to the left).
+		//
+		// In RTL mode, set style.right rather than style.left so in the common case,
+		// window resizes move the popup along with the aroundNode.
+
+		var l = domGeometry.isBodyLtr(node.ownerDocument),
+			top = best.y,
+			side = l ? best.x : view.w - best.x - best.w;
+
+		if(/relative|absolute/.test(domStyle.get(win.body(node.ownerDocument), "position"))){
+			// compensate for margin on <body>, see #16148
+			top -= domStyle.get(win.body(node.ownerDocument), "marginTop");
+			side -= (l ? 1 : -1) * domStyle.get(win.body(node.ownerDocument), l ? "marginLeft" : "marginRight");
+		}
+
+		var s = node.style;
+		s.top = top + "px";
+		s[l ? "left" : "right"] = side + "px";
+		s[l ? "right" : "left"] = "auto";	// needed for FF or else tooltip goes to far left
+
+		return best;
+	}
+
+	var reverse = {
+		// Map from corner to kitty-corner
+		"TL": "BR",
+		"TR": "BL",
+		"BL": "TR",
+		"BR": "TL"
+	};
+
+	var place = {
+		// summary:
+		//		Code to place a DOMNode relative to another DOMNode.
+		//		Load using require(["dijit/place"], function(place){ ... }).
+
+		at: function(node, pos, corners, padding, layoutNode){
+			// summary:
+			//		Positions node kitty-corner to the rectangle centered at (pos.x, pos.y) with width and height of
+			//		padding.x * 2 and padding.y * 2, or zero if padding not specified.  Picks first corner in corners[]
+			//		where node is fully visible, or the corner where it's most visible.
+			//
+			//		Node is assumed to be absolutely or relatively positioned.
+			// node: DOMNode
+			//		The node to position
+			// pos: dijit/place.__Position
+			//		Object like {x: 10, y: 20}
+			// corners: String[]
+			//		Array of Strings representing order to try corners of the node in, like ["TR", "BL"].
+			//		Possible values are:
+			//
+			//		- "BL" - bottom left
+			//		- "BR" - bottom right
+			//		- "TL" - top left
+			//		- "TR" - top right
+			// padding: dijit/place.__Position?
+			//		Optional param to set padding, to put some buffer around the element you want to position.
+			//		Defaults to zero.
+			// layoutNode: Function(node, aroundNodeCorner, nodeCorner)
+			//		For things like tooltip, they are displayed differently (and have different dimensions)
+			//		based on their orientation relative to the parent.  This adjusts the popup based on orientation.
+			// example:
+			//		Try to place node's top right corner at (10,20).
+			//		If that makes node go (partially) off screen, then try placing
+			//		bottom left corner at (10,20).
+			//	|	place(node, {x: 10, y: 20}, ["TR", "BL"])
+			var choices = array.map(corners, function(corner){
+				var c = {
+					corner: corner,
+					aroundCorner: reverse[corner],	// so TooltipDialog.orient() gets aroundCorner argument set
+					pos: {x: pos.x,y: pos.y}
+				};
+				if(padding){
+					c.pos.x += corner.charAt(1) == 'L' ? padding.x : -padding.x;
+					c.pos.y += corner.charAt(0) == 'T' ? padding.y : -padding.y;
+				}
+				return c;
+			});
+
+			return _place(node, choices, layoutNode);
+		},
+
+		around: function(
+			/*DomNode*/		node,
+			/*DomNode|dijit/place.__Rectangle*/ anchor,
+			/*String[]*/	positions,
+			/*Boolean*/		leftToRight,
+			/*Function?*/	layoutNode){
+
+			// summary:
+			//		Position node adjacent or kitty-corner to anchor
+			//		such that it's fully visible in viewport.
+			// description:
+			//		Place node such that corner of node touches a corner of
+			//		aroundNode, and that node is fully visible.
+			// anchor:
+			//		Either a DOMNode or a rectangle (object with x, y, width, height).
+			// positions:
+			//		Ordered list of positions to try matching up.
+			//
+			//		- before: places drop down to the left of the anchor node/widget, or to the right in the case
+			//			of RTL scripts like Hebrew and Arabic; aligns either the top of the drop down
+			//			with the top of the anchor, or the bottom of the drop down with bottom of the anchor.
+			//		- after: places drop down to the right of the anchor node/widget, or to the left in the case
+			//			of RTL scripts like Hebrew and Arabic; aligns either the top of the drop down
+			//			with the top of the anchor, or the bottom of the drop down with bottom of the anchor.
+			//		- before-centered: centers drop down to the left of the anchor node/widget, or to the right
+			//			in the case of RTL scripts like Hebrew and Arabic
+			//		- after-centered: centers drop down to the right of the anchor node/widget, or to the left
+			//			in the case of RTL scripts like Hebrew and Arabic
+			//		- above-centered: drop down is centered above anchor node
+			//		- above: drop down goes above anchor node, left sides aligned
+			//		- above-alt: drop down goes above anchor node, right sides aligned
+			//		- below-centered: drop down is centered above anchor node
+			//		- below: drop down goes below anchor node
+			//		- below-alt: drop down goes below anchor node, right sides aligned
+			// layoutNode: Function(node, aroundNodeCorner, nodeCorner)
+			//		For things like tooltip, they are displayed differently (and have different dimensions)
+			//		based on their orientation relative to the parent.	 This adjusts the popup based on orientation.
+			// leftToRight:
+			//		True if widget is LTR, false if widget is RTL.   Affects the behavior of "above" and "below"
+			//		positions slightly.
+			// example:
+			//	|	placeAroundNode(node, aroundNode, {'BL':'TL', 'TR':'BR'});
+			//		This will try to position node such that node's top-left corner is at the same position
+			//		as the bottom left corner of the aroundNode (ie, put node below
+			//		aroundNode, with left edges aligned).	If that fails it will try to put
+			//		the bottom-right corner of node where the top right corner of aroundNode is
+			//		(ie, put node above aroundNode, with right edges aligned)
+			//
+
+			// If around is a DOMNode (or DOMNode id), convert to coordinates.
+			var aroundNodePos;
+			if(typeof anchor == "string" || "offsetWidth" in anchor){
+				aroundNodePos = domGeometry.position(anchor, true);
+
+				// For above and below dropdowns, subtract width of border so that popup and aroundNode borders
+				// overlap, preventing a double-border effect.  Unfortunately, difficult to measure the border
+				// width of either anchor or popup because in both cases the border may be on an inner node.
+				if(/^(above|below)/.test(positions[0])){
+					var anchorBorder = domGeometry.getBorderExtents(anchor),
+						anchorChildBorder = anchor.firstChild ? domGeometry.getBorderExtents(anchor.firstChild) : {t:0,l:0,b:0,r:0},
+						nodeBorder =  domGeometry.getBorderExtents(node),
+						nodeChildBorder = node.firstChild ? domGeometry.getBorderExtents(node.firstChild) : {t:0,l:0,b:0,r:0};
+					aroundNodePos.y += Math.min(anchorBorder.t + anchorChildBorder.t, nodeBorder.t + nodeChildBorder.t);
+					aroundNodePos.h -=  Math.min(anchorBorder.t + anchorChildBorder.t, nodeBorder.t+ nodeChildBorder.t) +
+						Math.min(anchorBorder.b + anchorChildBorder.b, nodeBorder.b + nodeChildBorder.b);
+				}
+			}else{
+				aroundNodePos = anchor;
+			}
+
+			// Compute position and size of visible part of anchor (it may be partially hidden by ancestor nodes w/scrollbars)
+			if(anchor.parentNode){
+				// ignore nodes between position:relative and position:absolute
+				var sawPosAbsolute = domStyle.getComputedStyle(anchor).position == "absolute";
+				var parent = anchor.parentNode;
+				while(parent && parent.nodeType == 1 && parent.nodeName != "BODY"){  //ignoring the body will help performance
+					var parentPos = domGeometry.position(parent, true),
+						pcs = domStyle.getComputedStyle(parent);
+					if(/relative|absolute/.test(pcs.position)){
+						sawPosAbsolute = false;
+					}
+					if(!sawPosAbsolute && /hidden|auto|scroll/.test(pcs.overflow)){
+						var bottomYCoord = Math.min(aroundNodePos.y + aroundNodePos.h, parentPos.y + parentPos.h);
+						var rightXCoord = Math.min(aroundNodePos.x + aroundNodePos.w, parentPos.x + parentPos.w);
+						aroundNodePos.x = Math.max(aroundNodePos.x, parentPos.x);
+						aroundNodePos.y = Math.max(aroundNodePos.y, parentPos.y);
+						aroundNodePos.h = bottomYCoord - aroundNodePos.y;
+						aroundNodePos.w = rightXCoord - aroundNodePos.x;
+					}
+					if(pcs.position == "absolute"){
+						sawPosAbsolute = true;
+					}
+					parent = parent.parentNode;
+				}
+			}			
+
+			var x = aroundNodePos.x,
+				y = aroundNodePos.y,
+				width = "w" in aroundNodePos ? aroundNodePos.w : (aroundNodePos.w = aroundNodePos.width),
+				height = "h" in aroundNodePos ? aroundNodePos.h : (kernel.deprecated("place.around: dijit/place.__Rectangle: { x:"+x+", y:"+y+", height:"+aroundNodePos.height+", width:"+width+" } has been deprecated.  Please use { x:"+x+", y:"+y+", h:"+aroundNodePos.height+", w:"+width+" }", "", "2.0"), aroundNodePos.h = aroundNodePos.height);
+
+			// Convert positions arguments into choices argument for _place()
+			var choices = [];
+			function push(aroundCorner, corner){
+				choices.push({
+					aroundCorner: aroundCorner,
+					corner: corner,
+					pos: {
+						x: {
+							'L': x,
+							'R': x + width,
+							'M': x + (width >> 1)
+						}[aroundCorner.charAt(1)],
+						y: {
+							'T': y,
+							'B': y + height,
+							'M': y + (height >> 1)
+						}[aroundCorner.charAt(0)]
+					}
+				})
+			}
+			array.forEach(positions, function(pos){
+				var ltr =  leftToRight;
+				switch(pos){
+					case "above-centered":
+						push("TM", "BM");
+						break;
+					case "below-centered":
+						push("BM", "TM");
+						break;
+					case "after-centered":
+						ltr = !ltr;
+						// fall through
+					case "before-centered":
+						push(ltr ? "ML" : "MR", ltr ? "MR" : "ML");
+						break;
+					case "after":
+						ltr = !ltr;
+						// fall through
+					case "before":
+						push(ltr ? "TL" : "TR", ltr ? "TR" : "TL");
+						push(ltr ? "BL" : "BR", ltr ? "BR" : "BL");
+						break;
+					case "below-alt":
+						ltr = !ltr;
+						// fall through
+					case "below":
+						// first try to align left borders, next try to align right borders (or reverse for RTL mode)
+						push(ltr ? "BL" : "BR", ltr ? "TL" : "TR");
+						push(ltr ? "BR" : "BL", ltr ? "TR" : "TL");
+						break;
+					case "above-alt":
+						ltr = !ltr;
+						// fall through
+					case "above":
+						// first try to align left borders, next try to align right borders (or reverse for RTL mode)
+						push(ltr ? "TL" : "TR", ltr ? "BL" : "BR");
+						push(ltr ? "TR" : "TL", ltr ? "BR" : "BL");
+						break;
+					default:
+						// To assist dijit/_base/place, accept arguments of type {aroundCorner: "BL", corner: "TL"}.
+						// Not meant to be used directly.  Remove for 2.0.
+						push(pos.aroundCorner, pos.corner);
+				}
+			});
+
+			var position = _place(node, choices, layoutNode, {w: width, h: height});
+			position.aroundNodePos = aroundNodePos;
+
+			return position;
+		}
+	};
+
+	/*=====
+	place.__Position = {
+		// x: Integer
+		//		horizontal coordinate in pixels, relative to document body
+		// y: Integer
+		//		vertical coordinate in pixels, relative to document body
+	};
+	place.__Rectangle = {
+		// x: Integer
+		//		horizontal offset in pixels, relative to document body
+		// y: Integer
+		//		vertical offset in pixels, relative to document body
+		// w: Integer
+		//		width in pixels.   Can also be specified as "width" for backwards-compatibility.
+		// h: Integer
+		//		height in pixels.   Can also be specified as "height" for backwards-compatibility.
+	};
+	=====*/
+
+	return dijit.place = place;	// setting dijit.place for back-compat, remove for 2.0
+});
+
+},
+'dojox/mobile/Overlay':function(){
+define([
+	"dojo/_base/declare",
+	"dojo/_base/lang",
+	"dojo/sniff",
+	"dojo/_base/window",
+	"dojo/dom-class",
+	"dojo/dom-geometry",
+	"dojo/dom-style",
+	"dojo/window",
+	"dijit/_WidgetBase",
+	"dojo/_base/array",
+	"dijit/registry",
+	"dojo/touch",
+	"./_css3"
+], function(declare, lang, has, win, domClass, domGeometry, domStyle, windowUtils, WidgetBase, array, registry, touch, css3){
+
+	return declare("dojox.mobile.Overlay", WidgetBase, {
+		// summary:
+		//		A non-templated widget that animates up from the bottom, 
+		//		overlaying the current content.
+
+		// baseClass: String
+		//		The name of the CSS class of this widget.
+		baseClass: "mblOverlay mblOverlayHidden",
+
+		buildRendering: function(){
+			this.inherited(arguments);
+			if(!this.containerNode){
+				// set containerNode so that getChildren() works
+				this.containerNode = this.domNode;
+			}
+		},
+
+		_reposition: function(){
+			// summary:
+			//		Position the overlay at the bottom
+			// tags:
+			//		private
+			var popupPos = domGeometry.position(this.domNode);
+			var vp = windowUtils.getBox();
+			if((popupPos.y+popupPos.h) != vp.h // TODO: should be a has() test for position:fixed not scrolling
+				|| (domStyle.get(this.domNode, 'position') != 'absolute' && has('android') < 3)){ // android 2.x supports position:fixed but child transforms don't persist
+				popupPos.y = vp.t + vp.h - popupPos.h;
+				domStyle.set(this.domNode, { position: "absolute", top: popupPos.y + "px", bottom: "auto" });
+			}
+			return popupPos;
+		},
+
+		show: function(/*DomNode?*/aroundNode){
+			// summary:
+			//		Scroll the overlay up into view
+			array.forEach(registry.findWidgets(this.domNode), function(w){
+				if(w && w.height == "auto" && typeof w.resize == "function"){
+					w.resize();
+				}
+			});
+			var popupPos = this._reposition();
+			if(aroundNode){
+				var aroundPos = domGeometry.position(aroundNode);
+				if(popupPos.y < aroundPos.y){ // if the aroundNode is under the popup, try to scroll it up
+					win.global.scrollBy(0, aroundPos.y + aroundPos.h - popupPos.y);
+					this._reposition();
+				}
+			}
+			var _domNode = this.domNode;
+			domClass.replace(_domNode, ["mblCoverv", "mblIn"], ["mblOverlayHidden", "mblRevealv", "mblOut", "mblReverse", "mblTransition"]);
+			this.defer(function(){
+				var handler = this.connect(_domNode, css3.name("transitionEnd"), function(){
+					this.disconnect(handler);
+					domClass.remove(_domNode, ["mblCoverv", "mblIn", "mblTransition"]);
+					this._reposition();
+				});
+				domClass.add(_domNode, "mblTransition");
+			}, 100);
+			var skipReposition = false;
+
+			this._moveHandle = this.connect(win.doc.documentElement, touch.move,
+				function(){
+					skipReposition = true;
+				}
+			);
+			this._repositionTimer = setInterval(lang.hitch(this, function(){
+				if(skipReposition){ // don't reposition if busy
+					skipReposition = false;
+					return;
+				}
+				this._reposition();
+			}), 50); // yield a short time to allow for consolidation for better CPU throughput
+			return popupPos;
+		},
+
+		hide: function(){
+			// summary:
+			//		Scroll the overlay down and then make it invisible
+			var _domNode = this.domNode;
+			if(this._moveHandle){
+				this.disconnect(this._moveHandle);
+				this._moveHandle = null;
+				clearInterval(this._repositionTimer);
+				this._repositionTimer = null;
+			}
+			if(has("css3-animations")){
+				domClass.replace(_domNode, ["mblRevealv", "mblOut", "mblReverse"], ["mblCoverv", "mblIn", "mblOverlayHidden", "mblTransition"]);
+				this.defer(function(){
+					var handler = this.connect(_domNode, css3.name("transitionEnd"), function(){
+						this.disconnect(handler);
+						domClass.replace(_domNode, ["mblOverlayHidden"], ["mblRevealv", "mblOut", "mblReverse", "mblTransition"]);
+					});
+					domClass.add(_domNode, "mblTransition");
+				}, 100);
+			}else{
+				domClass.replace(_domNode, ["mblOverlayHidden"], ["mblCoverv", "mblIn", "mblRevealv", "mblOut", "mblReverse"]);
+			}
+		},
+
+		onBlur: function(/*Event*/e){
+			return false; // touching outside the overlay area does not call hide()
+		}
+	});
+});
+
+},
+'dojox/mobile/lazyLoadUtils':function(){
+define([
+	"dojo/_base/kernel",
+	"dojo/_base/array",
+	"dojo/_base/config",
+	"dojo/_base/window",
+	"dojo/_base/Deferred",
+	"dojo/ready"
+], function(dojo, array, config, win, Deferred, ready){
+
+	// module:
+	//		dojox/mobile/lazyLoadUtils
+
+	var LazyLoadUtils = function(){
+		// summary:
+		//		Utilities to lazy-loading of Dojo widgets.
+
+		this._lazyNodes = [];
+		var _this = this;
+		if(config.parseOnLoad){
+			ready(90, function(){
+				var lazyNodes = array.filter(win.body().getElementsByTagName("*"), // avoid use of dojo.query
+					function(n){ return n.getAttribute("lazy") === "true" || (n.getAttribute("data-dojo-props")||"").match(/lazy\s*:\s*true/); });
+				var i, j, nodes, s, n;
+				for(i = 0; i < lazyNodes.length; i++){
+					array.forEach(["dojoType", "data-dojo-type"], function(a){
+						nodes = array.filter(lazyNodes[i].getElementsByTagName("*"),
+											function(n){ return n.getAttribute(a); });
+						for(j = 0; j < nodes.length; j++){
+							n = nodes[j];
+							n.setAttribute("__" + a, n.getAttribute(a));
+							n.removeAttribute(a);
+							_this._lazyNodes.push(n);
+						}
+					});
+				}
+			});
+		}
+
+		ready(function(){
+			for(var i = 0; i < _this._lazyNodes.length; i++){ /* 1.8 */
+				var n = _this._lazyNodes[i];
+				array.forEach(["dojoType", "data-dojo-type"], function(a){
+					if(n.getAttribute("__" + a)){
+						n.setAttribute(a, n.getAttribute("__" + a));
+						n.removeAttribute("__" + a);
+					}
+				});
+			}
+			delete _this._lazyNodes;
+
+		});
+
+		this.instantiateLazyWidgets = function(root, requires, callback){
+			// summary:
+			//		Instantiates dojo widgets under the root node.
+			// description:
+			//		Finds DOM nodes that have the dojoType or data-dojo-type attributes,
+			//		requires the found Dojo modules, and runs the parser.
+			var d = new Deferred();
+			var req = requires ? requires.split(/,/) : [];
+			var nodes = root.getElementsByTagName("*"); // avoid use of dojo.query
+			var len = nodes.length;
+			for(var i = 0; i < len; i++){
+				var s = nodes[i].getAttribute("dojoType") || nodes[i].getAttribute("data-dojo-type");
+				if(s){
+					req.push(s);
+					var m = nodes[i].getAttribute("data-dojo-mixins"),
+						mixins = m ? m.split(/, */) : [];
+					req = req.concat(mixins);
+				}
+			}
+			if(req.length === 0){ return true; }
+
+			if(dojo.require){
+				array.forEach(req, function(c){
+					dojo["require"](c);
+				});
+				dojo.parser.parse(root);
+				if(callback){ callback(root); }
+				return true;
+			}else{
+				req = array.map(req, function(s){ return s.replace(/\./g, "/"); });
+				require(req, function(){
+					dojo.parser.parse(root);
+					if(callback){ callback(root); }
+					d.resolve(true);
+				});
+			}
+			return d;
+		}	
+	};
+
+	// Return singleton.  (TODO: can we replace LazyLoadUtils class and singleton w/a simple hash of functions?)
+	return new LazyLoadUtils();
+});
 
 
-/*
-    - dojo/NodeList-manipulate
-    - Load dojo/NodeList-manipulate to get JQuery syntax:
+},
+'dojox/mobile/DatePicker':function(){
+define([
+	"dojo/_base/lang",
+	"./_PickerChooser!DatePicker"
+], function(lang, DatePicker){
 
-.html( value)
-.text(value)
-.val(value)
-.append(content)
-.appendTo(query)
-.prepend(content)
-.prependTo(query)
-.after(content)
-.insertAfter(query)
-.before(content)
-.insertBefore(query)
-.wrap(html)
-.wrapAll(html)
-.wrapInner(html)
-.replaceAll(query)
-.clone()
+	// module:
+	//		dojox/mobile/DatePicker
 
-*/
+	// TODO: need to list all the properties/methods in the interface provided by
+	// SpinWheelDatePicker / ValuePickerDatePicker
+		
+	/*=====
+	return function(){
+		// summary:
+		//		A wrapper widget around SpinWheelDatePicker or ValuePickerDatePicker.
+		//		It should be used with the automatic theme loader, dojox/mobile/deviceTheme.
+		//		Returns ValuePickerDatePicker when the current theme is "android" or "holodark".
+		//		Returns SpinWheelDatePicker otherwise.
+	};
+	=====*/
+	return lang.setObject("dojox.mobile.DatePicker", DatePicker);
+});
 
-/*  - dojo/query!css3
-    - NodeList functions dojo/query returns NodeList and supports chanining
-    - Read the docs or source for more info:
-        - (http://dojotoolkit.org/api/1.9/dojo/NodeList)
+},
+'dojox/mobile/_PickerChooser':function(){
+define([
+	"dojo/_base/lang",
+	"dojo/_base/window"
+], function(lang, win){
 
-.addClass(className) adds the specified class to every node in the list
-.addClassFx(cssClass, args) Animate the effects of adding a class to all nodes in this list. see dojox.fx.addClass
-.addContent(content, position) add a node, NodeList or some HTML as a string to every item in the list. Returns the original list.
-.adopt(queryOrListOrNode, position) places any/all elements in queryOrListOrNode at a position relative to the first element in this list.
-.after(content) Places the content after every node in the NodeList.
-.andSelf() Adds the nodes from the previous dojo/NodeList to the current dojo/NodeList.
-.anim(properties, duration, easing, onEnd, delay) Animate one or more CSS properties for all nodes in this list.
-.animateProperty(args) Animate all elements of this NodeList across the properties specified. syntax identical to dojo.animateProperty
-.append(content) appends the content to every node in the NodeList.
-.appendTo(query) appends nodes in this NodeList to the nodes matched by the query passed to appendTo.
-.at(index) Returns a new NodeList comprised of items in this NodeList at the given index or indices.
-.attr(property, value) gets or sets the DOM attribute for every element in the NodeList.
-.before(content) Places the content before every node in the NodeList.
-.children(query) Returns all immediate child elements for nodes in this dojo/NodeList. Optionally takes a query to filter the child elements.
-.clone() Clones all the nodes in this NodeList and returns them as a new NodeList.
-.closest(query, root) Returns closest parent that matches query, including current node in this dojo/NodeList if it matches the query.
-.concat(item) Returns a new NodeList comprised of items in this NodeList as well as items passed in as parameters
-.connect(methodName, objOrFunc, funcName) Attach event handlers to every item of the NodeList.
-.coords() Deprecated: Use position() for border-box x/y/w/h or marginBox() for margin-box w/h/l/t.
-.data(key, value) stash or get some arbitrary data on/from these nodes.
-.delegate(selector, eventName, fn) Monitor nodes in this NodeList for [bubbled] events on nodes that match selector. Calls fn(evt) for those events, where (inside of fn()), this == the node that matches the selector.
-.dtl(template, context) Renders the specified template in each of the NodeList entries.
-.empty() clears all content from each node in the list.
-.end() Ends use of the current NodeList by returning the previous NodeList that generated the current NodeList.
-.even() Returns the even nodes in this dojo/NodeList as a dojo/NodeList.
-.every(callback, thisObject) see dojo.every() and the Array.every docs.
-.fadeIn(args) fade in all elements of this NodeList via dojo.fadeIn
-.fadeOut(args) fade out all elements of this NodeList via dojo.fadeOut
-.filter(filter) "masks" the built-in javascript filter() method (supported in Dojo via dojo.filter) to support passing a simple string filter in addition to supporting filtering function objects.
-.first() Returns the first node in this dojo/NodeList as a dojo/NodeList.
-.forEach(callback, thisObj) see dojo.forEach().
-.html(value) allows setting the innerHTML of each node in the NodeList, if there is a value passed in, otherwise, reads the innerHTML value of the first node.
-.indexOf(value, fromIndex) see dojo.indexOf(). The primary difference is that the acted-on array is implicitly this NodeList
-.innerHTML(value) allows setting the innerHTML of each node in the NodeList, if there is a value passed in, otherwise, reads the innerHTML value of the first node.
-.insertAfter(query) The nodes in this NodeList will be placed after the nodes matched by the query passed to insertAfter.
-.insertBefore(query) The nodes in this NodeList will be placed after the nodes matched by the query passed to insertAfter.
-.instantiate(declaredClass, properties) Create a new instance of a specified class, using the specified properties and each node in the NodeList as a srcNodeRef.
-.last() Returns the last node in this dojo/NodeList as a dojo/NodeList.
-.lastIndexOf(value, fromIndex) see dojo.lastIndexOf(). The primary difference is that the acted-on array is implicitly this NodeList
-.map(func, obj) see dojo.map().
-.marginBox() Returns margin-box size of nodes
-.next(query) Returns the next element for nodes in this dojo/NodeList. Optionally takes a query to filter the next elements.
-.nextAll(query) Returns all sibling elements that come after the nodes in this dojo/NodeList. Optionally takes a query to filter the sibling elements.
-.odd() Returns the odd nodes in this dojo/NodeList as a dojo/NodeList.
-.on(eventName, listener) Listen for events on the nodes in the NodeList.
-.orphan(filter) removes elements in this list that match the filter from their parents and returns them as a new NodeList.
-.parent(query) Returns immediate parent elements for nodes in this dojo/NodeList. Optionally takes a query to filter the parent elements.
-.parents(query) Returns all parent elements for nodes in this dojo/NodeList. Optionally takes a query to filter the child elements.
-.place(queryOrNode, position) places elements of this node list relative to the first element matched by queryOrNode.
-.position() Returns border-box objects (x/y/w/h) of all elements in a node list as an Array (not a NodeList).
-.prepend(content) prepends the content to every node in the NodeList.
-.prependTo(query) prepends nodes in this NodeList to the nodes matched by the query passed to prependTo.
-.prev(query) Returns the previous element for nodes in this dojo/NodeList. Optionally takes a query to filter the previous elements.
-.prevAll(query) Returns all sibling elements that come before the nodes in this dojo/NodeList. Optionally takes a query to filter the sibling elements.
-.query(queryStr) Returns a new list whose members match the passed query, assuming elements of the current NodeList as the root for each search.
-.remove(filter) removes elements in this list that match the filter from their parents and returns them as a new NodeList.
-.removeAttr(name) Removes an attribute from each node in the list.
-.removeClass(className) removes the specified class from every node in the list
-.removeClassFx(cssClass, args) Animate the effect of removing a class to all nodes in this list. see dojox.fx.removeClass
-.removeData(key) Remove the data associated with these nodes.
-.replaceAll(query) replaces nodes matched by the query passed to replaceAll with the nodes in this NodeList.
-.replaceClass(addClassStr, removeClassStr) Replaces one or more classes on a node if not present.
-.replaceWith(content) Replaces each node in ths NodeList with the content passed to replaceWith.
-.siblings(query) Returns all sibling elements for nodes in this dojo/NodeList. Optionally takes a query to filter the sibling elements.
-.slice(begin, end) Returns a new NodeList, maintaining this one in place
-.slideTo(args) slide all elements of the node list to the specified place via dojo/fx.slideTo()
-.some(callback, thisObject) Takes the same structure of arguments and returns as dojo.some() with the caveat that the passed array is implicitly this NodeList.
-.splice(index, howmany, item) Returns a new NodeList, manipulating this NodeList based on the arguments passed, potentially splicing in new elements at an offset, optionally deleting elements
-.style(property, value) gets or sets the CSS property for every element in the NodeList
-.text(value) allows setting the text value of each node in the NodeList, if there is a value passed in, otherwise, returns the text value for all the nodes in the NodeList in one string.
-.toggleClass(className, condition) Adds a class to node if not present, or removes if present.
-.toggleClassFx(cssClass, force, args) Animate the effect of adding or removing a class to all nodes in this list. see dojox.fx.toggleClass
-.toString()
-.val(value) If a value is passed, allows seting the value property of form elements in this NodeList, or properly selecting/checking the right value for radio/checkbox/select elements.
-.wipeIn(args) wipe in all elements of this NodeList via dojo/fx.wipeIn()
-.wipeOut(args) wipe out all elements of this NodeList via dojo/fx.wipeOut()
-.wrap(html) Wrap each node in the NodeList with html passed to wrap.
-.wrapAll(html) Insert html where the first node in this NodeList lives, then place all nodes in this NodeList as the child of the html.
-.wrapInner(html) For each node in the NodeList, wrap all its children with the passed in html..
-*/
+	// module:
+	//		dojox/mobile/_PickerChooser
 
+	return{
+		// summary:
+		//		This widget chooses a picker class according to the current theme.
+		//		Imports ValuePicker-based date/time picker when the current theme is "android".
+		//		Imports SpinWheel-based date/time picker otherwise.
+
+		load: function (id, parentRequire, loaded){
+			// summary:
+			//		Imports a picker class according to the current theme.
+			var dm = win.global._no_dojo_dm || lang.getObject("dojox.mobile", true);
+			parentRequire([(dm.currentTheme === "android" || dm.currentTheme === "holodark" ? "./ValuePicker" : "./SpinWheel") + id], loaded);
+		}
+	};
+});
+
+},
+'dojox/mobile/SpinWheelDatePicker':function(){
+define([
+	"dojo/_base/array",
+	"dojo/_base/declare",
+	"dojo/dom-class",
+	"./_DatePickerMixin",
+	"./SpinWheel",
+	"./SpinWheelSlot"
+], function(array, declare, domClass, DatePickerMixin, SpinWheel, SpinWheelSlot){
+
+	// module:
+	//		dojox/mobile/SpinWheelDatePicker
+
+	return declare("dojox.mobile.SpinWheelDatePicker", [SpinWheel, DatePickerMixin], {
+		// summary:
+		//		A SpinWheel-based date picker widget.
+		// description:
+		//		SpinWheelDatePicker is a date picker widget. It is a subclass of
+		//		dojox/mobile/SpinWheel. It has three slots: year, month, and day.
+
+		slotClasses: [
+			SpinWheelSlot,
+			SpinWheelSlot,
+			SpinWheelSlot
+		],
+
+		slotProps: [
+			{labelFrom:1970, labelTo:2038},
+			{},
+			{}
+		],
+
+		buildRendering: function(){
+			this.initSlots();
+			this.inherited(arguments);
+			domClass.add(this.domNode, "mblSpinWheelDatePicker");
+			this._conn = [
+				this.connect(this.slots[0], "onFlickAnimationEnd", "_onYearSet"),
+				this.connect(this.slots[1], "onFlickAnimationEnd", "_onMonthSet"),
+				this.connect(this.slots[2], "onFlickAnimationEnd", "_onDaySet")
+			];
+		},
+
+		disableValues: function(/*Number*/daysInMonth){
+			// summary:
+			//		Disables the end days of the month to match the specified
+			//		number of days of the month.
+			array.forEach(this.slots[2].panelNodes, function(panel){
+				for(var i = 27; i < 31; i++){
+					domClass.toggle(panel.childNodes[i], "mblSpinWheelSlotLabelGray", i >= daysInMonth);
+				}
+			});
+		}
+	});
+});
+
+},
+'dojox/mobile/_DatePickerMixin':function(){
+define([
+	"dojo/_base/array",
+	"dojo/_base/declare",
+	"dojo/_base/lang",
+	"dojo/date",
+	"dojo/date/locale",
+	"dojo/date/stamp"
+], function(array, declare, lang, ddate, datelocale, datestamp){
+
+	// module:
+	//		dojox/mobile/_DatePickerMixin
+
+	var slotMixin = {
+		format: function(/*Date*/d){
+			return datelocale.format(d, {datePattern:this.pattern, selector:"date"});
+		}
+	};
+
+	var yearSlotMixin = lang.mixin({
+		initLabels: function(){
+			this.labels = [];
+			if(this.labelFrom !== this.labelTo){
+				var d = new Date(this.labelFrom, 0, 1);
+				var i, idx;
+				for(i = this.labelFrom, idx = 0; i <= this.labelTo; i++, idx++){
+					d.setFullYear(i);
+					this.labels.push(this.format(d));
+				}
+			}
+		}
+	}, slotMixin);
+
+	var monthSlotMixin = lang.mixin({
+		initLabels: function(){
+			this.labels = [];
+			// On certain BlackBerry devices, we need to init to 16 not 1 to avoid some devices bugs (see #15677)
+			var d = new Date(2000, 0, 16);
+			for(var i = 0; i < 12; i++){
+				d.setMonth(i);
+				this.labels.push(this.format(d));
+			}
+		}
+	}, slotMixin);
+
+	var daySlotMixin = lang.mixin({
+		initLabels: function(){
+			this.labels = [];
+			var d = new Date(2000, 0, 1);
+			for(var i = 1; i <= 31; i++){
+				d.setDate(i);
+				this.labels.push(this.format(d));
+			}
+		}
+	}, slotMixin);
+
+	return declare("dojox.mobile._DatePickerMixin", null, {
+		// summary:
+		//		A mixin for date picker widget.
+
+		// yearPattern: String
+		//		A pattern to be used to format year.
+		yearPattern: "yyyy",
+
+		// monthPattern: String
+		//		A pattern to be used to format month.
+		monthPattern: "MMM",
+
+		// dayPattern: String
+		//		A pattern to be used to format day.
+		dayPattern: "d",
+		
+		/*=====
+		// value: String
+		//		A string representing the date value.
+		//		The setter of this property first converts the value argument by calling 
+		//		the fromISOString method of the dojo/date/stamp module, then sets the 
+		//		values of the picker according to the resulting	Date object. 
+		//		If the string cannot be parsed by fromISOString, the method does nothing.
+		//		Example: set("value", "2012-1-20"); // January 20, 2012
+		//		The getter returns the string formatted as described in the dojo/date/stamp 
+		//		module.
+		value: "",
+		=====*/
+		
+		initSlots: function(){
+			// summary:
+			//		Initializes the slots.
+			var c = this.slotClasses, p = this.slotProps;
+			c[0] = declare(c[0], yearSlotMixin);
+			c[1] = declare(c[1], monthSlotMixin);
+			c[2] = declare(c[2], daySlotMixin);
+			p[0].pattern = this.yearPattern;
+			p[1].pattern = this.monthPattern;
+			p[2].pattern = this.dayPattern;
+			this.reorderSlots();
+		},
+
+		reorderSlots: function(){
+			// summary:
+			//		Reorders the slots.			
+			if(this.slotOrder.length){ return; }
+			var a = datelocale._parseInfo().bundle["dateFormat-short"].toLowerCase().split(/[^ymd]+/, 3);
+			this.slotOrder = array.map(a, function(pat){
+				return {y:0, m:1, d:2}[pat.charAt(0)];
+			});
+		},
+
+		reset: function(){
+			// summary:
+			//		Goes to today.
+			var now = new Date();
+			var v = array.map(this.slots, function(w){ return w.format(now); });
+			this.set("colors", v);
+			this._disableEndDaysOfMonth();
+			if(this.value){
+				this.set("value", this.value);
+				this.value = null;
+			}else if(this.values){
+				this.set("values", this.values);
+				this.values = null;
+			}else{
+				this.set("values", v);
+			}
+		},
+
+		_onYearSet: function(){
+			// summary:
+			//		An internal handler called when the year value is changed.
+			// tags:
+			//		private
+			var slot = this.slots[0];
+			var newValue = slot.get("value");
+			if(!(slot._previousValue && newValue == slot._previousValue)){ // do nothing if the value is unchanged
+				this._disableEndDaysOfMonth();
+				slot._previousValue = newValue;
+				slot._set("value", newValue);
+				this.onYearSet();
+			}
+		},
+		
+		onYearSet: function(){
+			// summary:
+			//		A handler called when the year value is changed.
+		},
+
+		_onMonthSet: function(){
+			// summary:
+			//		An internal handler called when the month value is changed.
+			// tags:
+			//		private
+			var slot = this.slots[1];
+			var newValue = slot.get("value");
+			if(!(slot._previousValue && newValue == slot._previousValue)){ // do nothing if the value is unchanged
+				this._disableEndDaysOfMonth();
+				slot._previousValue = newValue;
+				slot._set("value", newValue); // notify watches
+				this.onMonthSet();
+			}
+		},
+
+		onMonthSet: function(){
+			// summary:
+			//		A handler called when the month value is changed.
+		},
+
+		_onDaySet: function(){
+			// summary:
+			//		An internal handler called when the day value is changed.
+			// tags:
+			//		private
+			var slot = this.slots[2];
+			var newValue = slot.get("value");
+			if(!(slot._previousValue && newValue == slot._previousValue)){ // do nothing if the value is unchanged
+				if(!this._disableEndDaysOfMonth()){
+					// If _disableEndDaysOfMonth has changed the day value,
+					// skip notifications till next call of _onDaySet, to
+					// avoid the extra notification for the (invalid)
+					// intermediate value of the day.
+					slot._previousValue = newValue;
+					slot._set("value", newValue); // notify watches
+					this.onDaySet();
+				}
+			}
+		},
+
+		onDaySet: function(){
+			// summary:
+			//		A handler called when the day value is changed.
+		},
+
+		_disableEndDaysOfMonth: function(){
+			// summary:
+			//		Disables the end days of the month to match the specified
+			//		number of days of the month. Returns true if the day value is changed.
+			// tags:
+			//		private
+			var pat = this.slots[0].pattern + "/" + this.slots[1].pattern,
+				v = this.get("values"),
+				date = datelocale.parse(v[0] + "/" + v[1], {datePattern:pat, selector:"date"}),
+				daysInMonth = ddate.getDaysInMonth(date);
+			var changedDay = false;
+			if(daysInMonth < v[2]){
+				// day value is invalid for this month, change it
+				changedDay = true;
+				this.slots[2]._spinToValue(daysInMonth, false/*applyValue*/);
+			}
+			this.disableValues(daysInMonth);
+			return changedDay;
+		},
+
+		_getDateAttr: function(){
+			// summary:
+			//		Returns a Date object for the current values.
+			// tags:
+			//		private
+			var v = this.get("values"), // [year, month, day]
+				s = this.slots,
+				pat = s[0].pattern + "/" + s[1].pattern + "/" + s[2].pattern;
+				return datelocale.parse(v[0] + "/" + v[1] + "/" + v[2], {datePattern:pat, selector:"date"});
+		},
+
+		_setValuesAttr: function(/*Array*/values){
+			// summary:
+			//		Sets the current date as an array of values.
+			// description:
+			//		This method takes an array that consists of three values,
+			//		year, month, and day. If the values are integer, they are
+			//		formatted to locale-specific strings before setting them to
+			//		the slots. Month starts from 1 to 12 (Ex. 1 - Jan, 2 - Feb, etc.)
+			//		If the values are NOT integer, they are directly
+			//		passed to the setter of the slots without formatting.
+			//
+			// example:
+			//	|	set("values", [2012, 1, 20]); // January 20, 2012
+			// tags:
+			//		private
+			array.forEach(this.getSlots(), function(w, i){
+				var v = values[i];
+				if(typeof v == "number"){
+					var arr = [1970, 1, 1];
+					arr.splice(i, 1, v - 0);
+					v = w.format(new Date(arr[0], arr[1] - 1, arr[2]));
+				}
+				w.set("value", v);
+			});
+		},
+		
+		_setValueAttr: function(/*String*/value){
+			// summary:
+			//		Sets the current date as an String formatted according to a subset of the ISO-8601 standard.
+			// description:
+			//		This method first converts the value argument by calling the fromISOString method of
+			//		the dojo/date/stamp module, then sets the values of the picker according to the resulting
+			//		Date object. If the string cannot be parsed by fromISOString, the method does nothing.
+			// value:
+			//		A string formatted as described in the dojo/date/stamp module.
+			// example:
+			//	|	set("value", "2012-1-20"); // January 20, 2012
+			// tags:
+			//		private			
+			var date = datestamp.fromISOString(value);
+			this.set("values", array.map(this.slots, function(w){ return w.format(date); }));
+		},
+		
+		_getValueAttr: function(){
+			// summary:
+			//		Gets the current date as a String formatted according to a subset of the ISO-8601 standard.
+			// returns: String
+			//		A string formatted as described in the dojo/date/stamp module.
+			// tags:
+			//		private			
+			return datestamp.toISOString(this.get("date"), { selector: "date" });
+		}		
+	});
+});
+
+},
+'dojo/date':function(){
+define(["./has", "./_base/lang"], function(has, lang){
+// module:
+//		dojo/date
+
+var date = {
+	// summary:
+	//		Date manipulation utilities
+};
+
+date.getDaysInMonth = function(/*Date*/dateObject){
+	// summary:
+	//		Returns the number of days in the month used by dateObject
+	var month = dateObject.getMonth();
+	var days = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+	if(month == 1 && date.isLeapYear(dateObject)){ return 29; } // Number
+	return days[month]; // Number
+};
+
+date.isLeapYear = function(/*Date*/dateObject){
+	// summary:
+	//		Determines if the year of the dateObject is a leap year
+	// description:
+	//		Leap years are years with an additional day YYYY-02-29, where the
+	//		year number is a multiple of four with the following exception: If
+	//		a year is a multiple of 100, then it is only a leap year if it is
+	//		also a multiple of 400. For example, 1900 was not a leap year, but
+	//		2000 is one.
+
+	var year = dateObject.getFullYear();
+	return !(year%400) || (!(year%4) && !!(year%100)); // Boolean
+};
+
+// FIXME: This is not localized
+date.getTimezoneName = function(/*Date*/dateObject){
+	// summary:
+	//		Get the user's time zone as provided by the browser
+	// dateObject:
+	//		Needed because the timezone may vary with time (daylight savings)
+	// description:
+	//		Try to get time zone info from toString or toLocaleString method of
+	//		the Date object -- UTC offset is not a time zone.  See
+	//		http://www.twinsun.com/tz/tz-link.htm Note: results may be
+	//		inconsistent across browsers.
+
+	var str = dateObject.toString(); // Start looking in toString
+	var tz = ''; // The result -- return empty string if nothing found
+	var match;
+
+	// First look for something in parentheses -- fast lookup, no regex
+	var pos = str.indexOf('(');
+	if(pos > -1){
+		tz = str.substring(++pos, str.indexOf(')'));
+	}else{
+		// If at first you don't succeed ...
+		// If IE knows about the TZ, it appears before the year
+		// Capital letters or slash before a 4-digit year
+		// at the end of string
+		var pat = /([A-Z\/]+) \d{4}$/;
+		if((match = str.match(pat))){
+			tz = match[1];
+		}else{
+		// Some browsers (e.g. Safari) glue the TZ on the end
+		// of toLocaleString instead of putting it in toString
+			str = dateObject.toLocaleString();
+			// Capital letters or slash -- end of string,
+			// after space
+			pat = / ([A-Z\/]+)$/;
+			if((match = str.match(pat))){
+				tz = match[1];
+			}
+		}
+	}
+
+	// Make sure it doesn't somehow end up return AM or PM
+	return (tz == 'AM' || tz == 'PM') ? '' : tz; // String
+};
+
+// Utility methods to do arithmetic calculations with Dates
+
+date.compare = function(/*Date*/date1, /*Date?*/date2, /*String?*/portion){
+	// summary:
+	//		Compare two date objects by date, time, or both.
+	// description:
+	//		Returns 0 if equal, positive if a > b, else negative.
+	// date1:
+	//		Date object
+	// date2:
+	//		Date object.  If not specified, the current Date is used.
+	// portion:
+	//		A string indicating the "date" or "time" portion of a Date object.
+	//		Compares both "date" and "time" by default.  One of the following:
+	//		"date", "time", "datetime"
+
+	// Extra step required in copy for IE - see #3112
+	date1 = new Date(+date1);
+	date2 = new Date(+(date2 || new Date()));
+
+	if(portion == "date"){
+		// Ignore times and compare dates.
+		date1.setHours(0, 0, 0, 0);
+		date2.setHours(0, 0, 0, 0);
+	}else if(portion == "time"){
+		// Ignore dates and compare times.
+		date1.setFullYear(0, 0, 0);
+		date2.setFullYear(0, 0, 0);
+	}
+
+	if(date1 > date2){ return 1; } // int
+	if(date1 < date2){ return -1; } // int
+	return 0; // int
+};
+
+date.add = function(/*Date*/date, /*String*/interval, /*int*/amount){
+	// summary:
+	//		Add to a Date in intervals of different size, from milliseconds to years
+	// date: Date
+	//		Date object to start with
+	// interval:
+	//		A string representing the interval.  One of the following:
+	//		"year", "month", "day", "hour", "minute", "second",
+	//		"millisecond", "quarter", "week", "weekday"
+	// amount:
+	//		How much to add to the date.
+
+	var sum = new Date(+date); // convert to Number before copying to accomodate IE (#3112)
+	var fixOvershoot = false;
+	var property = "Date";
+
+	switch(interval){
+		case "day":
+			break;
+		case "weekday":
+			//i18n FIXME: assumes Saturday/Sunday weekend, but this is not always true.  see dojo/cldr/supplemental
+
+			// Divide the increment time span into weekspans plus leftover days
+			// e.g., 8 days is one 5-day weekspan / and two leftover days
+			// Can't have zero leftover days, so numbers divisible by 5 get
+			// a days value of 5, and the remaining days make up the number of weeks
+			var days, weeks;
+			var mod = amount % 5;
+			if(!mod){
+				days = (amount > 0) ? 5 : -5;
+				weeks = (amount > 0) ? ((amount-5)/5) : ((amount+5)/5);
+			}else{
+				days = mod;
+				weeks = parseInt(amount/5);
+			}
+			// Get weekday value for orig date param
+			var strt = date.getDay();
+			// Orig date is Sat / positive incrementer
+			// Jump over Sun
+			var adj = 0;
+			if(strt == 6 && amount > 0){
+				adj = 1;
+			}else if(strt == 0 && amount < 0){
+			// Orig date is Sun / negative incrementer
+			// Jump back over Sat
+				adj = -1;
+			}
+			// Get weekday val for the new date
+			var trgt = strt + days;
+			// New date is on Sat or Sun
+			if(trgt == 0 || trgt == 6){
+				adj = (amount > 0) ? 2 : -2;
+			}
+			// Increment by number of weeks plus leftover days plus
+			// weekend adjustments
+			amount = (7 * weeks) + days + adj;
+			break;
+		case "year":
+			property = "FullYear";
+			// Keep increment/decrement from 2/29 out of March
+			fixOvershoot = true;
+			break;
+		case "week":
+			amount *= 7;
+			break;
+		case "quarter":
+			// Naive quarter is just three months
+			amount *= 3;
+			// fallthrough...
+		case "month":
+			// Reset to last day of month if you overshoot
+			fixOvershoot = true;
+			property = "Month";
+			break;
+//		case "hour":
+//		case "minute":
+//		case "second":
+//		case "millisecond":
+		default:
+			property = "UTC"+interval.charAt(0).toUpperCase() + interval.substring(1) + "s";
+	}
+
+	if(property){
+		sum["set"+property](sum["get"+property]()+amount);
+	}
+
+	if(fixOvershoot && (sum.getDate() < date.getDate())){
+		sum.setDate(0);
+	}
+
+	return sum; // Date
+};
+
+date.difference = function(/*Date*/date1, /*Date?*/date2, /*String?*/interval){
+	// summary:
+	//		Get the difference in a specific unit of time (e.g., number of
+	//		months, weeks, days, etc.) between two dates, rounded to the
+	//		nearest integer.
+	// date1:
+	//		Date object
+	// date2:
+	//		Date object.  If not specified, the current Date is used.
+	// interval:
+	//		A string representing the interval.  One of the following:
+	//		"year", "month", "day", "hour", "minute", "second",
+	//		"millisecond", "quarter", "week", "weekday"
+	//
+	//		Defaults to "day".
+
+	date2 = date2 || new Date();
+	interval = interval || "day";
+	var yearDiff = date2.getFullYear() - date1.getFullYear();
+	var delta = 1; // Integer return value
+
+	switch(interval){
+		case "quarter":
+			var m1 = date1.getMonth();
+			var m2 = date2.getMonth();
+			// Figure out which quarter the months are in
+			var q1 = Math.floor(m1/3) + 1;
+			var q2 = Math.floor(m2/3) + 1;
+			// Add quarters for any year difference between the dates
+			q2 += (yearDiff * 4);
+			delta = q2 - q1;
+			break;
+		case "weekday":
+			var days = Math.round(date.difference(date1, date2, "day"));
+			var weeks = parseInt(date.difference(date1, date2, "week"));
+			var mod = days % 7;
+
+			// Even number of weeks
+			if(mod == 0){
+				days = weeks*5;
+			}else{
+				// Weeks plus spare change (< 7 days)
+				var adj = 0;
+				var aDay = date1.getDay();
+				var bDay = date2.getDay();
+
+				weeks = parseInt(days/7);
+				mod = days % 7;
+				// Mark the date advanced by the number of
+				// round weeks (may be zero)
+				var dtMark = new Date(date1);
+				dtMark.setDate(dtMark.getDate()+(weeks*7));
+				var dayMark = dtMark.getDay();
+
+				// Spare change days -- 6 or less
+				if(days > 0){
+					switch(true){
+						// Range starts on Sat
+						case aDay == 6:
+							adj = -1;
+							break;
+						// Range starts on Sun
+						case aDay == 0:
+							adj = 0;
+							break;
+						// Range ends on Sat
+						case bDay == 6:
+							adj = -1;
+							break;
+						// Range ends on Sun
+						case bDay == 0:
+							adj = -2;
+							break;
+						// Range contains weekend
+						case (dayMark + mod) > 5:
+							adj = -2;
+					}
+				}else if(days < 0){
+					switch(true){
+						// Range starts on Sat
+						case aDay == 6:
+							adj = 0;
+							break;
+						// Range starts on Sun
+						case aDay == 0:
+							adj = 1;
+							break;
+						// Range ends on Sat
+						case bDay == 6:
+							adj = 2;
+							break;
+						// Range ends on Sun
+						case bDay == 0:
+							adj = 1;
+							break;
+						// Range contains weekend
+						case (dayMark + mod) < 0:
+							adj = 2;
+					}
+				}
+				days += adj;
+				days -= (weeks*2);
+			}
+			delta = days;
+			break;
+		case "year":
+			delta = yearDiff;
+			break;
+		case "month":
+			delta = (date2.getMonth() - date1.getMonth()) + (yearDiff * 12);
+			break;
+		case "week":
+			// Truncate instead of rounding
+			// Don't use Math.floor -- value may be negative
+			delta = parseInt(date.difference(date1, date2, "day")/7);
+			break;
+		case "day":
+			delta /= 24;
+			// fallthrough
+		case "hour":
+			delta /= 60;
+			// fallthrough
+		case "minute":
+			delta /= 60;
+			// fallthrough
+		case "second":
+			delta /= 1000;
+			// fallthrough
+		case "millisecond":
+			delta *= date2.getTime() - date1.getTime();
+	}
+
+	// Round for fractional values and DST leaps
+	return Math.round(delta); // Number (integer)
+};
+
+// Don't use setObject() because it may overwrite dojo/date/stamp (if that has already been loaded)
+ 1  && lang.mixin(lang.getObject("dojo.date", true), date);
+
+return date;
+});
+
+},
+'dojo/date/locale':function(){
+define([
+	"../_base/lang",
+	"../_base/array",
+	"../date",
+	/*===== "../_base/declare", =====*/
+	"../cldr/supplemental",
+	"../i18n",
+	"../regexp",
+	"../string",
+	"../i18n!../cldr/nls/gregorian",
+	"module"
+], function(lang, array, date, /*===== declare, =====*/ supplemental, i18n, regexp, string, gregorian, module){
+
+// module:
+//		dojo/date/locale
+
+var exports = {
+	// summary:
+	//		This modules defines dojo/date/locale, localization methods for Date.
+};
+lang.setObject(module.id.replace(/\//g, "."), exports);
+
+// Localization methods for Date.   Honor local customs using locale-dependent dojo.cldr data.
+
+// Load the bundles containing localization information for
+// names and formats
+
+//NOTE: Everything in this module assumes Gregorian calendars.
+// Other calendars will be implemented in separate modules.
+
+	// Format a pattern without literals
+	function formatPattern(dateObject, bundle, options, pattern){
+		return pattern.replace(/([a-z])\1*/ig, function(match){
+			var s, pad,
+				c = match.charAt(0),
+				l = match.length,
+				widthList = ["abbr", "wide", "narrow"];
+			switch(c){
+				case 'G':
+					s = bundle[(l < 4) ? "eraAbbr" : "eraNames"][dateObject.getFullYear() < 0 ? 0 : 1];
+					break;
+				case 'y':
+					s = dateObject.getFullYear();
+					switch(l){
+						case 1:
+							break;
+						case 2:
+							if(!options.fullYear){
+								s = String(s); s = s.substr(s.length - 2);
+								break;
+							}
+							// fallthrough
+						default:
+							pad = true;
+					}
+					break;
+				case 'Q':
+				case 'q':
+					s = Math.ceil((dateObject.getMonth()+1)/3);
+//					switch(l){
+//						case 1: case 2:
+							pad = true;
+//							break;
+//						case 3: case 4: // unimplemented
+//					}
+					break;
+				case 'M':
+				case 'L':
+					var m = dateObject.getMonth();
+					if(l<3){
+						s = m+1; pad = true;
+					}else{
+						var propM = [
+							"months",
+							c == 'L' ? "standAlone" : "format",
+							widthList[l-3]
+						].join("-");
+						s = bundle[propM][m];
+					}
+					break;
+				case 'w':
+					var firstDay = 0;
+					s = exports._getWeekOfYear(dateObject, firstDay); pad = true;
+					break;
+				case 'd':
+					s = dateObject.getDate(); pad = true;
+					break;
+				case 'D':
+					s = exports._getDayOfYear(dateObject); pad = true;
+					break;
+				case 'e':
+				case 'c':
+					var d = dateObject.getDay();
+					if(l<2){
+						s = (d - supplemental.getFirstDayOfWeek(options.locale) + 8) % 7
+						break;
+					}
+					// fallthrough
+				case 'E':
+					d = dateObject.getDay();
+					if(l<3){
+						s = d+1; pad = true;
+					}else{
+						var propD = [
+							"days",
+							c == 'c' ? "standAlone" : "format",
+							widthList[l-3]
+						].join("-");
+						s = bundle[propD][d];
+					}
+					break;
+				case 'a':
+					var timePeriod = dateObject.getHours() < 12 ? 'am' : 'pm';
+					s = options[timePeriod] || bundle['dayPeriods-format-wide-' + timePeriod];
+					break;
+				case 'h':
+				case 'H':
+				case 'K':
+				case 'k':
+					var h = dateObject.getHours();
+					// strange choices in the date format make it impossible to write this succinctly
+					switch (c){
+						case 'h': // 1-12
+							s = (h % 12) || 12;
+							break;
+						case 'H': // 0-23
+							s = h;
+							break;
+						case 'K': // 0-11
+							s = (h % 12);
+							break;
+						case 'k': // 1-24
+							s = h || 24;
+							break;
+					}
+					pad = true;
+					break;
+				case 'm':
+					s = dateObject.getMinutes(); pad = true;
+					break;
+				case 's':
+					s = dateObject.getSeconds(); pad = true;
+					break;
+				case 'S':
+					s = Math.round(dateObject.getMilliseconds() * Math.pow(10, l-3)); pad = true;
+					break;
+				case 'v': // FIXME: don't know what this is. seems to be same as z?
+				case 'z':
+					// We only have one timezone to offer; the one from the browser
+					s = exports._getZone(dateObject, true, options);
+					if(s){break;}
+					l=4;
+					// fallthrough... use GMT if tz not available
+				case 'Z':
+					var offset = exports._getZone(dateObject, false, options);
+					var tz = [
+						(offset<=0 ? "+" : "-"),
+						string.pad(Math.floor(Math.abs(offset)/60), 2),
+						string.pad(Math.abs(offset)% 60, 2)
+					];
+					if(l==4){
+						tz.splice(0, 0, "GMT");
+						tz.splice(3, 0, ":");
+					}
+					s = tz.join("");
+					break;
+//				case 'Y': case 'u': case 'W': case 'F': case 'g': case 'A':
+//					console.log(match+" modifier unimplemented");
+				default:
+					throw new Error("dojo.date.locale.format: invalid pattern char: "+pattern);
+			}
+			if(pad){ s = string.pad(s, l); }
+			return s;
+		});
+	}
+
+/*=====
+var __FormatOptions = exports.__FormatOptions = declare(null, {
+	// selector: String
+	//		choice of 'time','date' (default: date and time)
+	// formatLength: String
+	//		choice of long, short, medium or full (plus any custom additions).  Defaults to 'short'
+	// datePattern:String
+	//		override pattern with this string
+	// timePattern:String
+	//		override pattern with this string
+	// am: String
+	//		override strings for am in times
+	// pm: String
+	//		override strings for pm in times
+	// locale: String
+	//		override the locale used to determine formatting rules
+	// fullYear: Boolean
+	//		(format only) use 4 digit years whenever 2 digit years are called for
+	// strict: Boolean
+	//		(parse only) strict parsing, off by default
+});
+=====*/
+
+exports._getZone = function(/*Date*/ dateObject, /*boolean*/ getName, /*__FormatOptions?*/ options){
+	// summary:
+	//		Returns the zone (or offset) for the given date and options.  This
+	//		is broken out into a separate function so that it can be overridden
+	//		by timezone-aware code.
+	//
+	// dateObject:
+	//		the date and/or time being formatted.
+	//
+	// getName:
+	//		Whether to return the timezone string (if true), or the offset (if false)
+	//
+	// options:
+	//		The options being used for formatting
+	if(getName){
+		return date.getTimezoneName(dateObject);
+	}else{
+		return dateObject.getTimezoneOffset();
+	}
+};
+
+
+exports.format = function(/*Date*/ dateObject, /*__FormatOptions?*/ options){
+	// summary:
+	//		Format a Date object as a String, using locale-specific settings.
+	//
+	// description:
+	//		Create a string from a Date object using a known localized pattern.
+	//		By default, this method formats both date and time from dateObject.
+	//		Formatting patterns are chosen appropriate to the locale.  Different
+	//		formatting lengths may be chosen, with "full" used by default.
+	//		Custom patterns may be used or registered with translations using
+	//		the dojo/date/locale.addCustomFormats() method.
+	//		Formatting patterns are implemented using [the syntax described at
+	//		unicode.org](http://www.unicode.org/reports/tr35/tr35-4.html#Date_Format_Patterns)
+	//
+	// dateObject:
+	//		the date and/or time to be formatted.  If a time only is formatted,
+	//		the values in the year, month, and day fields are irrelevant.  The
+	//		opposite is true when formatting only dates.
+
+	options = options || {};
+
+	var locale = i18n.normalizeLocale(options.locale),
+		formatLength = options.formatLength || 'short',
+		bundle = exports._getGregorianBundle(locale),
+		str = [],
+		sauce = lang.hitch(this, formatPattern, dateObject, bundle, options);
+	if(options.selector == "year"){
+		return _processPattern(bundle["dateFormatItem-yyyy"] || "yyyy", sauce);
+	}
+	var pattern;
+	if(options.selector != "date"){
+		pattern = options.timePattern || bundle["timeFormat-"+formatLength];
+		if(pattern){str.push(_processPattern(pattern, sauce));}
+	}
+	if(options.selector != "time"){
+		pattern = options.datePattern || bundle["dateFormat-"+formatLength];
+		if(pattern){str.push(_processPattern(pattern, sauce));}
+	}
+
+	return str.length == 1 ? str[0] : bundle["dateTimeFormat-"+formatLength].replace(/\'/g,'').replace(/\{(\d+)\}/g,
+		function(match, key){ return str[key]; }); // String
+};
+
+exports.regexp = function(/*__FormatOptions?*/ options){
+	// summary:
+	//		Builds the regular needed to parse a localized date
+
+	return exports._parseInfo(options).regexp; // String
+};
+
+exports._parseInfo = function(/*__FormatOptions?*/ options){
+	options = options || {};
+	var locale = i18n.normalizeLocale(options.locale),
+		bundle = exports._getGregorianBundle(locale),
+		formatLength = options.formatLength || 'short',
+		datePattern = options.datePattern || bundle["dateFormat-" + formatLength],
+		timePattern = options.timePattern || bundle["timeFormat-" + formatLength],
+		pattern;
+	if(options.selector == 'date'){
+		pattern = datePattern;
+	}else if(options.selector == 'time'){
+		pattern = timePattern;
+	}else{
+		pattern = bundle["dateTimeFormat-"+formatLength].replace(/\{(\d+)\}/g,
+			function(match, key){ return [timePattern, datePattern][key]; });
+	}
+
+	var tokens = [],
+		re = _processPattern(pattern, lang.hitch(this, _buildDateTimeRE, tokens, bundle, options));
+	return {regexp: re, tokens: tokens, bundle: bundle};
+};
+
+exports.parse = function(/*String*/ value, /*__FormatOptions?*/ options){
+	// summary:
+	//		Convert a properly formatted string to a primitive Date object,
+	//		using locale-specific settings.
+	//
+	// description:
+	//		Create a Date object from a string using a known localized pattern.
+	//		By default, this method parses looking for both date and time in the string.
+	//		Formatting patterns are chosen appropriate to the locale.  Different
+	//		formatting lengths may be chosen, with "full" used by default.
+	//		Custom patterns may be used or registered with translations using
+	//		the dojo/date/locale.addCustomFormats() method.
+	//
+	//		Formatting patterns are implemented using [the syntax described at
+	//		unicode.org](http://www.unicode.org/reports/tr35/tr35-4.html#Date_Format_Patterns)
+	//		When two digit years are used, a century is chosen according to a sliding
+	//		window of 80 years before and 20 years after present year, for both `yy` and `yyyy` patterns.
+	//		year < 100CE requires strict mode.
+	//
+	// value:
+	//		A string representation of a date
+
+	// remove non-printing bidi control chars from input and pattern
+	var controlChars = /[\u200E\u200F\u202A\u202E]/g,
+		info = exports._parseInfo(options),
+		tokens = info.tokens, bundle = info.bundle,
+		re = new RegExp("^" + info.regexp.replace(controlChars, "") + "$",
+			info.strict ? "" : "i"),
+		match = re.exec(value && value.replace(controlChars, ""));
+
+	if(!match){ return null; } // null
+
+	var widthList = ['abbr', 'wide', 'narrow'],
+		result = [1970,0,1,0,0,0,0], // will get converted to a Date at the end
+		amPm = "",
+		valid = array.every(match, function(v, i){
+		if(!i){return true;}
+		var token = tokens[i-1],
+			l = token.length,
+			c = token.charAt(0);
+		switch(c){
+			case 'y':
+				if(l != 2 && options.strict){
+					//interpret year literally, so '5' would be 5 A.D.
+					result[0] = v;
+				}else{
+					if(v<100){
+						v = Number(v);
+						//choose century to apply, according to a sliding window
+						//of 80 years before and 20 years after present year
+						var year = '' + new Date().getFullYear(),
+							century = year.substring(0, 2) * 100,
+							cutoff = Math.min(Number(year.substring(2, 4)) + 20, 99);
+						result[0] = (v < cutoff) ? century + v : century - 100 + v;
+					}else{
+						//we expected 2 digits and got more...
+						if(options.strict){
+							return false;
+						}
+						//interpret literally, so '150' would be 150 A.D.
+						//also tolerate '1950', if 'yyyy' input passed to 'yy' format
+						result[0] = v;
+					}
+				}
+				break;
+			case 'M':
+			case 'L':
+				if(l>2){
+					var months = bundle['months-' +
+							    (c == 'L' ? 'standAlone' : 'format') +
+							    '-' + widthList[l-3]].concat();
+					if(!options.strict){
+						//Tolerate abbreviating period in month part
+						//Case-insensitive comparison
+						v = v.replace(".","").toLowerCase();
+						months = array.map(months, function(s){ return s.replace(".","").toLowerCase(); } );
+					}
+					v = array.indexOf(months, v);
+					if(v == -1){
+//						console.log("dojo/date/locale.parse: Could not parse month name: '" + v + "'.");
+						return false;
+					}
+				}else{
+					v--;
+				}
+				result[1] = v;
+				break;
+			case 'E':
+			case 'e':
+			case 'c':
+				var days = bundle['days-' +
+						  (c == 'c' ? 'standAlone' : 'format') +
+						  '-' + widthList[l-3]].concat();
+				if(!options.strict){
+					//Case-insensitive comparison
+					v = v.toLowerCase();
+					days = array.map(days, function(d){return d.toLowerCase();});
+				}
+				v = array.indexOf(days, v);
+				if(v == -1){
+//					console.log("dojo/date/locale.parse: Could not parse weekday name: '" + v + "'.");
+					return false;
+				}
+
+				//TODO: not sure what to actually do with this input,
+				//in terms of setting something on the Date obj...?
+				//without more context, can't affect the actual date
+				//TODO: just validate?
+				break;
+			case 'D':
+				result[1] = 0;
+				// fallthrough...
+			case 'd':
+				result[2] = v;
+				break;
+			case 'a': //am/pm
+				var am = options.am || bundle['dayPeriods-format-wide-am'],
+					pm = options.pm || bundle['dayPeriods-format-wide-pm'];
+				if(!options.strict){
+					var period = /\./g;
+					v = v.replace(period,'').toLowerCase();
+					am = am.replace(period,'').toLowerCase();
+					pm = pm.replace(period,'').toLowerCase();
+				}
+				if(options.strict && v != am && v != pm){
+//					console.log("dojo/date/locale.parse: Could not parse am/pm part.");
+					return false;
+				}
+
+				// we might not have seen the hours field yet, so store the state and apply hour change later
+				amPm = (v == pm) ? 'p' : (v == am) ? 'a' : '';
+				break;
+			case 'K': //hour (1-24)
+				if(v == 24){ v = 0; }
+				// fallthrough...
+			case 'h': //hour (1-12)
+			case 'H': //hour (0-23)
+			case 'k': //hour (0-11)
+				//TODO: strict bounds checking, padding
+				if(v > 23){
+//					console.log("dojo/date/locale.parse: Illegal hours value");
+					return false;
+				}
+
+				//in the 12-hour case, adjusting for am/pm requires the 'a' part
+				//which could come before or after the hour, so we will adjust later
+				result[3] = v;
+				break;
+			case 'm': //minutes
+				result[4] = v;
+				break;
+			case 's': //seconds
+				result[5] = v;
+				break;
+			case 'S': //milliseconds
+				result[6] = v;
+//				break;
+//			case 'w':
+//TODO				var firstDay = 0;
+//			default:
+//TODO: throw?
+//				console.log("dojo/date/locale.parse: unsupported pattern char=" + token.charAt(0));
+		}
+		return true;
+	});
+
+	var hours = +result[3];
+	if(amPm === 'p' && hours < 12){
+		result[3] = hours + 12; //e.g., 3pm -> 15
+	}else if(amPm === 'a' && hours == 12){
+		result[3] = 0; //12am -> 0
+	}
+
+	//TODO: implement a getWeekday() method in order to test
+	//validity of input strings containing 'EEE' or 'EEEE'...
+
+	var dateObject = new Date(result[0], result[1], result[2], result[3], result[4], result[5], result[6]); // Date
+	if(options.strict){
+		dateObject.setFullYear(result[0]);
+	}
+
+	// Check for overflow.  The Date() constructor normalizes things like April 32nd...
+	//TODO: why isn't this done for times as well?
+	var allTokens = tokens.join(""),
+		dateToken = allTokens.indexOf('d') != -1,
+		monthToken = allTokens.indexOf('M') != -1;
+
+	if(!valid ||
+		(monthToken && dateObject.getMonth() > result[1]) ||
+		(dateToken && dateObject.getDate() > result[2])){
+		return null;
+	}
+
+	// Check for underflow, due to DST shifts.  See #9366
+	// This assumes a 1 hour dst shift correction at midnight
+	// We could compare the timezone offset after the shift and add the difference instead.
+	if((monthToken && dateObject.getMonth() < result[1]) ||
+		(dateToken && dateObject.getDate() < result[2])){
+		dateObject = date.add(dateObject, "hour", 1);
+	}
+
+	return dateObject; // Date
+};
+
+function _processPattern(pattern, applyPattern, applyLiteral, applyAll){
+	//summary: Process a pattern with literals in it
+
+	// Break up on single quotes, treat every other one as a literal, except '' which becomes '
+	var identity = function(x){return x;};
+	applyPattern = applyPattern || identity;
+	applyLiteral = applyLiteral || identity;
+	applyAll = applyAll || identity;
+
+	//split on single quotes (which escape literals in date format strings)
+	//but preserve escaped single quotes (e.g., o''clock)
+	var chunks = pattern.match(/(''|[^'])+/g),
+		literal = pattern.charAt(0) == "'";
+
+	array.forEach(chunks, function(chunk, i){
+		if(!chunk){
+			chunks[i]='';
+		}else{
+			chunks[i]=(literal ? applyLiteral : applyPattern)(chunk.replace(/''/g, "'"));
+			literal = !literal;
+		}
+	});
+	return applyAll(chunks.join(''));
+}
+
+function _buildDateTimeRE(tokens, bundle, options, pattern){
+	pattern = regexp.escapeString(pattern);
+	if(!options.strict){ pattern = pattern.replace(" a", " ?a"); } // kludge to tolerate no space before am/pm
+	return pattern.replace(/([a-z])\1*/ig, function(match){
+		// Build a simple regexp.  Avoid captures, which would ruin the tokens list
+		var s,
+			c = match.charAt(0),
+			l = match.length,
+			p2 = '', p3 = '';
+		if(options.strict){
+			if(l > 1){ p2 = '0' + '{'+(l-1)+'}'; }
+			if(l > 2){ p3 = '0' + '{'+(l-2)+'}'; }
+		}else{
+			p2 = '0?'; p3 = '0{0,2}';
+		}
+		switch(c){
+			case 'y':
+				s = '\\d{2,4}';
+				break;
+			case 'M':
+			case 'L':
+				s = (l>2) ? '\\S+?' : '1[0-2]|'+p2+'[1-9]';
+				break;
+			case 'D':
+				s = '[12][0-9][0-9]|3[0-5][0-9]|36[0-6]|'+p2+'[1-9][0-9]|'+p3+'[1-9]';
+				break;
+			case 'd':
+				s = '3[01]|[12]\\d|'+p2+'[1-9]';
+				break;
+			case 'w':
+				s = '[1-4][0-9]|5[0-3]|'+p2+'[1-9]';
+				break;
+			case 'E':
+			case 'e':
+			case 'c':
+				s = '.+?'; // match anything including spaces until the first pattern delimiter is found such as a comma or space
+				break;
+			case 'h': //hour (1-12)
+				s = '1[0-2]|'+p2+'[1-9]';
+				break;
+			case 'k': //hour (0-11)
+				s = '1[01]|'+p2+'\\d';
+				break;
+			case 'H': //hour (0-23)
+				s = '1\\d|2[0-3]|'+p2+'\\d';
+				break;
+			case 'K': //hour (1-24)
+				s = '1\\d|2[0-4]|'+p2+'[1-9]';
+				break;
+			case 'm':
+			case 's':
+				s = '[0-5]\\d';
+				break;
+			case 'S':
+				s = '\\d{'+l+'}';
+				break;
+			case 'a':
+				var am = options.am || bundle['dayPeriods-format-wide-am'],
+					pm = options.pm || bundle['dayPeriods-format-wide-pm'];
+					s = am + '|' + pm;
+				if(!options.strict){
+					if(am != am.toLowerCase()){ s += '|' + am.toLowerCase(); }
+					if(pm != pm.toLowerCase()){ s += '|' + pm.toLowerCase(); }
+					if(s.indexOf('.') != -1){ s += '|' + s.replace(/\./g, ""); }
+				}
+				s = s.replace(/\./g, "\\.");
+				break;
+			default:
+			// case 'v':
+			// case 'z':
+			// case 'Z':
+				s = ".*";
+//				console.log("parse of date format, pattern=" + pattern);
+		}
+
+		if(tokens){ tokens.push(match); }
+
+		return "(" + s + ")"; // add capture
+	}).replace(/[\xa0 ]/g, "[\\s\\xa0]"); // normalize whitespace.  Need explicit handling of \xa0 for IE.
+}
+
+var _customFormats = [];
+exports.addCustomFormats = function(/*String*/ packageName, /*String*/ bundleName){
+	// summary:
+	//		Add a reference to a bundle containing localized custom formats to be
+	//		used by date/time formatting and parsing routines.
+	//
+	// description:
+	//		The user may add custom localized formats where the bundle has properties following the
+	//		same naming convention used by dojo.cldr: `dateFormat-xxxx` / `timeFormat-xxxx`
+	//		The pattern string should match the format used by the CLDR.
+	//		See dojo/date/locale.format() for details.
+	//		The resources must be loaded by dojo.requireLocalization() prior to use
+
+	_customFormats.push({pkg:packageName,name:bundleName});
+};
+
+exports._getGregorianBundle = function(/*String*/ locale){
+	var gregorian = {};
+	array.forEach(_customFormats, function(desc){
+		var bundle = i18n.getLocalization(desc.pkg, desc.name, locale);
+		gregorian = lang.mixin(gregorian, bundle);
+	}, this);
+	return gregorian; /*Object*/
+};
+
+exports.addCustomFormats(module.id.replace(/\/date\/locale$/, ".cldr"),"gregorian");
+
+exports.getNames = function(/*String*/ item, /*String*/ type, /*String?*/ context, /*String?*/ locale){
+	// summary:
+	//		Used to get localized strings from dojo.cldr for day or month names.
+	//
+	// item:
+	//	'months' || 'days'
+	// type:
+	//	'wide' || 'abbr' || 'narrow' (e.g. "Monday", "Mon", or "M" respectively, in English)
+	// context:
+	//	'standAlone' || 'format' (default)
+	// locale:
+	//	override locale used to find the names
+
+	var label,
+		lookup = exports._getGregorianBundle(locale),
+		props = [item, context, type];
+	if(context == 'standAlone'){
+		var key = props.join('-');
+		label = lookup[key];
+		// Fall back to 'format' flavor of name
+		if(label[0] == 1){ label = undefined; } // kludge, in the absence of real aliasing support in dojo.cldr
+	}
+	props[1] = 'format';
+
+	// return by copy so changes won't be made accidentally to the in-memory model
+	return (label || lookup[props.join('-')]).concat(); /*Array*/
+};
+
+exports.isWeekend = function(/*Date?*/ dateObject, /*String?*/ locale){
+	// summary:
+	//	Determines if the date falls on a weekend, according to local custom.
+
+	var weekend = supplemental.getWeekend(locale),
+		day = (dateObject || new Date()).getDay();
+	if(weekend.end < weekend.start){
+		weekend.end += 7;
+		if(day < weekend.start){ day += 7; }
+	}
+	return day >= weekend.start && day <= weekend.end; // Boolean
+};
+
+// These are used only by format and strftime.  Do they need to be public?  Which module should they go in?
+
+exports._getDayOfYear = function(/*Date*/ dateObject){
+	// summary:
+	//		gets the day of the year as represented by dateObject
+	return date.difference(new Date(dateObject.getFullYear(), 0, 1, dateObject.getHours()), dateObject) + 1; // Number
+};
+
+exports._getWeekOfYear = function(/*Date*/ dateObject, /*Number*/ firstDayOfWeek){
+	if(arguments.length == 1){ firstDayOfWeek = 0; } // Sunday
+
+	var firstDayOfYear = new Date(dateObject.getFullYear(), 0, 1).getDay(),
+		adj = (firstDayOfYear - firstDayOfWeek + 7) % 7,
+		week = Math.floor((exports._getDayOfYear(dateObject) + adj - 1) / 7);
+
+	// if year starts on the specified day, start counting weeks at 1
+	if(firstDayOfYear == firstDayOfWeek){ week++; }
+
+	return week; // Number
+};
+
+return exports;
+});
+
+},
+'dojo/cldr/supplemental':function(){
+define(["../_base/lang", "../i18n"], function(lang, i18n){
+
+// module:
+//		dojo/cldr/supplemental
+
+
+var supplemental = {
+	// summary:
+	//		TODOC
+};
+lang.setObject("dojo.cldr.supplemental", supplemental);
+
+supplemental.getFirstDayOfWeek = function(/*String?*/locale){
+	// summary:
+	//		Returns a zero-based index for first day of the week
+	// description:
+	//		Returns a zero-based index for first day of the week, as used by the local (Gregorian) calendar.
+	//		e.g. Sunday (returns 0), or Monday (returns 1)
+
+	// from http://www.unicode.org/cldr/data/common/supplemental/supplementalData.xml:supplementalData/weekData/firstDay
+	var firstDay = {/*default is 1=Monday*/
+		bd:5,mv:5,
+		ae:6,af:6,bh:6,dj:6,dz:6,eg:6,iq:6,ir:6,jo:6,kw:6,
+		ly:6,ma:6,om:6,qa:6,sa:6,sd:6,sy:6,ye:6,
+		ag:0,ar:0,as:0,au:0,br:0,bs:0,bt:0,bw:0,by:0,bz:0,ca:0,cn:0,
+		co:0,dm:0,'do':0,et:0,gt:0,gu:0,hk:0,hn:0,id:0,ie:0,il:0,'in':0,
+		jm:0,jp:0,ke:0,kh:0,kr:0,la:0,mh:0,mm:0,mo:0,mt:0,mx:0,mz:0,
+		ni:0,np:0,nz:0,pa:0,pe:0,ph:0,pk:0,pr:0,py:0,sg:0,sv:0,th:0,
+		tn:0,tt:0,tw:0,um:0,us:0,ve:0,vi:0,ws:0,za:0,zw:0
+	};
+
+	var country = supplemental._region(locale);
+	var dow = firstDay[country];
+	return (dow === undefined) ? 1 : dow; /*Number*/
+};
+
+supplemental._region = function(/*String?*/locale){
+	locale = i18n.normalizeLocale(locale);
+	var tags = locale.split('-');
+	var region = tags[1];
+	if(!region){
+		// IE often gives language only (#2269)
+		// Arbitrary mappings of language-only locales to a country:
+		region = {
+			aa:"et", ab:"ge", af:"za", ak:"gh", am:"et", ar:"eg", as:"in", av:"ru", ay:"bo", az:"az", ba:"ru",
+			be:"by", bg:"bg", bi:"vu", bm:"ml", bn:"bd", bo:"cn", br:"fr", bs:"ba", ca:"es", ce:"ru", ch:"gu",
+			co:"fr", cr:"ca", cs:"cz", cv:"ru", cy:"gb", da:"dk", de:"de", dv:"mv", dz:"bt", ee:"gh", el:"gr",
+			en:"us", es:"es", et:"ee", eu:"es", fa:"ir", ff:"sn", fi:"fi", fj:"fj", fo:"fo", fr:"fr", fy:"nl",
+			ga:"ie", gd:"gb", gl:"es", gn:"py", gu:"in", gv:"gb", ha:"ng", he:"il", hi:"in", ho:"pg", hr:"hr",
+			ht:"ht", hu:"hu", hy:"am", ia:"fr", id:"id", ig:"ng", ii:"cn", ik:"us", "in":"id", is:"is", it:"it",
+			iu:"ca", iw:"il", ja:"jp", ji:"ua", jv:"id", jw:"id", ka:"ge", kg:"cd", ki:"ke", kj:"na", kk:"kz",
+			kl:"gl", km:"kh", kn:"in", ko:"kr", ks:"in", ku:"tr", kv:"ru", kw:"gb", ky:"kg", la:"va", lb:"lu",
+			lg:"ug", li:"nl", ln:"cd", lo:"la", lt:"lt", lu:"cd", lv:"lv", mg:"mg", mh:"mh", mi:"nz", mk:"mk",
+			ml:"in", mn:"mn", mo:"ro", mr:"in", ms:"my", mt:"mt", my:"mm", na:"nr", nb:"no", nd:"zw", ne:"np",
+			ng:"na", nl:"nl", nn:"no", no:"no", nr:"za", nv:"us", ny:"mw", oc:"fr", om:"et", or:"in", os:"ge",
+			pa:"in", pl:"pl", ps:"af", pt:"br", qu:"pe", rm:"ch", rn:"bi", ro:"ro", ru:"ru", rw:"rw", sa:"in",
+			sd:"in", se:"no", sg:"cf", si:"lk", sk:"sk", sl:"si", sm:"ws", sn:"zw", so:"so", sq:"al", sr:"rs",
+			ss:"za", st:"za", su:"id", sv:"se", sw:"tz", ta:"in", te:"in", tg:"tj", th:"th", ti:"et", tk:"tm",
+			tl:"ph", tn:"za", to:"to", tr:"tr", ts:"za", tt:"ru", ty:"pf", ug:"cn", uk:"ua", ur:"pk", uz:"uz",
+			ve:"za", vi:"vn", wa:"be", wo:"sn", xh:"za", yi:"il", yo:"ng", za:"cn", zh:"cn", zu:"za",
+			ace:"id", ady:"ru", agq:"cm", alt:"ru", amo:"ng", asa:"tz", ast:"es", awa:"in", bal:"pk",
+			ban:"id", bas:"cm", bax:"cm", bbc:"id", bem:"zm", bez:"tz", bfq:"in", bft:"pk", bfy:"in",
+			bhb:"in", bho:"in", bik:"ph", bin:"ng", bjj:"in", bku:"ph", bqv:"ci", bra:"in", brx:"in",
+			bss:"cm", btv:"pk", bua:"ru", buc:"yt", bug:"id", bya:"id", byn:"er", cch:"ng", ccp:"in",
+			ceb:"ph", cgg:"ug", chk:"fm", chm:"ru", chp:"ca", chr:"us", cja:"kh", cjm:"vn", ckb:"iq",
+			crk:"ca", csb:"pl", dar:"ru", dav:"ke", den:"ca", dgr:"ca", dje:"ne", doi:"in", dsb:"de",
+			dua:"cm", dyo:"sn", dyu:"bf", ebu:"ke", efi:"ng", ewo:"cm", fan:"gq", fil:"ph", fon:"bj",
+			fur:"it", gaa:"gh", gag:"md", gbm:"in", gcr:"gf", gez:"et", gil:"ki", gon:"in", gor:"id",
+			grt:"in", gsw:"ch", guz:"ke", gwi:"ca", haw:"us", hil:"ph", hne:"in", hnn:"ph", hoc:"in",
+			hoj:"in", ibb:"ng", ilo:"ph", inh:"ru", jgo:"cm", jmc:"tz", kaa:"uz", kab:"dz", kaj:"ng",
+			kam:"ke", kbd:"ru", kcg:"ng", kde:"tz", kdt:"th", kea:"cv", ken:"cm", kfo:"ci", kfr:"in",
+			kha:"in", khb:"cn", khq:"ml", kht:"in", kkj:"cm", kln:"ke", kmb:"ao", koi:"ru", kok:"in",
+			kos:"fm", kpe:"lr", krc:"ru", kri:"sl", krl:"ru", kru:"in", ksb:"tz", ksf:"cm", ksh:"de",
+			kum:"ru", lag:"tz", lah:"pk", lbe:"ru", lcp:"cn", lep:"in", lez:"ru", lif:"np", lis:"cn",
+			lki:"ir", lmn:"in", lol:"cd", lua:"cd", luo:"ke", luy:"ke", lwl:"th", mad:"id", mag:"in",
+			mai:"in", mak:"id", man:"gn", mas:"ke", mdf:"ru", mdh:"ph", mdr:"id", men:"sl", mer:"ke",
+			mfe:"mu", mgh:"mz", mgo:"cm", min:"id", mni:"in", mnk:"gm", mnw:"mm", mos:"bf", mua:"cm",
+			mwr:"in", myv:"ru", nap:"it", naq:"na", nds:"de", "new":"np", niu:"nu", nmg:"cm", nnh:"cm",
+			nod:"th", nso:"za", nus:"sd", nym:"tz", nyn:"ug", pag:"ph", pam:"ph", pap:"bq", pau:"pw",
+			pon:"fm", prd:"ir", raj:"in", rcf:"re", rej:"id", rjs:"np", rkt:"in", rof:"tz", rwk:"tz",
+			saf:"gh", sah:"ru", saq:"ke", sas:"id", sat:"in", saz:"in", sbp:"tz", scn:"it", sco:"gb",
+			sdh:"ir", seh:"mz", ses:"ml", shi:"ma", shn:"mm", sid:"et", sma:"se", smj:"se", smn:"fi",
+			sms:"fi", snk:"ml", srn:"sr", srr:"sn", ssy:"er", suk:"tz", sus:"gn", swb:"yt", swc:"cd",
+			syl:"bd", syr:"sy", tbw:"ph", tcy:"in", tdd:"cn", tem:"sl", teo:"ug", tet:"tl", tig:"er",
+			tiv:"ng", tkl:"tk", tmh:"ne", tpi:"pg", trv:"tw", tsg:"ph", tts:"th", tum:"mw", tvl:"tv",
+			twq:"ne", tyv:"ru", tzm:"ma", udm:"ru", uli:"fm", umb:"ao", unr:"in", unx:"in", vai:"lr",
+			vun:"tz", wae:"ch", wal:"et", war:"ph", xog:"ug", xsr:"np", yao:"mz", yap:"fm", yav:"cm", zza:"tr"
+		}[tags[0]];
+	}else if(region.length == 4){
+		// The ISO 3166 country code is usually in the second position, unless a
+		// 4-letter script is given. See http://www.ietf.org/rfc/rfc4646.txt
+		region = tags[2];
+	}
+	return region;
+};
+
+supplemental.getWeekend = function(/*String?*/locale){
+	// summary:
+	//		Returns a hash containing the start and end days of the weekend
+	// description:
+	//		Returns a hash containing the start and end days of the weekend according to local custom using locale,
+	//		or by default in the user's locale.
+	//		e.g. {start:6, end:0}
+
+	// from http://www.unicode.org/cldr/data/common/supplemental/supplementalData.xml:supplementalData/weekData/weekend{Start,End}
+	var weekendStart = {/*default is 6=Saturday*/
+			'in':0,
+			af:4,dz:4,ir:4,om:4,sa:4,ye:4,
+			ae:5,bh:5,eg:5,il:5,iq:5,jo:5,kw:5,ly:5,ma:5,qa:5,sd:5,sy:5,tn:5
+		},
+
+		weekendEnd = {/*default is 0=Sunday*/
+			af:5,dz:5,ir:5,om:5,sa:5,ye:5,
+			ae:6,bh:5,eg:6,il:6,iq:6,jo:6,kw:6,ly:6,ma:6,qa:6,sd:6,sy:6,tn:6
+		},
+
+		country = supplemental._region(locale),
+		start = weekendStart[country],
+		end = weekendEnd[country];
+
+	if(start === undefined){start=6;}
+	if(end === undefined){end=0;}
+	return {start:start, end:end}; /*Object {start,end}*/
+};
+
+return supplemental;
 });
 
 },
@@ -20774,11 +23050,1537 @@ define(["./_base/kernel", "require", "./has", "./_base/array", "./_base/config",
 });
 
 },
+'dojo/regexp':function(){
+define(["./_base/kernel", "./_base/lang"], function(dojo, lang){
+
+// module:
+//		dojo/regexp
+
+var regexp = {
+	// summary:
+	//		Regular expressions and Builder resources
+};
+lang.setObject("dojo.regexp", regexp);
+
+regexp.escapeString = function(/*String*/str, /*String?*/except){
+	// summary:
+	//		Adds escape sequences for special characters in regular expressions
+	// except:
+	//		a String with special characters to be left unescaped
+
+	return str.replace(/([\.$?*|{}\(\)\[\]\\\/\+^])/g, function(ch){
+		if(except && except.indexOf(ch) != -1){
+			return ch;
+		}
+		return "\\" + ch;
+	}); // String
+};
+
+regexp.buildGroupRE = function(/*Object|Array*/arr, /*Function*/re, /*Boolean?*/nonCapture){
+	// summary:
+	//		Builds a regular expression that groups subexpressions
+	// description:
+	//		A utility function used by some of the RE generators. The
+	//		subexpressions are constructed by the function, re, in the second
+	//		parameter.  re builds one subexpression for each elem in the array
+	//		a, in the first parameter. Returns a string for a regular
+	//		expression that groups all the subexpressions.
+	// arr:
+	//		A single value or an array of values.
+	// re:
+	//		A function. Takes one parameter and converts it to a regular
+	//		expression.
+	// nonCapture:
+	//		If true, uses non-capturing match, otherwise matches are retained
+	//		by regular expression. Defaults to false
+
+	// case 1: a is a single value.
+	if(!(arr instanceof Array)){
+		return re(arr); // String
+	}
+
+	// case 2: a is an array
+	var b = [];
+	for(var i = 0; i < arr.length; i++){
+		// convert each elem to a RE
+		b.push(re(arr[i]));
+	}
+
+	 // join the REs as alternatives in a RE group.
+	return regexp.group(b.join("|"), nonCapture); // String
+};
+
+regexp.group = function(/*String*/expression, /*Boolean?*/nonCapture){
+	// summary:
+	//		adds group match to expression
+	// nonCapture:
+	//		If true, uses non-capturing match, otherwise matches are retained
+	//		by regular expression.
+	return "(" + (nonCapture ? "?:":"") + expression + ")"; // String
+};
+
+return regexp;
+});
+
+},
+'dojox/mobile/SpinWheel':function(){
+define([
+	"dojo/_base/declare",
+	"dojo/_base/array",
+	"dojo/dom-construct",
+	"./_PickerBase",
+	"./SpinWheelSlot" // to load SpinWheelSlot for you (no direct references)
+], function(declare, array, domConstruct, PickerBase){
+
+	// module:
+	//		dojox/mobile/SpinWheel
+
+	return declare("dojox.mobile.SpinWheel", PickerBase, {
+		// summary:
+		//		A value picker widget that has spin wheels.
+		// description:
+		//		SpinWheel is a value picker component. It is a sectioned wheel
+		//		that can be used to pick up some values from the wheel slots by
+		//		spinning them.
+
+		/* internal properties */	
+		baseClass: "mblSpinWheel",
+
+		buildRendering: function(){
+			this.inherited(arguments);
+			domConstruct.create("div", {className: "mblSpinWheelBar"}, this.domNode);
+		},
+
+		startup: function(){
+			if(this._started){ return; }
+			this.centerPos = Math.round(this.domNode.offsetHeight / 2);
+			this.inherited(arguments);
+		},
+
+		resize: function() {
+			this.centerPos = Math.round(this.domNode.offsetHeight / 2);
+			array.forEach(this.getChildren(), function(child){
+				child.resize && child.resize();
+			});
+		},
+
+		addChild: function(/*Widget*/ widget, /*int?*/ insertIndex){
+			this.inherited(arguments);
+			if(this._started){
+				widget.setInitialValue();
+			}
+		}
+	});
+});
+
+},
+'dojox/mobile/_PickerBase':function(){
+define([
+	"dojo/_base/array",
+	"dojo/_base/declare",
+	"dijit/_Contained",
+	"dijit/_Container",
+	"dijit/_WidgetBase"
+], function(array, declare, Contained, Container, WidgetBase){
+
+	// module:
+	//		dojox/mobile/_PickerBase
+
+	return declare("dojox.mobile._PickerBase", [WidgetBase, Container, Contained], {
+		// summary:
+		//		A base class for picker classes (e.g. SpinWheel, ValuePicker).
+
+		/*=====
+		// values: Array
+		//		An array of slot values.
+		//		Warning: Do not use this property directly, make sure to call set() or get() methods.
+		values: "",
+		=====*/
+		
+		/*=====
+		// colors: Array
+		//		An array of slot colors.
+		//		Warning: Do not use this property directly, make sure to call set() or get() methods.
+		colors: "",
+		=====*/
+		
+		/* internal properties */
+
+		// slotClasses: [protected] Array
+		//		An array of slot classes. This property is intended to be used
+		//		when you create a subclass of this widget that has specific slots.
+		slotClasses: [],
+
+		// slotProps: [protected] Array
+		//		An array of property objects for each slot class specified in
+		//		slotClasses. This property is intended to be used when you
+		//		create a subclass of this widget that has specific slots.
+		slotProps: [],
+
+		// slotOrder: [protected] Array
+		//		An array of index of slotClasses and slotProps.
+		//		If there are three slots and slotOrder=[2,1,0], the slots are
+		//		displayed in reversed order. This property is intended to be used
+		//		when you create a subclass of this widget that has specific slots.
+		slotOrder: [],
+
+		buildRendering: function(){
+			this.inherited(arguments);
+			this.slots = [];
+			for(var i = 0; i < this.slotClasses.length; i++){
+				var idx = this.slotOrder.length ? this.slotOrder[i] : i;
+				var slot = new this.slotClasses[idx](this.slotProps[idx]);
+				this.addChild(slot);
+				this.slots[idx] = slot;
+			}
+		},
+
+		startup: function(){
+			if(this._started){ return; }
+			this._duringStartup = true;
+			this.inherited(arguments);
+			this.reset();
+			delete this._duringStartup;
+		},
+
+		getSlots: function(){
+			// summary:
+			//		Returns an array of child slot widgets.
+			return this.slots.length ? this.slots :
+				array.filter(this.getChildren(), function(c){
+					return c.declaredClass.indexOf("Slot") !== -1;
+				});
+		},
+
+		_getValuesAttr: function(){
+			// summary:
+			//		Returns an array of slot values.
+			// tags:
+			//		private
+			return array.map(this.getSlots(), function(w){
+				return w.get("value");
+			});
+		},
+
+		_setValuesAttr: function(/*Array*/a){
+			// summary:
+			//		Sets the slot values.
+			// tags:
+			//		private
+			array.forEach(this.getSlots(), function(w, i){
+				w.set("value", a[i]);
+			});
+		},
+
+		_setColorsAttr: function(/*Array*/a){
+			// summary:
+			//		Sets the slot colors.
+			// tags:
+			//		private
+			array.forEach(this.getSlots(), function(w, i){
+				w.setColor && w.setColor(a[i]);
+			});
+		},
+
+		reset: function(){
+			// summary:
+			//		Resets the picker to show the initial values.
+			array.forEach(this.getSlots(), function(w){
+				w.setInitialValue();
+			});
+		}
+	});
+});
+
+},
+'dojox/mobile/SpinWheelSlot':function(){
+define([
+	"dojo/_base/kernel",
+	"dojo/_base/array",
+	"dojo/_base/declare",
+	"dojo/_base/window",
+	"dojo/dom-class",
+	"dojo/dom-construct",
+	"dojo/has", 
+	"dojo/has!dojo-bidi?dojox/mobile/bidi/SpinWheelSlot",
+	"dojo/touch",
+	"dojo/on",
+	"dijit/_Contained",
+	"dijit/_WidgetBase",
+	"./scrollable",
+	"./common"
+], function(dojo, array, declare, win, domClass, domConstruct, has, BidiSpinWheelSlot, 
+	touch, on, Contained, WidgetBase, Scrollable){
+
+	// module:
+	//		dojox/mobile/SpinWheelSlot
+
+	var SpinWheelSlot = declare(has("dojo-bidi") ? "dojox.mobile.NonBidiSpinWheelSlot" : "dojox.mobile.SpinWheelSlot", [WidgetBase, Contained, Scrollable], {
+		// summary:
+		//		A slot of a SpinWheel.
+		// description:
+		//		SpinWheelSlot is a slot that is placed in the SpinWheel widget.
+
+		// items: Array
+		//		An array of array of key-label pairs
+		//		(e.g. [[0, "Jan"], [1, "Feb"], ...]). If key values for each label
+		//		are not necessary, labels can be used instead.
+		items: [],
+
+		// labels: Array
+		//		An array of labels to be displayed on the slot
+		//		(e.g. ["Jan", "Feb", ...]). This is a simplified version of the
+		//		items property.
+		labels: [],
+
+		// labelFrom: Number
+		//		The start value of display values of the slot. This parameter is
+		//		especially useful when the slot has serial values.
+		labelFrom: 0,
+
+		// labelTo: Number
+		//		The end value of display values of the slot.
+		labelTo: 0,
+
+		// zeroPad: Number
+		//		Length of zero padding numbers.
+		//		Ex. zeroPad=2 -> "00", "01", ...
+		//		Ex. zeroPad=3 -> "000", "001", ...
+		zeroPad: 0,
+
+		// value: String
+		//		The initial value of the slot.
+		value: "",
+
+		// step: Number
+		//		The steps between labelFrom and labelTo.
+		step: 1,
+
+		// tabIndex: String
+		//		Tabindex setting for this widget so users can hit the tab key to
+		//		focus on it.
+		tabIndex: "0",
+		_setTabIndexAttr: "", // sets tabIndex to domNode
+
+		/* internal properties */	
+		baseClass: "mblSpinWheelSlot",
+		// maxSpeed: [private] Number
+		//		Maximum speed.
+		maxSpeed: 500,
+		// minItems: [private] int
+		//		Minimum number of items.
+		minItems: 15,
+		// centerPos: [private] Number
+		//		Inherited from parent.
+		centerPos: 0,
+		// scrollbar: [private] Boolean
+		//		False: no scrollbars must be shown.
+		scrollBar: false,
+		// constraint: [private] Boolean
+		//		False: no scroll constraint.
+		constraint: false,
+		// propagatable: [private] Boolean
+		//		False: stop touchstart event propagation.
+		propagatable: false, // stop touchstart event propagation to make spin wheel work inside scrollable
+		// androidWorkaroud: [private] Boolean
+		//		False.
+		androidWorkaroud: false, // disable workaround in SpinWheel TODO:remove this line later
+
+		buildRendering: function(){
+			this.inherited(arguments);
+
+			this.initLabels();
+			var i, j;
+			if(this.labels.length > 0){
+				this.items = [];
+				for(i = 0; i < this.labels.length; i++){
+					this.items.push([i, this.labels[i]]);
+				}
+			}
+
+			this.containerNode = domConstruct.create("div", {className:"mblSpinWheelSlotContainer"});
+			this.containerNode.style.height
+				= (win.global.innerHeight||win.doc.documentElement.clientHeight) * 2 + "px"; // must bigger than the screen
+			this.panelNodes = [];
+			for(var k = 0; k < 3; k++){
+				this.panelNodes[k] = domConstruct.create("div", {className:"mblSpinWheelSlotPanel"});
+				var len = this.items.length;
+				if(len > 0){ // if the slot is not empty
+					var n = Math.ceil(this.minItems / len);
+					for(j = 0; j < n; j++){
+						for(i = 0; i < len; i++){
+							domConstruct.create("div", {
+								className: "mblSpinWheelSlotLabel",
+								name: this.items[i][0],
+								"data-mobile-val": this.items[i][1],
+								innerHTML: this._cv ? this._cv(this.items[i][1]) : this.items[i][1]
+							}, this.panelNodes[k]);
+						}
+					}
+				}
+				this.containerNode.appendChild(this.panelNodes[k]);
+			}
+			this.domNode.appendChild(this.containerNode);
+			this.touchNode = domConstruct.create("div", {className:"mblSpinWheelSlotTouch"}, this.domNode);
+			this.setSelectable(this.domNode, false);
+
+			if(this.value === "" && this.items.length > 0){
+				this.value = this.items[0][1];
+			}
+			this._initialValue = this.value;
+
+			if(has("windows-theme")){
+				var self = this,
+					containerNode = this.containerNode,
+					threshold = 5;
+
+				this.own(on(self.touchNode, touch.press, function(e){
+					var posY = e.pageY,
+						slots = self.getParent().getChildren();
+
+					for(var i = 0, ln = slots.length; i < ln; i++){
+						var container = slots[i].containerNode;
+
+						if(containerNode !== container){
+							domClass.remove(container, "mblSelectedSlot");
+							container.selected = false;
+						}else{
+							domClass.add(containerNode, "mblSelectedSlot");
+						}
+					}
+
+					var moveHandler = on(self.touchNode, touch.move, function(e){
+						if(Math.abs(e.pageY - posY) < threshold){
+							return;
+						}
+
+						moveHandler.remove();
+						releaseHandler.remove();
+						containerNode.selected = true;
+
+						var item = self.getCenterItem();
+
+						if(item){
+							domClass.remove(item, "mblSelectedSlotItem");
+						}
+					});
+
+					var releaseHandler = on(self.touchNode, touch.release, function(){
+						releaseHandler.remove();
+						moveHandler.remove();
+						containerNode.selected ?
+							domClass.remove(containerNode, "mblSelectedSlot") :
+							domClass.add(containerNode, "mblSelectedSlot");
+
+						containerNode.selected = !containerNode.selected;
+					});
+				}));
+
+				this.on("flickAnimationEnd", function(){
+						var item = self.getCenterItem();
+
+						if(self.previousCenterItem) {
+							domClass.remove(self.previousCenterItem, "mblSelectedSlotItem");
+						}
+
+						domClass.add(item, "mblSelectedSlotItem");
+						self.previousCenterItem = item;
+				});
+			}
+		},
+
+		startup: function(){
+			if(this._started){ return; }
+			this.inherited(arguments);
+			this.noResize = true;
+			if(this.items.length > 0){ // if the slot is not empty
+				this.init();
+				this.centerPos = this.getParent().centerPos;
+				var items = this.panelNodes[1].childNodes;
+				this._itemHeight = items[0].offsetHeight;
+				this.adjust();
+				this.connect(this.domNode, "onkeydown", "_onKeyDown"); // for desktop browsers
+			}
+			if(has("windows-theme")){
+				this.previousCenterItem = this.getCenterItem();
+				if(this.previousCenterItem){
+					domClass.add(this.previousCenterItem, "mblSelectedSlotItem");
+				}
+			}
+		},
+
+		initLabels: function(){
+			// summary:
+			//		Initializes the slot labels according to the labelFrom/labelTo properties.
+			// tags:
+			//		private
+			if(this.labelFrom !== this.labelTo){
+				var a = this.labels = [],
+					zeros = this.zeroPad && Array(this.zeroPad).join("0");
+				for(var i = this.labelFrom; i <= this.labelTo; i += this.step){
+					a.push(this.zeroPad ? (zeros + i).slice(-this.zeroPad) : i + "");
+				}
+			}
+		},
+
+		adjust: function(){
+			// summary:
+			//		Adjusts the position of slot panels.
+			var items = this.panelNodes[1].childNodes;
+			var adjustY;
+			for(var i = 0, len = items.length; i < len; i++){
+				var item = items[i];
+				if(item.offsetTop <= this.centerPos && this.centerPos < item.offsetTop + item.offsetHeight){
+					adjustY = this.centerPos - (item.offsetTop + Math.round(item.offsetHeight/2));
+					break;
+				}
+			}
+			var h = this.panelNodes[0].offsetHeight;
+			this.panelNodes[0].style.top = -h + adjustY + "px";
+			this.panelNodes[1].style.top = adjustY + "px";
+			this.panelNodes[2].style.top = h + adjustY + "px";
+		},
+
+		setInitialValue: function(){
+			// summary:
+			//		Sets the initial value using this.value or the first item.
+			this.set("value", this._initialValue);
+		},
+
+		_onKeyDown: function(e){
+			if(!e || e.type !== "keydown"){ return; }
+			if(e.keyCode === 40){ // down arrow key
+				this.spin(-1);
+			}else if(e.keyCode === 38){ // up arrow key
+				this.spin(1);
+			}
+		},
+
+		_getCenterPanel: function(){
+			// summary:
+			//		Gets a panel that contains the currently selected item.
+			var pos = this.getPos();
+			for(var i = 0, len = this.panelNodes.length; i < len; i++){
+				var top = pos.y + this.panelNodes[i].offsetTop;
+				if(top <= this.centerPos && this.centerPos < top + this.panelNodes[i].offsetHeight){
+					return this.panelNodes[i];
+				}
+			}
+			return null;
+		},
+
+		setColor: function(/*String*/value, /*String?*/color){
+			// summary:
+			//		Sets the color of the specified item as blue.
+			array.forEach(this.panelNodes, function(panel){
+				array.forEach(panel.childNodes, function(node, i){
+					domClass.toggle(node, color || "mblSpinWheelSlotLabelBlue", node.innerHTML === value);
+				}, this);
+			}, this);
+		},
+
+		disableValues: function(/*Number*/n){
+			// summary:
+			//		Grays out the items with an index higher or equal to the specified number.
+			array.forEach(this.panelNodes, function(panel){
+				for(var i = 0; i < panel.childNodes.length; i++){
+					domClass.toggle(panel.childNodes[i], "mblSpinWheelSlotLabelGray", i >= n);
+				}
+			});
+		},
+
+		getCenterItem: function(){
+			// summary:
+			//		Gets the currently selected item.
+			var pos = this.getPos();
+			var centerPanel = this._getCenterPanel();
+			if(centerPanel){
+				var top = pos.y + centerPanel.offsetTop;
+				var items = centerPanel.childNodes;
+				for(var i = 0, len = items.length; i < len; i++){
+					if(top + items[i].offsetTop <= this.centerPos && this.centerPos < top + items[i].offsetTop + items[i].offsetHeight){
+						return items[i];
+					}
+				}
+			}
+			return null;
+
+		},
+
+		_getKeyAttr: function(){
+			// summary:
+			//		Gets the key for the currently selected value.
+			if(!this._started){
+				if(this.items){
+					var v = this.value;
+					for(var i = 0; i < this.items.length; i++){
+						if(this.items[i][1] == this.value){
+							return this.items[i][0];
+						}
+					}
+				}
+				return null;
+			}
+			var item = this.getCenterItem();
+			return (item && item.getAttribute("name"));
+		},
+
+		_getValueAttr: function(){
+			// summary:
+			//		Gets the currently selected value.
+			if(!this._started){
+				return this.value;
+			}
+			if(this.items.length > 0){ // if the slot is not empty
+				var item = this.getCenterItem();
+				return (item && item.getAttribute("data-mobile-val"));
+			}else{
+				return this._initialValue;
+			}
+		},
+
+		_setValueAttr: function(value){
+			// summary:
+			//		Sets the value to this slot.
+			if(this.items.length > 0){ // no-op for empty slots
+				this._spinToValue(value, true);
+			}
+		},
+		
+		_spinToValue: function(value, applyValue){
+			// summary:
+			//		Spins the slot to the specified value.
+			// tags:
+			//		private
+			var idx0, idx1;
+			var curValue = this.get("value");
+			if(!curValue){
+				this._pendingValue = value;
+				return;
+			}
+			if(curValue == value){
+				return; // no change; avoid notification
+			}
+			this._pendingValue = undefined;
+			// to avoid unnecessary notifications, applyValue is false when 
+			// _spinToValue is called by _DatePickerMixin.
+			if(applyValue){
+				this._set("value", value);
+			}
+			var n = this.items.length;
+			for(var i = 0; i < n; i++){
+				if(this.items[i][1] === String(curValue)){
+					idx0 = i;
+				}
+				if(this.items[i][1] === String(value)){
+					idx1 = i;
+				}
+				if(idx0 !== undefined && idx1 !== undefined){
+					break;
+				}
+			}
+			var d = idx1 - (idx0 || 0);
+			var m;
+			if(d > 0){
+				m = (d < n - d) ? -d : n - d;
+			}else{
+				m = (-d < n + d) ? -d : -(n + d);
+			}
+			this.spin(m);
+		},
+		
+		onFlickAnimationStart: function(e){
+			// summary:
+			//		Overrides dojox/mobile/scrollable.onFlickAnimationStart().
+			this._onFlickAnimationStartCalled = true;
+			this.inherited(arguments);
+		},
+
+		onFlickAnimationEnd: function(e){
+			// summary:
+			//		Overrides dojox/mobile/scrollable.onFlickAnimationEnd().
+			this._duringSlideTo = false;
+			this._onFlickAnimationStartCalled = false;
+			this.inherited(arguments);
+		},
+		
+		spin: function(/*Number*/steps){
+			// summary:
+			//		Spins the slot as specified by steps.
+			
+			// do nothing before startup and during slide
+			if(!this._started || this._duringSlideTo){
+				return; 
+			}
+			var to = this.getPos();
+			to.y += steps * this._itemHeight;
+			this.slideTo(to, 1);
+		},
+
+		getSpeed: function(){
+			// summary:
+			//		Overrides dojox/mobile/scrollable.getSpeed().
+			var y = 0, n = this._time.length;
+			var delta = (new Date()).getTime() - this.startTime - this._time[n - 1];
+			if(n >= 2 && delta < 200){
+				var dy = this._posY[n - 1] - this._posY[(n - 6) >= 0 ? n - 6 : 0];
+				var dt = this._time[n - 1] - this._time[(n - 6) >= 0 ? n - 6 : 0];
+				y = this.calcSpeed(dy, dt);
+			}
+			return {x:0, y:y};
+		},
+
+		calcSpeed: function(/*Number*/d, /*Number*/t){
+			// summary:
+			//		Overrides dojox/mobile/scrollable.calcSpeed().
+			var speed = this.inherited(arguments);
+			if(!speed){ return 0; }
+			var v = Math.abs(speed);
+			var ret = speed;
+			if(v > this.maxSpeed){
+				ret = this.maxSpeed*(speed/v);
+			}
+			return ret;
+		},
+
+		adjustDestination: function(to, pos, dim){
+			// summary:
+			//		Overrides dojox/mobile/scrollable.adjustDestination().
+			var h = this._itemHeight;
+			var j = to.y + Math.round(h/2);
+			var r = j >= 0 ? j % h : j % h + h;
+			to.y = j - r;
+			return true;
+		},
+
+		resize: function(e){
+			// Correct internal variables & adjust slot panels
+			var items = this.panelNodes[1].childNodes;
+			// TODO investigate - the position is calculated incorrectly for 
+			// windows theme, disable this logic for now.
+			if(items.length > 0 && !has("windows-theme")){ // empty slot?
+				this._itemHeight = items[0].offsetHeight;
+				this.centerPos = this.getParent().centerPos;
+				this.adjust();
+			}
+			if(this._pendingValue){
+				this.set("value", this._pendingValue);
+			}
+		},
+
+		slideTo: function(/*Object*/to, /*Number*/duration, /*String*/easing){
+			// summary:
+			//		Overrides dojox/mobile/scrollable.slideTo().
+			this._duringSlideTo = true; 
+			var pos = this.getPos();
+			var top = pos.y + this.panelNodes[1].offsetTop;
+			var bottom = top + this.panelNodes[1].offsetHeight;
+			var vh = this.domNode.parentNode.offsetHeight;
+			var t;
+			if(pos.y < to.y){ // going down
+				if(bottom > vh){
+					// move up the bottom panel
+					t = this.panelNodes[2];
+					t.style.top = this.panelNodes[0].offsetTop - this.panelNodes[0].offsetHeight + "px";
+					this.panelNodes[2] = this.panelNodes[1];
+					this.panelNodes[1] = this.panelNodes[0];
+					this.panelNodes[0] = t;
+				}
+			}else if(pos.y > to.y){ // going up
+				if(top < 0){
+					// move down the top panel
+					t = this.panelNodes[0];
+					t.style.top = this.panelNodes[2].offsetTop + this.panelNodes[2].offsetHeight + "px";
+					this.panelNodes[0] = this.panelNodes[1];
+					this.panelNodes[1] = this.panelNodes[2];
+					this.panelNodes[2] = t;
+				}
+			}
+			if(this.getParent()._duringStartup){
+				duration = 0; // to reduce flickers at start-up especially on android
+			}else if(Math.abs(this._speed.y) < 40){
+				duration = 0.2;
+			}
+			this.inherited(arguments, [to, duration, easing]); // 2nd arg is to avoid excessive optimization by closure compiler
+			if(this.getParent()._duringStartup && !this._onFlickAnimationStartCalled){
+				// during startup, because of duration set to 0, if onFlickAnimationStart() 
+				// has not been called (depends on scrollType value), the call of 
+				// onFlickAnimationEnd is missing, hence:
+				this.onFlickAnimationEnd();
+			}else if(!this._onFlickAnimationStartCalled){
+				// if onFlickAnimationStart() wasn't called, and if slideTo() didn't call
+				// itself onFlickAnimationEnd():
+				this._duringSlideTo = false;
+				// (otherwise, wait for onFlickAnimationEnd which deletes the flag)
+			}
+		}
+	});
+
+	return has("dojo-bidi") ? declare("dojox.mobile.SpinWheelSlot", [SpinWheelSlot, BidiSpinWheelSlot]) : SpinWheelSlot;	
+});
+
+},
+'dojox/mobile/ValuePickerDatePicker':function(){
+define([
+	"dojo/_base/declare",
+	"dojo/dom-class",
+	"dojo/dom-attr",
+	"./_DatePickerMixin",
+	"./ValuePicker",
+	"./ValuePickerSlot"
+], function(declare, domClass, domAttr, DatePickerMixin, ValuePicker, ValuePickerSlot){
+
+	// module:
+	//		dojox/mobile/ValuePickerDatePicker
+
+	return declare("dojox.mobile.ValuePickerDatePicker", [ValuePicker, DatePickerMixin], {
+		// summary:
+		//		A ValuePicker-based date picker widget.
+		// description:
+		//		ValuePickerDatePicker is a date picker widget. It is a subclass of
+		//		dojox/mobile/ValuePicker. It has 3 slots: day, month and year.
+		
+		// readOnly: [const] Boolean
+		//		If true, slot input fields are read-only. Only the plus and
+		//		minus buttons can be used to change the values.
+		//		Note that changing the value of the property after the widget 
+		//		creation has no effect.
+		readOnly: false,
+		
+		// yearPlusBtnLabel: String
+		//		(Accessibility) Label for year plus button
+		yearPlusBtnLabel: "",
+		
+		// yearPlusBtnLabelRef: String
+		//		(Accessibility) Reference to a node id containing text label for the year plus button
+		yearPlusBtnLabelRef: "",
+		
+		// yearPlusBtnLabel: String
+		//		(Accessibility) Label for year minus button
+		yearMinusBtnLabel: "",
+		
+		// yearPlusBtnLabelRef: String
+		//		(Accessibility) Reference to a node id containing text label for the year minus button
+		yearMinusBtnLabelRef: "",
+
+		// monthPlusBtnLabel: String
+		//		(Accessibility) Label for month plus button
+		monthPlusBtnLabel: "",
+		
+		// monthPlusBtnLabelRef: String
+		//		(Accessibility) Reference to a node id containing text label for the month plus button
+		monthPlusBtnLabelRef: "",
+		
+		// monthMinusBtnLabel: String
+		//		(Accessibility) Label for month minus button
+		monthMinusBtnLabel: "",
+		
+		// monthMinusBtnLabelRef: String
+		//		(Accessibility) Reference to a node id containing text label for the month minus button
+		monthMinusBtnLabelRef: "",
+
+		// dayPlusBtnLabel: String
+		//		(Accessibility) Label for day plus button
+		dayPlusBtnLabel: "",
+		
+		// dayPlusBtnLabelRef: String
+		//		(Accessibility) Reference to a node id containing text label for the day plus button
+		dayPlusBtnLabelRef: "",
+		
+		// dayMinusBtnLabel: String
+		//		(Accessibility) Label for day minus button
+		dayMinusBtnLabel: "",
+		
+		// dayMinusBtnLabelRef: String
+		//		(Accessibility) Reference to a node id containing text label for the day minus button
+		dayMinusBtnLabelRef: "",
+
+		slotClasses: [
+			ValuePickerSlot,
+			ValuePickerSlot,
+			ValuePickerSlot
+		],
+
+		slotProps: [
+			{labelFrom:1970, labelTo:2038, style:{width:"87px"}},
+			{style:{width:"72px"}},
+			{style:{width:"72px"}}
+		],
+
+		buildRendering: function(){
+			var p = this.slotProps;
+			p[0].readOnly = p[1].readOnly = p[2].readOnly = this.readOnly;
+			this._setBtnLabels(p);
+			this.initSlots();
+			this.inherited(arguments);
+			domClass.add(this.domNode, "mblValuePickerDatePicker");
+			this._conn = [
+				this.connect(this.slots[0], "_spinToValue", "_onYearSet"),
+				this.connect(this.slots[1], "_spinToValue", "_onMonthSet"),
+				this.connect(this.slots[2], "_spinToValue", "_onDaySet")
+			];
+		},
+
+		disableValues: function(/*Number*/daysInMonth){
+			// summary:
+			//		Disables the end days of the month to match the specified
+			//		number of days of the month.
+			var items = this.slots[2].items;
+			if(this._tail){
+				this.slots[2].items = items = items.concat(this._tail);
+			}
+			this._tail = items.slice(daysInMonth);
+			items.splice(daysInMonth);
+		},
+		
+		_setBtnLabels: function(slotProps){
+		    //summary:
+		    // Set a11y labels on the plus/minus buttons
+			slotProps[0].plusBtnLabel = this.yearPlusBtnLabel;
+			slotProps[0].plusBtnLabelRef = this.yearPlusBtnLabelRef;
+			slotProps[0].minusBtnLabel = this.yearMinusBtnLabel;
+			slotProps[0].minusBtnLabelRef = this.yearMinusBtnLabelRef;
+			slotProps[1].plusBtnLabel = this.monthPlusBtnLabel; 
+			slotProps[1].plusBtnLabelRef = this.monthPlusBtnLabelRef;
+			slotProps[1].minusBtnLabel = this.monthMinusBtnLabel;
+			slotProps[1].minusBtnLabelRef = this.monthMinusBtnLabelRef;
+			slotProps[2].plusBtnLabel = this.dayPlusBtnLabel;
+			slotProps[2].plusBtnLabelRef = this.dayPlusBtnLabelRef;
+			slotProps[2].minusBtnLabel = this.dayMinusBtnLabel;
+			slotProps[2].minusBtnLabelRef = this.dayMinusBtnLabelRef;
+		}
+	});
+});
+
+},
+'dojox/mobile/ValuePicker':function(){
+define([
+	"dojo/_base/declare",
+	"./_PickerBase",
+	"./ValuePickerSlot" // to load ValuePickerSlot for you (no direct references)
+], function(declare, PickerBase){
+
+	// module:
+	//		dojox/mobile/ValuePicker
+
+	return declare("dojox.mobile.ValuePicker", PickerBase, {
+		// summary:
+		//		A value picker that has a stepper.
+		// description:
+		//		ValuePicker is a widget for selecting values. The values
+		//		can be selected by using the Plus or Minus buttons, or by
+		//		entering the value directly into the input field.
+		//		This type of value picker is typically seen on Android devices.
+
+		/* internal properties */	
+		baseClass: "mblValuePicker",
+
+		onValueChanged: function(/*dojox/mobile/ValuePickerSlot*/slot){
+			// summary:
+			//		Callback when the slot value is changed.
+			// slot:
+			//		The slot widget whose value has been changed.
+			// tags:
+			//		callback
+		}
+	});
+});
+
+},
+'dojox/mobile/ValuePickerSlot':function(){
+define([
+	"dojo/_base/array",
+	"dojo/_base/declare",
+	"dojo/_base/event",
+	"dojo/_base/lang",
+	"dojo/_base/window",
+	"dojo/dom-class",
+	"dojo/dom-construct",
+	"dojo/dom-attr",
+	"dojo/touch",
+	"dijit/_WidgetBase",
+	"./iconUtils",
+	"dojo/has",
+	"dojo/has!dojo-bidi?dojox/mobile/bidi/ValuePickerSlot"
+], function(array, declare, event, lang, win, domClass, domConstruct, domAttr, touch, WidgetBase, iconUtils, has, BidiValuePickerSlot){
+
+	// module:
+	//		dojox/mobile/ValuePickerSlot
+
+	var ValuePickerSlot = declare(has("dojo-bidi") ?  "dojox.mobile.NonBidiValuePickerSlot" : "dojox.mobile.ValuePickerSlot", WidgetBase, {
+		// summary:
+		//		A widget representing one slot of a ValuePicker widget.
+		
+		// items: Array
+		//		An array of array of key-label pairs
+		//		(e.g. [[0, "Jan"], [1,"Feb"], ...]). If key values for each label
+		//		are not necessary, labels can be used instead.
+		items: [],
+
+		// labels: String[]
+		//		An array of labels to be displayed on the value picker
+		//		(e.g. ["Jan","Feb",...]). This is a simplified version of the
+		//		items property.
+		labels: [],
+
+		// labelFrom: Number
+		//		The start value of display values of the value picker. This
+		//		parameter is especially useful when value picker has serial
+		//		values.
+		labelFrom: 0,
+
+		// labelTo: Number
+		//		The end value of display values of the value picker.
+		labelTo: 0,
+
+		// zeroPad: Number
+		//		Length of zero padding numbers.
+		//		Ex. zeroPad=2 -> "00", "01", ...
+		//		Ex. zeroPad=3 -> "000", "001", ...
+		zeroPad: 0,
+
+		// value: String
+		//		The initial value of the value picker.
+		value: "",
+
+		// step: Number
+		//		The steps between labelFrom and labelTo.
+		step: 1,
+
+		// readOnly: [const] Boolean
+		//		A flag used to indicate if the input field is readonly or not.
+		//		Note that changing the value of the property after the widget 
+		//		creation has no effect.
+		readOnly: false,
+
+		// tabIndex: String
+		//		Tabindex setting for this widget so users can hit the tab key to
+		//		focus on it.
+		tabIndex: "0",
+
+		// key: Object
+		//		The key of the currently selected value in the items array. This is a read-only property.
+		//		Warning: Do not use this property directly, make sure to call the get() method.
+		/*=====
+		key: null,
+		=====*/
+		
+		// plusBtnLabel: String
+		//		(Accessibility) Text label for plus button
+		plusBtnLabel: "",
+		
+		// plusBtnLabelRef: String
+		//		(Accessibility) Reference to a node id containing text label for plus button
+		plusBtnLabelRef: "",
+		
+		// minusBtnLabel: String
+		//		(Accessibility) Text label for minus button
+		minusBtnLabel: "",
+		
+		// minusBtnLabelRef: String
+		//		(Accessibility) Reference to a node id containing text label for minus button
+		minusBtnLabelRef: "",
+
+		/* internal properties */	
+		baseClass: "mblValuePickerSlot",
+
+		buildRendering: function(){
+			this.inherited(arguments);
+
+			this.initLabels();
+			if(this.labels.length > 0){
+				this.items = [];
+				for(var i = 0; i < this.labels.length; i++){
+					this.items.push([i, this.labels[i]]);
+				}
+			}
+
+			this.plusBtnNode = domConstruct.create("div", {
+				className: "mblValuePickerSlotPlusButton mblValuePickerSlotButton",
+				title: "+"
+			}, this.domNode);
+			
+			this.plusIconNode = domConstruct.create("div", {
+				className: "mblValuePickerSlotIcon"
+			}, this.plusBtnNode);
+			iconUtils.createIcon("mblDomButtonGrayPlus", null, this.plusIconNode);
+
+			this.inputAreaNode = domConstruct.create("div", {
+				className: "mblValuePickerSlotInputArea"
+			}, this.domNode);
+			this.inputNode = domConstruct.create("input", {
+				className: "mblValuePickerSlotInput",
+				readonly: this.readOnly
+			}, this.inputAreaNode);
+			
+			this.minusBtnNode = domConstruct.create("div", {
+				className: "mblValuePickerSlotMinusButton mblValuePickerSlotButton",
+				title: "-"
+			}, this.domNode);
+			this.minusIconNode = domConstruct.create("div", {
+				className: "mblValuePickerSlotIcon"
+			}, this.minusBtnNode);
+			iconUtils.createIcon("mblDomButtonGrayMinus", null, this.minusIconNode);
+			
+			domAttr.set(this.plusBtnNode, "role", "button"); //a11y
+			this._setPlusBtnLabelAttr(this.plusBtnLabel)
+			this._setPlusBtnLabelRefAttr(this.plusBtnLabelRef);
+			
+			domAttr.set(this.inputNode, "role", "textbox");
+			var registry = require("dijit/registry");
+			var inputAreaNodeId =  registry.getUniqueId("dojo_mobile__mblValuePickerSlotInput");
+			domAttr.set(this.inputNode, "id", inputAreaNodeId);
+			domAttr.set(this.plusBtnNode, "aria-controls", inputAreaNodeId);
+			
+			domAttr.set(this.minusBtnNode, "role", "button");
+			domAttr.set(this.minusBtnNode, "aria-controls", inputAreaNodeId);
+			this._setMinusBtnLabelAttr(this.minusBtnLabel);
+			this._setMinusBtnLabelRefAttr(this.minusBtnLabelRef);
+
+			if(this.value === "" && this.items.length > 0){
+				this.value = this.items[0][1];
+			}
+			this._initialValue = this.value;
+		},
+
+		startup: function(){
+			if(this._started){ return; }
+			this._handlers = [
+				this.connect(this.plusBtnNode, touch.press, "_onTouchStart"),
+				this.connect(this.minusBtnNode, touch.press, "_onTouchStart"),
+				this.connect(this.plusBtnNode, "onkeydown", "_onClick"), // for desktop browsers
+				this.connect(this.minusBtnNode, "onkeydown", "_onClick"), // for desktop browsers
+				this.connect(this.inputNode, "onchange", lang.hitch(this, function(e){
+					this._onChange(e);
+				}))
+			];
+			this.inherited(arguments);
+			this._set(this.plusBtnLabel);
+		},
+
+		initLabels: function(){
+			// summary:
+			//		Initializes the labels of this slot according to the labelFrom and labelTo properties.
+			// tags:
+			//		private
+			if(this.labelFrom !== this.labelTo){
+				var a = this.labels = [],
+					zeros = this.zeroPad && Array(this.zeroPad).join("0");
+				for(var i = this.labelFrom; i <= this.labelTo; i += this.step){
+					a.push(this.zeroPad ? (zeros + i).slice(-this.zeroPad) : i + "");
+				}
+			}
+		},
+
+		spin: function(/*Number*/steps){
+			// summary:
+			//		Spins the slot as specified by steps.
+
+			// find the position of the current value
+			var pos = -1,
+				v = this.get("value"),
+				len = this.items.length;
+			for(var i = 0; i < len; i++){
+				if(this.items[i][1] === v){
+					pos = i;
+					break;
+				}
+			}
+			if(v == -1){ return; }
+			pos += steps;
+			if(pos < 0){ // shift to positive
+				pos += (Math.abs(Math.ceil(pos / len)) + 1) * len;
+			}
+			var newItem = this.items[pos % len];
+			this.set("value", newItem[1]);
+		},
+
+		setInitialValue: function(){
+			// summary:
+			//		Sets the initial value using this.value or the first item.
+			this.set("value", this._initialValue);
+		},
+
+		_onClick: function(e){
+			// summary:
+			//		Internal handler for click events.
+			// tags:
+			//		private
+			if(e && e.type === "keydown" && e.keyCode !== 13){ return; }
+			if(this.onClick(e) === false){ return; } // user's click action
+			var node = e.currentTarget;
+			if(node === this.plusBtnNode || node === this.minusBtnNode){
+				this._btn = node;
+			}
+			this.spin(this._btn === this.plusBtnNode ? 1 : -1);
+		},
+
+		onClick: function(/*Event*/ /*===== e =====*/){
+			// summary:
+			//		User defined function to handle clicks
+			// tags:
+			//		callback
+		},
+
+		_onChange: function(e){
+			// summary:
+			//		Internal handler for the input field's value change events
+			// tags:
+			//		callback
+			if(this.onChange(e) === false){ return; } // user's click action
+			var v = this.get("value"), // text in the input field
+				a = this.validate(v);
+			this.set("value", a.length ? a[0][1] : this.value);
+		},
+
+		onChange: function(/*Event*/ /*===== e =====*/){
+			// summary:
+			//		User defined function to handle value changes
+			// tags:
+			//		callback
+		},
+
+		validate: function(value){
+			return array.filter(this.items, function(a){
+				return (a[1] + "").toLowerCase() == (value + "").toLowerCase();
+			});
+		},
+
+		_onTouchStart: function(e){
+			this._conn = [
+				this.connect(win.body(), touch.move, "_onTouchMove"),
+				this.connect(win.body(), touch.release, "_onTouchEnd")
+			];
+			this.touchStartX = e.touches ? e.touches[0].pageX : e.clientX;
+			this.touchStartY = e.touches ? e.touches[0].pageY : e.clientY;
+			domClass.add(e.currentTarget, "mblValuePickerSlotButtonSelected");
+			this._btn = e.currentTarget;
+			if(this._timer){
+				this._timer.remove(); // fail safe
+				this._timer = null;
+			}
+			if(this._interval){
+				clearInterval(this._interval); // fail safe
+				this._interval = null;
+			}
+			this._timer = this.defer(function(){
+				this._interval = setInterval(lang.hitch(this, function(){
+					this.spin(this._btn === this.plusBtnNode ? 1 : -1);
+				}), 60);
+				this._timer = null;
+			}, 1000);
+			event.stop(e);
+		},
+
+		_onTouchMove: function(e){
+			var x = e.touches ? e.touches[0].pageX : e.clientX;
+			var y = e.touches ? e.touches[0].pageY : e.clientY;
+			if(Math.abs(x - this.touchStartX) >= 4 ||
+			   Math.abs(y - this.touchStartY) >= 4){ // dojox/mobile/scrollable.threshold
+			   	if(this._timer){
+					this._timer.remove(); // fail safe
+					this._timer = null;
+				}
+				if(this._interval){
+					clearInterval(this._interval); // fail safe
+					this._interval = null;
+				}
+				array.forEach(this._conn, this.disconnect, this);
+				domClass.remove(this._btn, "mblValuePickerSlotButtonSelected");
+			}
+		},
+
+		_onTouchEnd: function(e){
+			if(this._timer){
+				this._timer.remove();
+				this._timer = null;
+			}
+			array.forEach(this._conn, this.disconnect, this);
+			domClass.remove(this._btn, "mblValuePickerSlotButtonSelected");
+			if(this._interval){
+				clearInterval(this._interval);
+				this._interval = null;
+			}else{
+				this._onClick(e);
+			}
+		},
+
+		_getKeyAttr: function(){
+			var val = this.get("value");
+			var item = array.filter(this.items, function(item){
+				return item[1] === val;
+			})[0];
+			return item ? item[0] : null;
+		},
+
+		_getValueAttr: function(){
+			// summary:
+			//		Gets the currently selected value.
+			return this.inputNode.value;
+		},
+
+		_setValueAttr: function(value){
+			// summary:
+			//		Sets a new value to this slot.
+			this._spinToValue(value, true);
+		},
+		
+		_spinToValue: function(value, applyValue){
+			// summary:
+			//		Sets a new value to this slot.
+			// tags:
+			//		private
+			if(this.get("value") == value){
+				return; // no change; avoid notification
+			}
+			this.inputNode.value = value;
+			// to avoid unnecessary notifications, applyValue is undefined when 
+			// _spinToValue is called by _DatePickerMixin.
+			if(applyValue){
+				this._set("value", value);
+			}
+			var parent = this.getParent();
+			if(parent && parent.onValueChanged){
+				parent.onValueChanged(this);
+			}
+		},
+
+		_setTabIndexAttr: function(/*String*/ tabIndex){
+			this.plusBtnNode.setAttribute("tabIndex", tabIndex);
+			this.minusBtnNode.setAttribute("tabIndex", tabIndex);
+		},
+		
+		_setAria: function(node, attr, value){
+			if(value){
+				domAttr.set(node, attr, value);
+			}else{
+				domAttr.remove(node, attr);
+			}
+		},
+		
+		_setPlusBtnLabelAttr: function(/*String*/ plusBtnLabel){
+			this._setAria(this.plusBtnNode, "aria-label", plusBtnLabel);
+		},
+		
+		_setPlusBtnLabelRefAttr: function(/*String*/ plusBtnLabelRef){
+			this._setAria(this.plusBtnNode, "aria-labelledby", plusBtnLabelRef);
+		},
+		
+		_setMinusBtnLabelAttr: function(/*String*/ minusBtnLabel){
+			this._setAria(this.minusBtnNode, "aria-label", minusBtnLabel);
+		},
+		
+		_setMinusBtnLabelRefAttr: function(/*String*/ minusBtnLabelRef){
+			this._setAria(this.minusBtnNode, "aria-labelledby", minusBtnLabelRef);
+		}
+	});
+	
+	return has("dojo-bidi") ? declare("dojox.mobile.ValuePickerSlot", [ValuePickerSlot, BidiValuePickerSlot]) : ValuePickerSlot;
+});
+
+},
+'app/views/search/search':function(){
+/*jslint nomen: true */
+/*jshint nomen: true */
+/*global _, define, console*/
+define([
+    'dojo/query!css3',
+    //query is the core of dojo dom query
+    // the return is NodeList that has full set of functions
+    // most of the function have same syntax as jquery see bellow this file for summary
+    'dojo/on',
+    'dojox/mobile/ListItem',
+    'dojo/NodeList-manipulate',
+    // Load dojo/NodeList-manipulate to get JQuery syntax: see below this file for function syntax
+    'dojo/text!app/views/search/search.html',
+    'dojox/mobile/Heading'
+], function ($, on) {
+    'use strict';
+
+    var view, // set in init(params) to save in closure reference to this view controller instance
+        viewNode; // set in init(params) to save in closure reference to this view dom node
+
+
+
+    return {
+
+        init: function (params) {
+            // summary:
+            //      view life cycle init()
+            console.log(this.name + " view:init()");
+
+            //save the view node in clousure to use as scope for dom manipulatation and query
+            viewNode = this.domNode;
+            view = this;
+
+        },
+
+        beforeActivate: function (view, data) {
+            // summary:
+            //      view life cycle beforeActivate()
+            console.log(this.name + " view:beforeActivate(view,data)");
+        },
+
+        afterActivate: function (view, data) {
+            // summary:
+            //      view life cycle afterActivate()
+            console.log(this.name + " view:afterActivate(view,data)");
+        },
+
+        beforeDeactivate: function (view, data) {
+            // summary:
+            //      view life cycle beforeDeactivate()
+            console.log(this.name + " view:beforeDeactivate(view,data)");
+        },
+
+        afterDeactivate: function (view, data) {
+            // summary:
+            //      view life cycle afterDeactivate()
+            console.log(this.name + " view:afterDeactivate(view,data)");
+        },
+
+        destroy: function (params) {
+            // summary:
+            //      view life cycle destroy()
+            console.log(this.name + " view:destory()");
+        },
+        /*****
+         * Custom Code for View Controller
+         *****/
+
+        _formatterTmpl : function (value, key) {
+            // summary:
+            //      Use to format template properties using the convention ${foo:_formatterTmpl}
+            console.log(this.name + "_formatterTmpl(" + value + "," + "key" + ");");
+
+        },
+        doSomething: function (event) {
+            console.log('did something');
+            // summary:
+            //      Example of a custom view controller callback for event listener
+            console.log(this.name + "doSomething(" + event + ");");
+
+        }
+    };
+
+
+/*
+    - dojo/NodeList-manipulate
+    - Load dojo/NodeList-manipulate to get JQuery syntax:
+
+.html( value)
+.text(value)
+.val(value)
+.append(content)
+.appendTo(query)
+.prepend(content)
+.prependTo(query)
+.after(content)
+.insertAfter(query)
+.before(content)
+.insertBefore(query)
+.wrap(html)
+.wrapAll(html)
+.wrapInner(html)
+.replaceAll(query)
+.clone()
+
+*/
+
+/*  - dojo/query!css3
+    - NodeList functions dojo/query returns NodeList and supports chanining
+    - Read the docs or source for more info:
+        - (http://dojotoolkit.org/api/1.9/dojo/NodeList)
+
+.addClass(className) adds the specified class to every node in the list
+.addClassFx(cssClass, args) Animate the effects of adding a class to all nodes in this list. see dojox.fx.addClass
+.addContent(content, position) add a node, NodeList or some HTML as a string to every item in the list. Returns the original list.
+.adopt(queryOrListOrNode, position) places any/all elements in queryOrListOrNode at a position relative to the first element in this list.
+.after(content) Places the content after every node in the NodeList.
+.andSelf() Adds the nodes from the previous dojo/NodeList to the current dojo/NodeList.
+.anim(properties, duration, easing, onEnd, delay) Animate one or more CSS properties for all nodes in this list.
+.animateProperty(args) Animate all elements of this NodeList across the properties specified. syntax identical to dojo.animateProperty
+.append(content) appends the content to every node in the NodeList.
+.appendTo(query) appends nodes in this NodeList to the nodes matched by the query passed to appendTo.
+.at(index) Returns a new NodeList comprised of items in this NodeList at the given index or indices.
+.attr(property, value) gets or sets the DOM attribute for every element in the NodeList.
+.before(content) Places the content before every node in the NodeList.
+.children(query) Returns all immediate child elements for nodes in this dojo/NodeList. Optionally takes a query to filter the child elements.
+.clone() Clones all the nodes in this NodeList and returns them as a new NodeList.
+.closest(query, root) Returns closest parent that matches query, including current node in this dojo/NodeList if it matches the query.
+.concat(item) Returns a new NodeList comprised of items in this NodeList as well as items passed in as parameters
+.connect(methodName, objOrFunc, funcName) Attach event handlers to every item of the NodeList.
+.coords() Deprecated: Use position() for border-box x/y/w/h or marginBox() for margin-box w/h/l/t.
+.data(key, value) stash or get some arbitrary data on/from these nodes.
+.delegate(selector, eventName, fn) Monitor nodes in this NodeList for [bubbled] events on nodes that match selector. Calls fn(evt) for those events, where (inside of fn()), this == the node that matches the selector.
+.dtl(template, context) Renders the specified template in each of the NodeList entries.
+.empty() clears all content from each node in the list.
+.end() Ends use of the current NodeList by returning the previous NodeList that generated the current NodeList.
+.even() Returns the even nodes in this dojo/NodeList as a dojo/NodeList.
+.every(callback, thisObject) see dojo.every() and the Array.every docs.
+.fadeIn(args) fade in all elements of this NodeList via dojo.fadeIn
+.fadeOut(args) fade out all elements of this NodeList via dojo.fadeOut
+.filter(filter) "masks" the built-in javascript filter() method (supported in Dojo via dojo.filter) to support passing a simple string filter in addition to supporting filtering function objects.
+.first() Returns the first node in this dojo/NodeList as a dojo/NodeList.
+.forEach(callback, thisObj) see dojo.forEach().
+.html(value) allows setting the innerHTML of each node in the NodeList, if there is a value passed in, otherwise, reads the innerHTML value of the first node.
+.indexOf(value, fromIndex) see dojo.indexOf(). The primary difference is that the acted-on array is implicitly this NodeList
+.innerHTML(value) allows setting the innerHTML of each node in the NodeList, if there is a value passed in, otherwise, reads the innerHTML value of the first node.
+.insertAfter(query) The nodes in this NodeList will be placed after the nodes matched by the query passed to insertAfter.
+.insertBefore(query) The nodes in this NodeList will be placed after the nodes matched by the query passed to insertAfter.
+.instantiate(declaredClass, properties) Create a new instance of a specified class, using the specified properties and each node in the NodeList as a srcNodeRef.
+.last() Returns the last node in this dojo/NodeList as a dojo/NodeList.
+.lastIndexOf(value, fromIndex) see dojo.lastIndexOf(). The primary difference is that the acted-on array is implicitly this NodeList
+.map(func, obj) see dojo.map().
+.marginBox() Returns margin-box size of nodes
+.next(query) Returns the next element for nodes in this dojo/NodeList. Optionally takes a query to filter the next elements.
+.nextAll(query) Returns all sibling elements that come after the nodes in this dojo/NodeList. Optionally takes a query to filter the sibling elements.
+.odd() Returns the odd nodes in this dojo/NodeList as a dojo/NodeList.
+.on(eventName, listener) Listen for events on the nodes in the NodeList.
+.orphan(filter) removes elements in this list that match the filter from their parents and returns them as a new NodeList.
+.parent(query) Returns immediate parent elements for nodes in this dojo/NodeList. Optionally takes a query to filter the parent elements.
+.parents(query) Returns all parent elements for nodes in this dojo/NodeList. Optionally takes a query to filter the child elements.
+.place(queryOrNode, position) places elements of this node list relative to the first element matched by queryOrNode.
+.position() Returns border-box objects (x/y/w/h) of all elements in a node list as an Array (not a NodeList).
+.prepend(content) prepends the content to every node in the NodeList.
+.prependTo(query) prepends nodes in this NodeList to the nodes matched by the query passed to prependTo.
+.prev(query) Returns the previous element for nodes in this dojo/NodeList. Optionally takes a query to filter the previous elements.
+.prevAll(query) Returns all sibling elements that come before the nodes in this dojo/NodeList. Optionally takes a query to filter the sibling elements.
+.query(queryStr) Returns a new list whose members match the passed query, assuming elements of the current NodeList as the root for each search.
+.remove(filter) removes elements in this list that match the filter from their parents and returns them as a new NodeList.
+.removeAttr(name) Removes an attribute from each node in the list.
+.removeClass(className) removes the specified class from every node in the list
+.removeClassFx(cssClass, args) Animate the effect of removing a class to all nodes in this list. see dojox.fx.removeClass
+.removeData(key) Remove the data associated with these nodes.
+.replaceAll(query) replaces nodes matched by the query passed to replaceAll with the nodes in this NodeList.
+.replaceClass(addClassStr, removeClassStr) Replaces one or more classes on a node if not present.
+.replaceWith(content) Replaces each node in ths NodeList with the content passed to replaceWith.
+.siblings(query) Returns all sibling elements for nodes in this dojo/NodeList. Optionally takes a query to filter the sibling elements.
+.slice(begin, end) Returns a new NodeList, maintaining this one in place
+.slideTo(args) slide all elements of the node list to the specified place via dojo/fx.slideTo()
+.some(callback, thisObject) Takes the same structure of arguments and returns as dojo.some() with the caveat that the passed array is implicitly this NodeList.
+.splice(index, howmany, item) Returns a new NodeList, manipulating this NodeList based on the arguments passed, potentially splicing in new elements at an offset, optionally deleting elements
+.style(property, value) gets or sets the CSS property for every element in the NodeList
+.text(value) allows setting the text value of each node in the NodeList, if there is a value passed in, otherwise, returns the text value for all the nodes in the NodeList in one string.
+.toggleClass(className, condition) Adds a class to node if not present, or removes if present.
+.toggleClassFx(cssClass, force, args) Animate the effect of adding or removing a class to all nodes in this list. see dojox.fx.toggleClass
+.toString()
+.val(value) If a value is passed, allows seting the value property of form elements in this NodeList, or properly selecting/checking the right value for radio/checkbox/select elements.
+.wipeIn(args) wipe in all elements of this NodeList via dojo/fx.wipeIn()
+.wipeOut(args) wipe out all elements of this NodeList via dojo/fx.wipeOut()
+.wrap(html) Wrap each node in the NodeList with html passed to wrap.
+.wrapAll(html) Insert html where the first node in this NodeList lives, then place all nodes in this NodeList as the child of the html.
+.wrapInner(html) For each node in the NodeList, wrap all its children with the passed in html..
+*/
+
+});
+
+},
 'url:app/config.json':"{\n    //Mandatory\n    \"id\": \"App\",\n    //Optional\n    \"name\": \"requuest-App\",\n    //Optional\n    \"description\": \"Example dApp, Work Order Requests App\",\n    //Optional, but very useful for views properties\n    \"loaderConfig\": {\n        \"paths\": {\n            \"app\": \"../app\"\n        }\n    },\n    //Optional, but required when not using the parser, and its required by views\n    \"dependencies\": [\n        \"dojo/store/Observable\",\n        //\"dojox/app/controllers/History\",\n        \"dojox/app/controllers/HistoryHash\",\n        \"app/views/controllers/CustomHistory\",\n        /* On Mobile always add the 2 following modules dojox/mobule a dojox/mobile/deviceTheme */\n        \"dojox/mobile/common\",\n        /* For build to include css3/lite query selectorEngine */\n        \"dojo/selector/lite\",\n        //Need to inlclude dependency for model stores across views\n        \"dojo/store/Memory\",\n        \"dojo/store/JsonRest\"\n    ],\n    //Mandatory, they listen to App.emit events, they implement dojox/app/Controller\n    \"controllers\": [\n        //listens to \"app-init, app-load\"\n        \"dojox/app/controllers/Load\",\n        //listens to \"app-transition, app-domNode\"\n        \"dojox/app/controllers/Transition\",\n        //listens to \"app-initLayout,app-layoutVIew,app-resize\"\n        \"dojox/app/controllers/Layout\"\n    ],\n    //Optional, App levels stores shared with views\n    \"stores\": {\n        \"requestsListStore\":{\n            \"type\": \"dojo/store/Memory\",\n            \"observable\": true,\n            \"params\": { // parameters used to initialize the data store\n                \"data\": [{\n                            \"id\": 100,\n                            \"requestType\": \"software\",\n                            \"description\": \"Description text for id=100\",\n                            \"status\": \"open\",\n                            \"priority\": \"1-high\",\n                            \"requestedBy\": \"jsmith@gmail.com\",\n                            \"requestedFinishDate\": \"2013-06-20\",\n                            \"assignedTo\": \"jsmith@gmail.com\",\n                            \"actualFinishDate\": null,\n                            \"estimatedUnits\": 3,\n                            \"unitType\": \"hours\",\n                            \"createdDate\": \"2013-01-20T19:20:30\",\n                            \"updatedDate\": \"2013-01-21T15:21:30\"\n                        },\n                        {\n                            \"id\": 101,\n                            \"requestType\": \"service\",\n                            \"description\": \"Zippy Description text for id=101\",\n                            \"status\": \"open\",\n                            \"priority\": \"2-medium\",\n                            \"requestedBy\": \"jsmith@gmail.com\",\n                            \"requestedFinishDate\": \"2013-07-20\",\n                            \"assignedTo\": \"suestatler@gmail.com\",\n                            \"actualFinishDate\": null,\n                            \"estimatedUnits\": 0,\n                            \"unitType\": \"days\",\n                            \"createdDate\": \"2013-02-20T19:20:30\",\n                            \"updatedDate\": \"2013-03-21T15:21:30\",\n                        },\n                        {\n                            \"id\": 102,\n                            \"requestType\": \"consulting\",\n                            \"description\": \"A Description text for id=102\",\n                            \"status\": \"close\",\n                            \"priority\": \"2-medium\",\n                            \"requestedBy\": \"sdoe@gmail.com\",\n                            \"requestedFinishDate\": \"2013-03-20\",\n                            \"assignedTo\": \"jsmith@gmail.com\",\n                            \"actualFinishDate\": \"2013-02-21T15:21:30\",\n                            \"estimatedUnits\": 10,\n                            \"unitType\": \"days\",\n                            \"createdDate\": \"2013-01-20T19:20:30\",\n                            \"updatedDate\": \"2013-02-21T15:21:30\",\n                        }],\n                \"idProperty\":\"id\"\n            }\n        }/*,\"requests\":{\n            \"type\": \"dojo/store/JsonRest\",\n            \"observable\": true,\n            \"params\": {\n                \"target\": \"app/resources/data/rest/requests.json\"\n            }\n        },\"requests\":{\n            \"type\": \"dojo/store/JsonRest\",\n            \"observable\": true,\n            \"params\": {\n                \"target\": \"http://localhost:3000/items\"\n            }\n        }*/\n\n    },\n\n\n    //Mandatory, one or a set of views view1+view2+view3\n    \"defaultView\": \"home\",\n\n    //Optional, App level stings\n    \"nls\": \"app/nls/app_strings\",\n    //\"transition\": \"slide\",\n    \"defaultTransition\" : \"slide\",\n    //Mandatory, Specify Application child views\n    \"views\": {\n        \"home\":{\n            //Mandatory for defaultViews\n            \"template\": \"app/views/home/home.html\",\n            \"controller\" : \"app/views/home/home.js\",\n        },\n        \"requestList\":{\n            \"template\": \"app/views/list/list.html\",\n            \"controller\" : \"app/views/list/list.js\",\n            \"nls\": \"app/views/list/nls/list-strings\"\n        },\n        \"requestItemDetails\":{\n            \"template\": \"app/views/details/details.html\",\n            \"controller\" : \"app/views/details/details.js\",\n            \"nls\": \"app/views/details/nls/details-strings\"\n        },\n        \"requestItemDetailsEdit\":{\n            \"template\": \"app/views/edit/edit.html\",\n            \"controller\" : \"app/views/edit/edit.js\",\n            \"nls\": \"app/views/details/nls/details-strings\", //shares strings with details view\n        },\n        \"requestListSearch\":{\n            \"template\": \"app/views/search/search.html\",\n            \"controller\" : \"app/views/search/search.js\"\n        }\n    },\n    \"has\": {\n        \"html5history\": {\n            \"controllers\": [\n                //\"dojox/app/controllers/History\"\n                \"app/views/controllers/CustomHistory\"\n            ]\n        },\n        \"!html5history\": {\n            \"controllers\": [\n                \"dojox/app/controllers/HistoryHash\"\n            ]\n        }\n    }\n}\n",
 'url:app/views/home/home.html':"<div class=\"view mblView\">\n  <h1 data-dojo-type=\"dojox/mobile/Heading\">\n    ${nls.app_name}\n  </h1>\n  <!-- Transition to a different view using ListItem 'startTransition' Event -->\n  <ul data-dojo-type=\"dojox/mobile/EdgeToEdgeList\">\n    <li data-dojo-type=\"dojox/mobile/ListItem\"\n    data-dojo-props=\"clickable:true,target:'requestList'\">\n    ${nls.my_requests}\n  </li>\n</ul>\n</div>",
 'url:app/views/list/list.html':"<div class=\"view mblView\">\n  <h1 data-dojo-type=\"dojox/mobile/Heading\" data-dojo-props=\"back: '${nls.back}'\">\n    ${nls.requests}\n\n    <!--//TODO: hide for now until we have add function implemented\n    <button data-dojo-type=\"dojox/mobile/ToolBarButton\" style=\"position: absolute; right: 0\"\n        data-dojo-attach-point=\"createButton\"\n        data-dojo-attach-point=\"add\">\n    ${nls.add}\n    </button>\n    -->\n  </h1>\n\n  <!-- hide for now until advance search is implemented\n  <button data-dojo-type=\"dojox/mobile/Button\"\n          data-dojo-attach-point=\"searchButton\">\n  ${nls.search}\n  </button>\n  -->\n\n  <!-- target and clickable are set in the ul/StoreList to be inherent by li/children being created see list.js for paramsToInherit: \"target,clickable\"-->\n  <ul data-dojo-type=\"dojox/mobile/EdgeToEdgeStoreList\"\n      id=\"requestsList\"\n      data-dojo-attach-point=\"requests\"\n      data-dojo-props=\"store: this.loadedStores.requestsListStore,\n      itemRenderer: this.RequestListItem,\n      itemMap:{description:'label'}, labelProperty:'description',\n      target: 'requestItemDetails',\n      clickable: true\"\n      data-dojo-mixins=\"dojox/mobile/FilteredListMixin\">\n  </ul>\n  <!-- FIXME: We should use itemMap and then use event delegation with query selector on ul\n              Uncomment this when event delegation is implemented\n              bug #5 https://github.com/csantanapr/dapp-examples/issues/5\n  <ul data-dojo-type=\"dojox/mobile/EdgeToEdgeStoreList\"\n      data-dojo-attach-point=\"requests\"\n      data-dojo-props=\"store: this.loadedStores.requestsListStore,itemMap:{description:'label'}\">\n  </ul>\n   -->\n\n</div>",
 'url:app/views/details/details.html':"<div class=\"view mblView\">\n  <h1 data-dojo-type=\"dojox/mobile/Heading\"\n      data-dojo-props=\"back: '${nls.back}' \">\n    ${nls.details}\n\n    <!-- class editButton use in css files-->\n    <button class=\"editButton\"\n            data-dojo-type=\"dojox/mobile/ToolBarButton\"\n            data-dojo-attach-point=\"editButton\"\n            data-dojo-props=\"target: 'requestItemDetailsEdit',\n            transitionOptions : {\n                    'transition': 'fade'\n                  }\n            \">\n    ${nls.edit}\n    </button>\n  </h1>\n\n\n  <div data-dojo-type=\"dojox/mobile/RoundRect\">\n    <div data-dojo-type=\"dojox/mobile/FormLayout\"\n         data-dojo-attach-point=\"formLayout\">\n\n      <fieldset>\n        <label for=\"reqid\">${nls.id}</label>\n        <input type=\"text\" name=\"id\" data-dojo-type=\"dojox/mobile/TextBox\"\n             data-dojo-props=\"readOnly: true, placeHolder: '${nls.id}'\" data-dojo-attach-point=\"reqid\">\n      </fieldset>\n\n      <fieldset>\n        <label for=\"requestType\">${nls.requestType}</label>\n        <input name=\"requestType\" data-dojo-type=\"dojox/mobile/TextBox\"\n               data-dojo-props=\"readOnly: true, placeHolder: '${nls.requestType}', usesOpener:true\" data-dojo-attach-point=\"requestType\">\n      </fieldset>\n\n      <fieldset>\n        <label for=\"description\">${nls.description}</label>\n        <textarea name=\"description\" data-dojo-type=\"dojox/mobile/ExpandingTextArea\"\n             data-dojo-props=\"readOnly: true, placeHolder: '${nls.description}'\" data-dojo-attach-point=\"description\"></textarea>\n      </fieldset>\n\n      <fieldset>\n      <label for=\"status\">${nls.status}</label>\n      <input name=\"status\" data-dojo-type=\"dojox/mobile/TextBox\"\n           data-dojo-props=\"readOnly: true, placeHolder: '${nls.status}', usesOpener:true\" data-dojo-attach-point=\"status\">\n      </fieldset>\n\n      <fieldset>\n      <label for=\"priority\">${nls.priority}</label>\n      <input name=\"priority\" data-dojo-type=\"dojox/mobile/TextBox\"\n           data-dojo-props=\"readOnly: true, placeHolder: '${nls.priority}', usesOpener:true\" data-dojo-attach-point=\"priority\">\n      </fieldset>\n\n\n      <fieldset>\n        <label for=\"requestedBy\">${nls.requestedBy}</label>\n        <input name=\"requestedBy\" data-dojo-type=\"dojox/mobile/TextBox\"\n             data-dojo-props=\"readOnly: true, placeHolder: '${nls.requestedBy}'\" data-dojo-attach-point=\"requestedBy\">\n      </fieldset>\n\n\n      <fieldset>\n        <label for=\"requestedFinishDate\">${nls.requestedFinishDate}</label>\n        <input name=\"requestedFinishDate\" data-dojo-type=\"dojox/mobile/TextBox\"\n             data-dojo-props=\"readOnly: true, placeHolder: '${nls.requestedFinishDate}', usesOpener:true\" data-dojo-attach-point=\"requestedFinishDate\">\n      </fieldset>\n\n\n      <fieldset>\n        <label for=\"assignedTo\">${nls.assignedTo}</label>\n        <input name=\"assignedTo\" data-dojo-type=\"dojox/mobile/TextBox\"\n             data-dojo-props=\"readOnly: true, placeHolder: '${nls.assignedTo}'\" data-dojo-attach-point=\"assignedTo\">\n      </fieldset>\n\n\n      <fieldset>\n        <label for=\"actualFinishDate\">${nls.actualFinishDate}</label>\n        <input name=\"actualFinishDate\" data-dojo-type=\"dojox/mobile/TextBox\"\n             data-dojo-props=\"readOnly: true, placeHolder: '${nls.actualFinishDate}'\" data-dojo-attach-point=\"actualFinishDate\">\n      </fieldset>\n\n\n      <fieldset>\n        <label for=\"estimatedUnits\">${nls.estimatedUnits}</label>\n        <input name=\"estimatedUnits\" data-dojo-type=\"dojox/mobile/TextBox\"\n             data-dojo-props=\"readOnly: true, placeHolder: '${nls.estimatedUnits}'\" data-dojo-attach-point=\"estimatedUnits\">\n        <input name=\"unitType\" data-dojo-type=\"dojox/mobile/TextBox\"\n             data-dojo-props=\"readOnly: true, placeHolder: '${nls.unitType}', usesOpener:true\" data-dojo-attach-point=\"unitType\">\n      </fieldset>\n\n\n        <fieldset>\n          <label for=\"createdDate\">${nls.createdDate}</label>\n          <input name=\"createdDate\" data-dojo-type=\"dojox/mobile/TextBox\"\n               data-dojo-props=\"readOnly: true, placeHolder: '${nls.createdDate}'\" data-dojo-attach-point=\"createdDate\">\n\n        </fieldset>\n\n\n        <fieldset>\n        <label for=\"updatedDate\">${nls.updatedDate}</label>\n          <input name=\"updatedDate\" data-dojo-type=\"dojox/mobile/TextBox\"\n               data-dojo-props=\"readOnly: true, placeHolder: '${nls.updatedDate}'\" data-dojo-attach-point=\"updatedDate\">\n        </fieldset>\n\n      </div> <!-- end dojox/mobile/FormLayout -->\n    </div> <!-- end dojox.mobile.RoundRect -->\n\n</div>",
-'url:app/views/edit/edit.html':"<div class=\"view mblView\">\n  <h1 data-dojo-type=\"dojox/mobile/Heading\">\n    ${nls.details}\n\n    <!-- class cancelButton use in css files-->\n    <button data-dojo-type=\"dojox/mobile/ToolBarButton\"\n            data-dojo-props=\"back: true\"\n            >\n    ${nls.cancel}\n    </button>\n\n    <!-- class saveButton use in css files-->\n    <button class=\"saveButton\"\n            data-dojo-type=\"dojox/mobile/ToolBarButton\"\n            data-dojo-attach-point=\"saveButton\"\n            data-dojo-attach-event=\"onClick: _saveForm\"\n            data-dojo-props=\"back: true\"> <!-- Do a back for now until save function is implemented -->\n    ${nls.save}\n    </button>\n  </h1>\n\n\n  <div data-dojo-type=\"dojox/mobile/RoundRect\">\n    <div data-dojo-type=\"dojox/mobile/FormLayout\"\n         data-dojo-attach-point=\"formLayout\">\n\n      <fieldset>\n        <label for=\"reqid\">${nls.id}</label>\n        <input type=\"text\" name=\"id\" data-dojo-type=\"dojox/mobile/TextBox\"\n             data-dojo-props=\"readOnly: true, placeHolder: '${nls.id}'\" data-dojo-attach-point=\"reqid\">\n      </fieldset>\n\n      <fieldset>\n        <label for=\"requestType\">${nls.requestType}</label>\n        <input name=\"requestType\" data-dojo-type=\"dojox/mobile/TextBox\"\n               data-dojo-props=\"readOnly: true, placeHolder: '${nls.requestType}', usesOpener:true\" data-dojo-attach-point=\"requestType\">\n      </fieldset>\n\n      <fieldset>\n        <label for=\"description\">${nls.description}</label>\n        <textarea name=\"description\" data-dojo-type=\"dojox/mobile/ExpandingTextArea\"\n             data-dojo-props=\"placeHolder: '${nls.description}'\" data-dojo-attach-point=\"description\"></textarea>\n      </fieldset>\n\n      <fieldset>\n      <label for=\"status\">${nls.status}</label>\n      <input name=\"status\" data-dojo-type=\"dojox/mobile/TextBox\"\n           data-dojo-props=\"readOnly: true, placeHolder: '${nls.status}', usesOpener:true\" data-dojo-attach-point=\"status\">\n      </fieldset>\n\n      <fieldset>\n      <label for=\"priority\">${nls.priority}</label>\n      <input name=\"priority\" data-dojo-type=\"dojox/mobile/TextBox\"\n           data-dojo-props=\"readOnly: true, placeHolder: '${nls.priority}', usesOpener:true\" data-dojo-attach-point=\"priority\">\n      </fieldset>\n\n\n      <fieldset>\n        <label for=\"requestedBy\">${nls.requestedBy}</label>\n        <input name=\"requestedBy\" data-dojo-type=\"dojox/mobile/TextBox\"\n             data-dojo-props=\"placeHolder: '${nls.requestedBy}'\" data-dojo-attach-point=\"requestedBy\">\n      </fieldset>\n\n\n      <fieldset>\n        <label for=\"requestedFinishDate\">${nls.requestedFinishDate}</label>\n        <input name=\"requestedFinishDate\" data-dojo-type=\"dojox/mobile/TextBox\"\n             data-dojo-props=\"readOnly: true, placeHolder: '${nls.requestedFinishDate}', usesOpener:true\" data-dojo-attach-point=\"requestedFinishDate\">\n      </fieldset>\n\n\n      <fieldset>\n        <label for=\"assignedTo\">${nls.assignedTo}</label>\n        <input name=\"assignedTo\" data-dojo-type=\"dojox/mobile/TextBox\"\n             data-dojo-props=\"placeHolder: '${nls.assignedTo}'\" data-dojo-attach-point=\"assignedTo\">\n      </fieldset>\n\n\n      <fieldset>\n        <label for=\"actualFinishDate\">${nls.actualFinishDate}</label>\n        <input name=\"actualFinishDate\" data-dojo-type=\"dojox/mobile/TextBox\"\n             data-dojo-props=\"placeHolder: '${nls.actualFinishDate}'\" data-dojo-attach-point=\"actualFinishDate\">\n      </fieldset>\n\n\n      <fieldset>\n        <label for=\"estimatedUnits\">${nls.estimatedUnits}</label>\n        <input name=\"estimatedUnits\" data-dojo-type=\"dojox/mobile/TextBox\"\n             data-dojo-props=\"placeHolder: '${nls.estimatedUnits}'\" data-dojo-attach-point=\"estimatedUnits\">\n        <input name=\"unitType\" data-dojo-type=\"dojox/mobile/TextBox\"\n             data-dojo-props=\"readOnly: true, placeHolder: '${nls.unitType}', usesOpener:true\" data-dojo-attach-point=\"unitType\">\n      </fieldset>\n\n\n        <fieldset>\n          <label for=\"createdDate\">${nls.createdDate}</label>\n          <input name=\"createdDate\" data-dojo-type=\"dojox/mobile/TextBox\"\n               data-dojo-props=\"placeHolder: '${nls.createdDate}'\" data-dojo-attach-point=\"createdDate\">\n\n        </fieldset>\n\n\n        <fieldset>\n        <label for=\"updatedDate\">${nls.updatedDate}</label>\n          <input name=\"updatedDate\" data-dojo-type=\"dojox/mobile/TextBox\"\n               data-dojo-props=\"placeHolder: '${nls.updatedDate}'\" data-dojo-attach-point=\"updatedDate\">\n        </fieldset>\n\n      </div> <!-- end dojox/mobile/FormLayout -->\n    </div> <!-- end dojox.mobile.RoundRect -->\n\n\n    <button data-dojo-type=\"dojox/mobile/Button\"\n          data-dojo-attach-point=\"copyButton\"\n          data-dojo-attach-event=\"onClick: _copyForm\">\n    ${nls.duplicate}\n    </button>\n\n\n     <button data-dojo-type=\"dojox/mobile/Button\"\n          data-dojo-attach-event=\"onClick: _deleteRequest\"\n          class=\"mblRedButton\">${nls.remove}\n    </button>\n\n</div>",
+'url:app/views/edit/edit.html':"<div class=\"view mblView\">\n  <h1 data-dojo-type=\"dojox/mobile/Heading\">\n    ${nls.details}\n\n    <!-- class cancelButton use in css files-->\n    <button data-dojo-type=\"dojox/mobile/ToolBarButton\"\n            data-dojo-props=\"back: true\"\n            >\n    ${nls.cancel}\n    </button>\n\n    <!-- class saveButton use in css files-->\n    <button class=\"saveButton\"\n            data-dojo-type=\"dojox/mobile/ToolBarButton\"\n            data-dojo-attach-point=\"saveButton\"\n            data-dojo-attach-event=\"onClick: _saveForm\"\n            data-dojo-props=\"back: true\"> <!-- Do a back for now until save function is implemented -->\n    ${nls.save}\n    </button>\n  </h1>\n\n\n  <div data-dojo-type=\"dojox/mobile/RoundRect\">\n    <div data-dojo-type=\"dojox/mobile/FormLayout\"\n         data-dojo-attach-point=\"formLayout\">\n\n      <fieldset>\n        <label for=\"reqid\">${nls.id}</label>\n        <input type=\"text\" name=\"id\" data-dojo-type=\"dojox/mobile/TextBox\"\n             data-dojo-props=\"readOnly: true, placeHolder: '${nls.id}'\" data-dojo-attach-point=\"reqid\">\n      </fieldset>\n\n      <fieldset>\n        <label for=\"requestType\">${nls.requestType}</label>\n        <input name=\"requestType\" data-dojo-type=\"dojox/mobile/TextBox\"\n               data-dojo-props=\"readOnly: true, placeHolder: '${nls.requestType}', usesOpener:true\" data-dojo-attach-point=\"requestType\">\n      </fieldset>\n\n      <fieldset>\n        <label for=\"description\">${nls.description}</label>\n        <textarea name=\"description\" data-dojo-type=\"dojox/mobile/ExpandingTextArea\"\n             data-dojo-props=\"placeHolder: '${nls.description}'\" data-dojo-attach-point=\"description\"></textarea>\n      </fieldset>\n\n      <fieldset>\n      <label for=\"status\">${nls.status}</label>\n      <input name=\"status\" data-dojo-type=\"dojox/mobile/TextBox\"\n           data-dojo-props=\"readOnly: true, placeHolder: '${nls.status}', usesOpener:true\" data-dojo-attach-point=\"status\">\n      </fieldset>\n\n      <fieldset>\n      <label for=\"priority\">${nls.priority}</label>\n      <input name=\"priority\" data-dojo-type=\"dojox/mobile/TextBox\"\n           data-dojo-props=\"readOnly: true, placeHolder: '${nls.priority}', usesOpener:true\" data-dojo-attach-point=\"priority\">\n      </fieldset>\n\n\n      <fieldset>\n        <label for=\"requestedBy\">${nls.requestedBy}</label>\n        <input name=\"requestedBy\" data-dojo-type=\"dojox/mobile/TextBox\"\n             data-dojo-props=\"placeHolder: '${nls.requestedBy}'\" data-dojo-attach-point=\"requestedBy\">\n      </fieldset>\n\n\n      <fieldset>\n        <label for=\"requestedFinishDate\">${nls.requestedFinishDate}</label>\n        <input name=\"requestedFinishDate\" data-dojo-type=\"dojox/mobile/TextBox\"\n             data-dojo-props=\"placeHolder: '${nls.requestedFinishDate}', usesOpener:true\" data-dojo-attach-point=\"requestedFinishDate\">\n      </fieldset>\n\n\n      <fieldset>\n        <label for=\"assignedTo\">${nls.assignedTo}</label>\n        <input name=\"assignedTo\" data-dojo-type=\"dojox/mobile/TextBox\"\n             data-dojo-props=\"placeHolder: '${nls.assignedTo}'\" data-dojo-attach-point=\"assignedTo\">\n      </fieldset>\n\n\n      <fieldset>\n        <label for=\"actualFinishDate\">${nls.actualFinishDate}</label>\n        <input name=\"actualFinishDate\" data-dojo-type=\"dojox/mobile/TextBox\"\n             data-dojo-props=\"placeHolder: '${nls.actualFinishDate}'\" data-dojo-attach-point=\"actualFinishDate\">\n      </fieldset>\n\n\n      <fieldset>\n        <label for=\"estimatedUnits\">${nls.estimatedUnits}</label>\n        <input name=\"estimatedUnits\" data-dojo-type=\"dojox/mobile/TextBox\"\n             data-dojo-props=\"placeHolder: '${nls.estimatedUnits}'\" data-dojo-attach-point=\"estimatedUnits\">\n        <input name=\"unitType\" data-dojo-type=\"dojox/mobile/TextBox\"\n             data-dojo-props=\"readOnly: true, placeHolder: '${nls.unitType}', usesOpener:true\" data-dojo-attach-point=\"unitType\">\n      </fieldset>\n\n\n        <fieldset>\n          <label for=\"createdDate\">${nls.createdDate}</label>\n          <input name=\"createdDate\" data-dojo-type=\"dojox/mobile/TextBox\"\n               data-dojo-props=\"readOnly: true, placeHolder: '${nls.createdDate}'\" data-dojo-attach-point=\"createdDate\">\n\n        </fieldset>\n\n\n        <fieldset>\n          <label for=\"updatedDate\">${nls.updatedDate}</label>\n          <input name=\"updatedDate\"\n                 data-dojo-type=\"dojox/mobile/TextBox\"\n                data-dojo-props=\"readOnly: true, placeHolder: '${nls.updatedDate}'\"\n                data-dojo-attach-point=\"updatedDate\">\n        </fieldset>\n\n      </div> <!-- end dojox/mobile/FormLayout -->\n    </div> <!-- end dojox.mobile.RoundRect -->\n\n\n    <button data-dojo-type=\"dojox/mobile/Button\"\n          data-dojo-attach-point=\"copyButton\"\n          data-dojo-attach-event=\"onClick: _copyForm\">\n    ${nls.duplicate}\n    </button>\n\n\n     <button data-dojo-type=\"dojox/mobile/Button\"\n          data-dojo-attach-event=\"onClick: _deleteRequest\"\n          class=\"mblRedButton\">${nls.remove}\n    </button>\n    <div data-dojo-type=\"dojox/mobile/Opener\"\n         data-dojo-attach-point=\"opener\">\n      <h1 data-dojo-type=\"dojox/mobile/Heading\">\n        Date Picker\n        <button data-dojo-type=\"dojox/mobile/ToolBarButton\"\n                data-dojo-attach-event=\"onClick: _doneOpener\">\n          Done\n        </button>\n        <button data-dojo-type=\"dojox/mobile/ToolBarButton\"\n                data-dojo-attach-event=\"onClick: _cancelOpener\">\n          Cancel\n        </button>\n      </h1>\n      <div data-dojo-type=\"dojox/mobile/DatePicker\"\n           data-dojo-attach-point=\"datePicker\"></div>\n    </div>\n</div>",
 'url:app/views/search/search.html':"<div class=\"view mblView\">\n  <h1 data-dojo-type=\"dojox/mobile/Heading\" data-dojo-props=\"back: '${nls.back}'\">\n    search here..\n  </h1>\n</div>",
 '*now':function(r){r(['dojo/i18n!*preload*app/nls/main*["ar","ca","cs","da","de","el","en","en-gb","en-us","es","es-es","fi","fi-fi","fr","fr-fr","he","he-il","hu","it","it-it","ja","ja-jp","ko","ko-kr","nl","nl-nl","nb","pl","pt","pt-br","pt-pt","ru","sk","sl","sv","th","tr","zh","zh-tw","zh-cn","ROOT"]']);}
 }});
