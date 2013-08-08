@@ -1,6 +1,6 @@
 /*jslint nomen: true */
 /*jshint nomen: true */
-/*global _, define, console, history*/
+/*global _, define, console*/
 define([
     'dojo/query!css3',
     //query is the core of dojo dom query
@@ -165,12 +165,17 @@ define([
                 // no item passed in
                 return promise;
             }
-            promise = viewWidget.loadedStores.requestsListStore.remove(id);
 
-            when(promise, function () {
-                // we want to be back to list, which is 2 levels back
-                viewWidget.app.transitionToView(event.target, { target: 'requestList', reverse: 'true'});
-            });
+            //cofirm result is a boolean value indicating whether OK or Cancel was selected (true means OK).
+            if (win.global.confirm("Delete Request?")) {
+                promise = viewWidget.loadedStores.requestsListStore.remove(id);
+
+                when(promise, function () {
+                    // we want to be back to list, which is 2 levels back
+                    viewWidget.app.transitionToView(event.target, { target: 'requestList', reverse: 'true'});
+                });
+            }
+
         },
         _saveForm: function () {
             // summary:
