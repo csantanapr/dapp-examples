@@ -167,7 +167,7 @@ define([
             }
 
             //cofirm result is a boolean value indicating whether OK or Cancel was selected (true means OK).
-            if (win.global.confirm("Delete Request?")) {
+            if (win.global.confirm(viewWidget.nls.confirm_delete)) {
                 promise = viewWidget.loadedStores.requestsListStore.remove(id);
 
                 when(promise, function () {

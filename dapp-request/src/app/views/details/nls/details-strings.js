@@ -31,7 +31,9 @@ define({
         cancel: "Cancel",
         ok: "Ok",
         remove: "Delete",
-        request_details: 'Request Details'
+        request_details: 'Request Details',
+        confirm_delete: 'Delete Request',
+        done: 'Done'
     },
     es: true
 });

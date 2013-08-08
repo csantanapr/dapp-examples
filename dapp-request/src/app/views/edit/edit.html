@@ -123,18 +123,18 @@
           data-dojo-attach-event="onClick: _deleteRequest"
           class="mblRedButton">${nls.remove}
     </button>
-    <div data-dojo-type="dojox/mobile/Opener"
+    <div class="dateOpener" data-dojo-type="dojox/mobile/Opener"
          data-dojo-attach-point="opener">
       <h1 data-dojo-type="dojox/mobile/Heading">
-        Date Picker
-        <button data-dojo-type="dojox/mobile/ToolBarButton"
-                data-dojo-attach-event="onClick: _doneOpener">
-          Done
-        </button>
         <button data-dojo-type="dojox/mobile/ToolBarButton"
                 data-dojo-attach-event="onClick: _cancelOpener">
-          Cancel
+          ${nls.cancel}
         </button>
+        <button class="doneButton" data-dojo-type="dojox/mobile/ToolBarButton"
+                data-dojo-attach-event="onClick: _doneOpener">
+          ${nls.done}
+        </button>
+
       </h1>
       <div data-dojo-type="dojox/mobile/DatePicker"
            data-dojo-attach-point="datePicker"></div>
