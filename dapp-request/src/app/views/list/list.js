@@ -75,10 +75,6 @@ define([
             }));
 */
 
-            if (this.params && this.params.id) {
-                this.selectItemById(this.params.id);
-            }
-
         },
 
         beforeActivate: function (previousView, data) {
@@ -113,34 +109,10 @@ define([
             // summary:
             //      view life cycle destroy()
             console.log(this.name + " view:destory()");
-        },
+        }
         /*****
          * Custom Code for View Controller
          *****/
-
-        _formatterTmpl : function (value, key) {
-            // summary:
-            //      Use to format template properties using the convention ${foo:_formatterTmpl}
-            console.log(this.name + "_formatterTmpl(" + value + "," + "key" + ");");
-
-        },
-        doSomething: function (event) {
-            console.log('did something');
-            // summary:
-            //      Example of a custom view controller callback for event listener
-            console.log(this.name + "doSomething(" + event + ");");
-
-        },
-        selectItemById: function (itemId) {
-            var requests = registry.byId("requestsList");
-            array.some(requests.getChildren(), function (child) {
-                if (child.id === itemId) {
-                    requests.selectItem(child);
-                    return true;
-                }
-                return false;
-            });
-        }
     };
 
 
