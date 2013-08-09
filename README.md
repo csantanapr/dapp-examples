@@ -3,7 +3,7 @@ Series of example Single Page Apps utilizing the [dapp-boilerplate](https://gith
 
 
 ## Work Request App
-- [dapp-request](https://github.com/csantanapr/dapp-examples/tree/master/dapp-request)
+- [dapp-request](https://github.com/csantanapr/dapp-examples/tree/master/dapp-request) using static HTML templates and manually coded data binding in controller.
 - dapp-request-polymer [dapp-request](https://github.com/csantanapr/dapp-examples/tree/master/dapp-request) with reactive templates using [Polymer MDV](https://github.com/Polymer/mdv)
 - dapp-request-backbone [dapp-request](https://github.com/csantanapr/dapp-examples/tree/master/dapp-request) using BackboneJS Model for data 
 - dapp-helloworld
