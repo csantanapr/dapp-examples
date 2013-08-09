@@ -34,7 +34,7 @@ cd $CDV_APP_PATH
 
 cordova platform add ios
 
-#cordova platform add android
+cordova platform add android
 
 
 
@@ -46,11 +46,11 @@ echo "Cordova build completed: $(($diff / 60)) minutes and $(($diff % 60)) secon
 
 # To Run local web server
 #cordova serve ios
-#cordova serve android
+cordova serve android
 
 # To Run on Simulator
 #echo "Quit Simulator or Ctrl + C to exit"
-cordova emulate ios
+#cordova emulate ios
 #cordova emulate android
 
 # To Run on Physical Device

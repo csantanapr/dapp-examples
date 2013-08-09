@@ -38,7 +38,8 @@
   ],
   "readmeFilename": "README.md",
   "devDependencies": {
-    "cordova": "~3.x.x",
-    "uglify-js": "~1.x"
+    "uglify-js": "~1.x",
+    "http-server": "~0.5.5",
+    "cordova": "~3.0.4"
   }
 }
