@@ -1,0 +1,15 @@
+[
+	{
+		"id": "software",
+		"description": "Request for software"
+	},
+	{
+		"id": "consulting",
+		"description": "Request for consulting"
+	},
+	{
+		"id": "service",
+		"description": "Request for service"
+	}
+]
+

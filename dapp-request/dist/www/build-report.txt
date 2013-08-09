@@ -1,4 +1,4 @@
-Build started: Wed Aug 07 2013 21:58:29 GMT-0400 (EDT)
+Build started: Thu Aug 08 2013 22:16:18 GMT-0400 (EDT)
 Build application version: 1.7.0dev (23930)
 Messages:
 info(100) Assumed module uses legacy loader API.
@@ -1425,6 +1425,7 @@ app/main:
 	dojox/mobile/ValuePickerDatePicker
 	dojox/mobile/ValuePicker
 	dojox/mobile/ValuePickerSlot
+	dojox/mobile/SimpleDialog
 	app/views/search/search
 	app/views/search/search.html
 
@@ -1433,4 +1434,4 @@ app/main:
 Process finished normally
 	errors: 0
 	warnings: 58
-	build time: 9.322 seconds
+	build time: 12.281 seconds

@@ -2671,6 +2671,29 @@ function(lang, declare, on, Controller, hash, topic){
 	// module:
 	//		dojox/app/tests/mediaQuery3ColumnApp/controllers/CustomHistory
 	// summary:
+	//		This CustomHistory controller will manage the history stack so that if you return to a view target which
+	//		is in the history stack already, it will update the history stack to go to that previous view in the stack.
+
+	//		Using dojox/app/controllers/History means you can use the browser back/forward buttons to retrace all of your
+	// 		steps even if, for example if you select "Main Option 1" multiple times.
+	//
+	//		Using CustomHistory without setting customHistoryStackKey in the config means it will check to see if the current url
+	// 		has been used already, and if it has it will remove the things from the history stack back to the point it was
+	// 		last used.  So for example if you start the application in a new tab, and select "Main Option 1", then
+	// 		you select other options, (like "Main Option 2" and "Main Option 3") and then select
+	// 		"Main Option 1" again, doing a browser back after selecting "Main Option 1" the last time will take you
+	// 		back to the initial default page instead of the last thing before you last went to "Main Option 1".
+	//
+	//		Using CustomHistory and setting customHistoryStackKey to "target" in the config means it will check to see if the
+	// 		current target has been used already, and if it has it will remove the things from the history stack back to the
+	// 		point it was last used.  So for example if you start the application in a new tab, and select "Main Option 1", then
+	// 		you select other options, (like "Main Option 2" and "Main Option 3") and then select
+	// 		"Main Option 1" again, doing a browser back after selecting "Main Option 1" the last time will take you
+	// 		back to the initial default page instead of the last thing before you last went to "Main Option 1".
+	// 		The difference caused by using "target" can be seen when selecting "Last Option 1", 2 or 3, and then using the
+	//		browser back button, when using "target" you will not go back through those selections, but without "target"
+	//		you will go through those options because those options are set in the url, but not in the target.
+
 	//		Bind "app-domNode" event on dojox/app application instance.
 	//		Bind "startTransition" event on dojox/app application domNode.
 	//		Bind "popstate" event on window object.
@@ -2690,8 +2713,13 @@ function(lang, declare, on, Controller, hash, topic){
 		// currentStack: Array
 		//              Array with the history used to look for targets already in the stack
 		currentStack: [],
+
+		// currentStackKey: string
+		//              boolean is true when the currentStack is being updated because the view target was already in the stack
+		currentStackKey: "url",  // set "customHistoryStackKey" : "target" in the config if you want to key off of the target instead of the url
+
 		// currentStackUpdating: boolean
-		//              boolean is true when the currentStack is being updated
+		//              boolean is true when the currentStack is being updated because the view target was already in the stack
 		currentStackUpdating: false,
 
 		constructor: function(){
@@ -2708,6 +2736,8 @@ function(lang, declare, on, Controller, hash, topic){
 				this.onDomNodeChange({oldNode: null, newNode: this.app.domNode});
 			}
 			this.bind(window, "popstate", lang.hitch(this, this.onPopState));
+
+			this.currentStackKey = this.app.customHistoryStackKey || this.currentStackKey;
 		},
 
 		onDomNodeChange: function(evt){
@@ -2754,28 +2784,37 @@ function(lang, declare, on, Controller, hash, topic){
 
 			// Create a new "current state" history entry
 			this._currentPosition += 1;
-			evt.detail.id = this._currentPosition;
 
-			var newHash = evt.detail.url || "#" + evt.detail.target;
+			var newUrl = evt.detail.url || "#" + evt.detail.target; // move up above
 
 			if(evt.detail.params){
-				newHash = hash.buildWithParams(newHash, evt.detail.params);
+				newUrl = hash.buildWithParams(newUrl, evt.detail.params);
 			}
 
-			//check to see if the target is already in the list
-			var idx = this.currentStack.indexOf(evt.detail.target);
+			//check to see if the hash or target based upon currentStackKey is already in the list
+			var testStackKey = this.currentStackKey == "target" ? evt.detail.target : newUrl;
+			var idx = this.currentStack.indexOf(testStackKey);
 			if(idx > -1){  // the target is in the list
+				// found the target in the list, so backup to that entry
 				this.currentStackUpdating = true;
 				var len = this.currentStack.length - idx;
+				this._currentPosition -= len;
 				history.go(-len);
 				for (var i = 0; i < len; i++) {
 					this.currentStack.pop();
 				}
 			}
 
+			evt.detail.id = this._currentPosition;
 			evt.detail.fwdTransition = evt.detail.transition;
-			history.pushState(evt.detail, evt.detail.href, newHash);
-			this.currentStack.push(evt.detail.target);
+			history.pushState(evt.detail, evt.detail.href, newUrl);
+
+			if(this.currentStackKey == "target"){
+				this.currentStack.push(evt.detail.target);
+			}else{
+				this.currentStack.push(newUrl);
+			}
+
 			this.currentState = lang.clone(evt.detail);
 
 			// Finally: Publish pushState topic
@@ -2798,11 +2837,19 @@ function(lang, declare, on, Controller, hash, topic){
 				return;
 			}
 
-			this.currentStack.pop();
-
 			// Get direction of navigation and update _currentPosition accordingly
 			var backward = evt.state.id < this._currentPosition;
 			backward ? this._currentPosition -= 1 : this._currentPosition += 1;
+
+			if(backward){
+				this.currentStack.pop(); // keep currentStack up to date
+			}else{
+				if(this.currentStackKey == "target"){
+					this.currentStack.push(evt.state.target);
+				}else{
+					this.currentStack.push(evt.state.url);
+				}
+			}
 
 			// Publish popState topic and transition to the target view. Important: Use correct transition.
 			// Reverse transitionDir only if the user navigates backwards.
@@ -2816,7 +2863,6 @@ function(lang, declare, on, Controller, hash, topic){
 		}
 	});
 });
-
 },
 'dojox/mobile/common':function(){
 define([
@@ -9763,7 +9809,7 @@ define([
 ], function ($, on) {
     'use strict';
 
-    var view, // set in init() to save in closure reference to this view controller instance
+    var viewWidget, // set in init() to save in closure reference to this view controller instance
         viewNode; // set in init() to save in closure reference to this view dom node
 
 
@@ -9773,26 +9819,25 @@ define([
         init: function () {
             // summary:
             //      view life cycle init()
+
+
             console.log(this.name + " view:init()");
 
             //save the view node in clousure to use as scope for dom manipulatation and query
             viewNode = this.domNode;
-            view = this;
-
+            viewWidget = this;
         },
 
         beforeActivate: function (previousView, data) {
             // summary:
             //      view life cycle beforeActivate()
             console.log(this.name + " view:beforeActivate(" + (previousView ? previousView.name : "") + ",data)");
-
         },
 
         afterActivate: function (previousView, data) {
             // summary:
             //      view life cycle afterActivate()
             console.log(this.name + " view:afterActivate(" + (previousView ? previousView.name : "") + ",data)");
-
         },
 
         beforeDeactivate: function (nextView, data) {
@@ -14260,10 +14305,6 @@ define([
             }));
 */
 
-            if (this.params && this.params.id) {
-                this.selectItemById(this.params.id);
-            }
-
         },
 
         beforeActivate: function (previousView, data) {
@@ -14298,34 +14339,10 @@ define([
             // summary:
             //      view life cycle destroy()
             console.log(this.name + " view:destory()");
-        },
+        }
         /*****
          * Custom Code for View Controller
          *****/
-
-        _formatterTmpl : function (value, key) {
-            // summary:
-            //      Use to format template properties using the convention ${foo:_formatterTmpl}
-            console.log(this.name + "_formatterTmpl(" + value + "," + "key" + ");");
-
-        },
-        doSomething: function (event) {
-            console.log('did something');
-            // summary:
-            //      Example of a custom view controller callback for event listener
-            console.log(this.name + "doSomething(" + event + ");");
-
-        },
-        selectItemById: function (itemId) {
-            var requests = registry.byId("requestsList");
-            array.some(requests.getChildren(), function (child) {
-                if (child.id === itemId) {
-                    requests.selectItem(child);
-                    return true;
-                }
-                return false;
-            });
-        }
     };
 
 
@@ -19721,7 +19738,7 @@ define([
 'app/views/edit/edit':function(){
 /*jslint nomen: true */
 /*jshint nomen: true */
-/*global _, define, console, history*/
+/*global _, define, console*/
 define([
     'dojo/query!css3',
     //query is the core of dojo dom query
@@ -19744,7 +19761,8 @@ define([
     'dojox/mobile/Opener',
     'dojox/mobile/DatePicker',
     'dojox/mobile/SpinWheelDatePicker',
-    'dojox/mobile/ValuePickerDatePicker'
+    'dojox/mobile/ValuePickerDatePicker',
+    'dojox/mobile/SimpleDialog'
 ], function ($, on, when, domClass, win) {
     'use strict';
 
@@ -19880,17 +19898,18 @@ define([
             //      Deletes the item being edited and returns back to the list
 
             var promise = null,
-                id = viewWidget.params.id,
-                transition = 'slide';
+                id = viewWidget.params.id;
             if (!id) {
                 // no item passed in
                 return promise;
             }
+
             promise = viewWidget.loadedStores.requestsListStore.remove(id);
 
             when(promise, function () {
                 // we want to be back to list, which is 2 levels back
-                viewWidget.app.transitionToView(event.target, { target: 'requestList', reverse: 'true'});
+                viewWidget._hideConfirmDelete();
+                viewWidget.app.transitionToView(viewWidget.domNode, { target: 'requestList', reverse: 'true'});
             });
         },
         _saveForm: function () {
@@ -19959,6 +19978,17 @@ define([
 
             console.log("cancel opener");
             viewWidget.opener.hide();
+        },
+        _hideConfirmDelete : function (event) {
+            // summary:
+            //      Hides the delere confirm dialog
+            console.log("cancel delete confirm");
+            viewWidget.confirmDelete.hide();
+        },
+        _showConfirmDelete: function (event) {
+            // summary:
+            //      Displays the confirm dialog to user
+            viewWidget.confirmDelete.show();
         }
     };
 
@@ -24379,6 +24409,230 @@ define([
 });
 
 },
+'dojox/mobile/SimpleDialog':function(){
+define([
+	"dojo/_base/declare",
+	"dojo/_base/window",
+	"dojo/dom-class",
+	"dojo/dom-attr",
+	"dojo/dom-construct",
+	"dojo/on",
+	"dojo/touch",
+	"dijit/registry",
+	"./Pane",
+	"./iconUtils",
+	"./sniff"
+], function(declare, win, domClass, domAttr, domConstruct, on, touch, registry, Pane, iconUtils, has){
+	// module:
+	//		dojox/mobile/SimpleDialog
+
+	return declare("dojox.mobile.SimpleDialog", Pane, {
+		// summary:
+		//		A dialog box for mobile.
+		// description:
+		//		SimpleDialog is a dialog box for mobile.
+		//		When a SimpleDialog is created, it is initially hidden 
+		//		(display="none"). To show the dialog box, you need to
+		//		get a reference to the widget and to call its show() method.
+		//
+		//		The contents can be arbitrary HTML, text, or widgets. Note,
+		//		however, that the widget is initially hidden. You need to be
+		//		careful when you place in a SimpleDialog elements that cannot 
+		//		be initialized in hidden state.
+		//
+		//		This widget has much less functionalities than dijit/Dialog, 
+		//		but it has the advantage of a much smaller code size.
+
+		// top: String
+		//		The top edge position of the widget. If "auto", the widget is
+		//		placed at the middle of the screen. Otherwise, the value
+		//		(ex. "20px") is used as the top style of widget's domNode.
+		top: "auto",
+
+		// left: String
+		//		The left edge position of the widget. If "auto", the widget is
+		//		placed at the center of the screen. Otherwise, the value
+		//		(ex. "20px") is used as the left style of widget's domNode.
+		left: "auto",
+
+		// modal: Boolean
+		//		If true, a translucent cover is added over the entire page to
+		//		prevent the user from interacting with elements on the page.
+		modal: true,
+
+		// closeButton: [const] Boolean
+		//		If true, a button to close the dialog box is displayed at the
+		//		top-right corner.
+		//		Note that changing the value of the property after the widget
+		//		creation has no effect.
+		closeButton: false,
+
+		// closeButtonClass: String
+		//		A class name of a DOM button to be used as a close button.
+		closeButtonClass: "mblDomButtonSilverCircleRedCross",
+
+		// tabIndex: String
+		//		Tabindex setting for the item so users can hit the tab key to
+		//		focus on it.
+		tabIndex: "0",
+		
+		// _setTabIndexAttr: [private] String
+		//		Sets tabIndex to domNode.
+		_setTabIndexAttr: "",
+
+		/* internal properties */	
+		
+		// baseClass: String
+		//		The name of the CSS class of this widget.
+		baseClass: "mblSimpleDialog",
+		
+		// _cover: [private] Array
+		//		Array for sharing the cover instances.
+		_cover: [],
+
+		buildRendering: function(){
+			this.containerNode = domConstruct.create("div", {className:"mblSimpleDialogContainer"});
+			if(this.srcNodeRef){
+				// reparent
+				for(var i = 0, len = this.srcNodeRef.childNodes.length; i < len; i++){
+					this.containerNode.appendChild(this.srcNodeRef.removeChild(this.srcNodeRef.firstChild));
+				}
+			}
+			this.inherited(arguments);
+			domAttr.set(this.domNode, "role", "dialog");
+			
+			if(this.containerNode.getElementsByClassName){ //TODO: Do we need to support IE8 a11y?
+	            var titleNode = this.containerNode.getElementsByClassName("mblSimpleDialogTitle")[0];
+	            if (titleNode){
+	            	titleNode.id = titleNode.id || registry.getUniqueId("dojo_mobile_mblSimpleDialogTitle");
+	            	domAttr.set(this.domNode, "aria-labelledby", titleNode.id);
+	            }
+	            var textNode = this.containerNode.getElementsByClassName("mblSimpleDialogText")[0];
+	            if (textNode){
+	                textNode.id = textNode.id || registry.getUniqueId("dojo_mobile_mblSimpleDialogText");
+	                domAttr.set(this.domNode, "aria-describedby", textNode.id);
+	            }
+			}
+			domClass.add(this.domNode, "mblSimpleDialogDecoration");
+			this.domNode.style.display = "none";
+			this.domNode.appendChild(this.containerNode);
+			if(this.closeButton){
+				this.closeButtonNode = domConstruct.create("div", {
+					className: "mblSimpleDialogCloseBtn "+this.closeButtonClass
+				}, this.domNode);
+				iconUtils.createDomButton(this.closeButtonNode);
+				this.connect(this.closeButtonNode, "onclick", "_onCloseButtonClick");
+			}
+			this.connect(this.domNode, "onkeydown", "_onKeyDown"); // for desktop browsers
+		},
+
+		startup: function(){
+			if(this._started){ return; }
+			this.inherited(arguments);
+			win.body().appendChild(this.domNode);
+		},
+
+		addCover: function(){
+			// summary:
+			//		Adds the transparent DIV cover.
+			if(!this._cover[0]){
+				this._cover[0] = domConstruct.create("div", {
+					className: "mblSimpleDialogCover"
+				}, win.body());
+			}else{
+				this._cover[0].style.display = "";
+			}
+
+			if(has("windows-theme")) {
+				// Hack to prevent interaction with elements placed under cover div.
+				this.own(on(this._cover[0], touch.press, function() {}));
+			}
+		},
+
+		removeCover: function(){
+			// summary:
+			//		Removes the transparent DIV cover.
+			this._cover[0].style.display = "none";
+		},
+
+		_onCloseButtonClick: function(e){
+			// tags:
+			//		private
+			if(this.onCloseButtonClick(e) === false){ return; } // user's click action
+			this.hide();
+		},
+
+		onCloseButtonClick: function(/*Event*/ /*===== e =====*/){
+			// summary:
+			//		User-defined function to handle clicks.
+			// tags:
+			//		callback
+		},
+
+		_onKeyDown: function(e){
+			// tags:
+			//		private
+			if(e.keyCode == 27){ // ESC
+				this.hide();
+			}
+		},
+
+		refresh: function(){ // TODO: should we call refresh on resize?
+			// summary:
+			//		Refreshes the layout of the dialog.
+			var n = this.domNode;
+			var h;
+			if(this.closeButton){
+				var b = this.closeButtonNode;
+				var s = Math.round(b.offsetHeight / 2);
+				b.style.top = -s + "px";
+				b.style.left = n.offsetWidth - s + "px";
+			}
+			if(this.top === "auto"){
+				h = win.global.innerHeight || win.doc.documentElement.clientHeight;
+				n.style.top = Math.round((h - n.offsetHeight) / 2) + "px";
+			}else{
+				n.style.top = this.top;
+			}
+			if(this.left === "auto"){
+				h = win.global.innerWidth || win.doc.documentElement.clientWidth;
+				n.style.left = Math.round((h - n.offsetWidth) / 2) + "px";
+			}else{
+				n.style.left = this.left;
+			}
+		},
+
+		show: function(){
+			// summary:
+			//		Shows the dialog.
+			if(this.domNode.style.display === ""){ return; }
+			if(this.modal){
+				this.addCover();
+			}
+			this.domNode.style.display = "";
+			this.refresh();
+			var diaglogButton;
+			if(this.domNode.getElementsByClassName){
+				diaglogButton = this.domNode.getElementsByClassName("mblSimpleDialogButton")[0];
+			}
+			var focusNode = diaglogButton || this.closeButtonNode || this.domNode; // Focus preference is: user supplied button, close button, entire dialog
+			/// on Safari iOS the focus is not taken without a timeout
+			this.defer(function(){ focusNode.focus();}, 1000);
+		},
+
+		hide: function(){
+			// summary:
+			//		Hides the dialog.
+			if(this.domNode.style.display === "none"){ return; }
+			this.domNode.style.display = "none";
+			if(this.modal){
+				this.removeCover();
+			}
+		}
+	});
+});
+
+},
 'app/views/search/search':function(){
 /*jslint nomen: true */
 /*jshint nomen: true */
@@ -24576,11 +24830,11 @@ define([
 });
 
 },
-'url:app/config.json':"{\n    //Mandatory\n    \"id\": \"App\",\n    //Optional\n    \"name\": \"requuest-App\",\n    //Optional\n    \"description\": \"Example dApp, Work Order Requests App\",\n    //Optional, but very useful for views properties\n    \"loaderConfig\": {\n        \"paths\": {\n            \"app\": \"../app\"\n        }\n    },\n    //Optional, but required when not using the parser, and its required by views\n    \"dependencies\": [\n        \"dojo/store/Observable\",\n        //\"dojox/app/controllers/History\",\n        \"dojox/app/controllers/HistoryHash\",\n        \"app/views/controllers/CustomHistory\",\n        /* On Mobile always add the 2 following modules dojox/mobule a dojox/mobile/deviceTheme */\n        \"dojox/mobile/common\",\n        /* For build to include css3/lite query selectorEngine */\n        \"dojo/selector/lite\",\n        //Need to inlclude dependency for model stores across views\n        \"dojo/store/Memory\",\n        \"dojo/store/JsonRest\"\n    ],\n    //Mandatory, they listen to App.emit events, they implement dojox/app/Controller\n    \"controllers\": [\n        //listens to \"app-init, app-load\"\n        \"dojox/app/controllers/Load\",\n        //listens to \"app-transition, app-domNode\"\n        \"dojox/app/controllers/Transition\",\n        //listens to \"app-initLayout,app-layoutVIew,app-resize\"\n        \"dojox/app/controllers/Layout\"\n    ],\n    //Optional, App levels stores shared with views\n    \"stores\": {\n        \"requestsListStore\":{\n            \"type\": \"dojo/store/Memory\",\n            \"observable\": true,\n            \"params\": { // parameters used to initialize the data store\n                \"data\": [{\n                            \"id\": 100,\n                            \"requestType\": \"software\",\n                            \"description\": \"Description text for id=100\",\n                            \"status\": \"open\",\n                            \"priority\": \"1-high\",\n                            \"requestedBy\": \"jsmith@gmail.com\",\n                            \"requestedFinishDate\": \"2013-06-20\",\n                            \"assignedTo\": \"jsmith@gmail.com\",\n                            \"actualFinishDate\": null,\n                            \"estimatedUnits\": 3,\n                            \"unitType\": \"hours\",\n                            \"createdDate\": \"2013-01-20T19:20:30\",\n                            \"updatedDate\": \"2013-01-21T15:21:30\"\n                        },\n                        {\n                            \"id\": 101,\n                            \"requestType\": \"service\",\n                            \"description\": \"Zippy Description text for id=101\",\n                            \"status\": \"open\",\n                            \"priority\": \"2-medium\",\n                            \"requestedBy\": \"jsmith@gmail.com\",\n                            \"requestedFinishDate\": \"2013-07-20\",\n                            \"assignedTo\": \"suestatler@gmail.com\",\n                            \"actualFinishDate\": null,\n                            \"estimatedUnits\": 0,\n                            \"unitType\": \"days\",\n                            \"createdDate\": \"2013-02-20T19:20:30\",\n                            \"updatedDate\": \"2013-03-21T15:21:30\",\n                        },\n                        {\n                            \"id\": 102,\n                            \"requestType\": \"consulting\",\n                            \"description\": \"A Description text for id=102\",\n                            \"status\": \"close\",\n                            \"priority\": \"2-medium\",\n                            \"requestedBy\": \"sdoe@gmail.com\",\n                            \"requestedFinishDate\": \"2013-03-20\",\n                            \"assignedTo\": \"jsmith@gmail.com\",\n                            \"actualFinishDate\": \"2013-02-21T15:21:30\",\n                            \"estimatedUnits\": 10,\n                            \"unitType\": \"days\",\n                            \"createdDate\": \"2013-01-20T19:20:30\",\n                            \"updatedDate\": \"2013-02-21T15:21:30\",\n                        }],\n                \"idProperty\":\"id\"\n            }\n        }/*,\"requests\":{\n            \"type\": \"dojo/store/JsonRest\",\n            \"observable\": true,\n            \"params\": {\n                \"target\": \"app/resources/data/rest/requests.json\"\n            }\n        },\"requests\":{\n            \"type\": \"dojo/store/JsonRest\",\n            \"observable\": true,\n            \"params\": {\n                \"target\": \"http://localhost:3000/items\"\n            }\n        }*/\n\n    },\n\n\n    //Mandatory, one or a set of views view1+view2+view3\n    \"defaultView\": \"home\",\n\n    //Optional, App level stings\n    \"nls\": \"app/nls/app_strings\",\n    //\"transition\": \"slide\",\n    \"defaultTransition\" : \"slide\",\n    //Mandatory, Specify Application child views\n    \"views\": {\n        \"home\":{\n            //Mandatory for defaultViews\n            \"template\": \"app/views/home/home.html\",\n            \"controller\" : \"app/views/home/home.js\",\n        },\n        \"requestList\":{\n            \"template\": \"app/views/list/list.html\",\n            \"controller\" : \"app/views/list/list.js\",\n            \"nls\": \"app/views/list/nls/list-strings\"\n        },\n        \"requestItemDetails\":{\n            \"template\": \"app/views/details/details.html\",\n            \"controller\" : \"app/views/details/details.js\",\n            \"nls\": \"app/views/details/nls/details-strings\"\n        },\n        \"requestItemDetailsEdit\":{\n            \"template\": \"app/views/edit/edit.html\",\n            \"controller\" : \"app/views/edit/edit.js\",\n            \"nls\": \"app/views/details/nls/details-strings\", //shares strings with details view\n        },\n        \"requestListSearch\":{\n            \"template\": \"app/views/search/search.html\",\n            \"controller\" : \"app/views/search/search.js\"\n        }\n    },\n    \"has\": {\n        \"html5history\": {\n            \"controllers\": [\n                //\"dojox/app/controllers/History\"\n                \"app/views/controllers/CustomHistory\"\n            ]\n        },\n        \"!html5history\": {\n            \"controllers\": [\n                \"dojox/app/controllers/HistoryHash\"\n            ]\n        }\n    }\n}\n",
+'url:app/config.json':"{\n    //Mandatory\n    \"id\": \"App\",\n    //Optional\n    \"name\": \"requuest-App\",\n    //Optional\n    \"description\": \"Example dApp, Work Order Requests App\",\n    //Optional, but very useful for views properties\n    \"loaderConfig\": {\n        \"paths\": {\n            \"app\": \"../app\"\n        }\n    },\n    //Optional, but required when not using the parser, and its required by views\n    \"dependencies\": [\n        \"dojo/store/Observable\",\n        //\"dojox/app/controllers/History\",\n        \"dojox/app/controllers/HistoryHash\",\n        \"app/views/controllers/CustomHistory\",\n        /* On Mobile always add the 2 following modules dojox/mobule a dojox/mobile/deviceTheme */\n        \"dojox/mobile/common\",\n        /* For build to include css3/lite query selectorEngine */\n        \"dojo/selector/lite\",\n        //Need to inlclude dependency for model stores across views\n        \"dojo/store/Memory\",\n        \"dojo/store/JsonRest\"\n    ],\n    //Mandatory, they listen to App.emit events, they implement dojox/app/Controller\n    \"controllers\": [\n        //listens to \"app-init, app-load\"\n        \"dojox/app/controllers/Load\",\n        //listens to \"app-transition, app-domNode\"\n        \"dojox/app/controllers/Transition\",\n        //listens to \"app-initLayout,app-layoutVIew,app-resize\"\n        \"dojox/app/controllers/Layout\"\n    ],\n    //Optional, App levels stores shared with views\n    \"stores\": {\n        \"requestsListStore\":{\n            \"type\": \"dojo/store/Memory\",\n            \"observable\": true,\n            \"params\": { // parameters used to initialize the data store\n                \"data\": [{\n                            \"id\": 100,\n                            \"requestType\": \"software\",\n                            \"description\": \"Description text for id=100\",\n                            \"status\": \"open\",\n                            \"priority\": \"1-high\",\n                            \"requestedBy\": \"jsmith@gmail.com\",\n                            \"requestedFinishDate\": \"2013-06-20\",\n                            \"assignedTo\": \"jsmith@gmail.com\",\n                            \"actualFinishDate\": null,\n                            \"estimatedUnits\": 3,\n                            \"unitType\": \"hours\",\n                            \"createdDate\": \"2013-01-20T19:20:30\",\n                            \"updatedDate\": \"2013-01-21T15:21:30\"\n                        },\n                        {\n                            \"id\": 101,\n                            \"requestType\": \"service\",\n                            \"description\": \"Zippy Description text for id=101\",\n                            \"status\": \"open\",\n                            \"priority\": \"2-medium\",\n                            \"requestedBy\": \"jsmith@gmail.com\",\n                            \"requestedFinishDate\": \"2013-07-20\",\n                            \"assignedTo\": \"suestatler@gmail.com\",\n                            \"actualFinishDate\": null,\n                            \"estimatedUnits\": 0,\n                            \"unitType\": \"days\",\n                            \"createdDate\": \"2013-02-20T19:20:30\",\n                            \"updatedDate\": \"2013-03-21T15:21:30\",\n                        },\n                        {\n                            \"id\": 102,\n                            \"requestType\": \"consulting\",\n                            \"description\": \"A Description text for id=102\",\n                            \"status\": \"close\",\n                            \"priority\": \"2-medium\",\n                            \"requestedBy\": \"sdoe@gmail.com\",\n                            \"requestedFinishDate\": \"2013-03-20\",\n                            \"assignedTo\": \"jsmith@gmail.com\",\n                            \"actualFinishDate\": \"2013-02-21T15:21:30\",\n                            \"estimatedUnits\": 10,\n                            \"unitType\": \"days\",\n                            \"createdDate\": \"2013-01-20T19:20:30\",\n                            \"updatedDate\": \"2013-02-21T15:21:30\",\n                        }],\n                \"idProperty\":\"id\"\n            }\n        },\n        \"requestTypeStore\":{\n            \"type\": \"dojo/store/JsonRest\",\n            \"observable\": true,\n            \"params\": {\n                \"target\": \"app/resources/data/rest/requesttype.json\",\n                \"idProperty\": \"key\"\n            }\n        },\n        \"requestStatusStore\":{\n            \"type\": \"dojo/store/JsonRest\",\n            \"observable\": true,\n            \"params\": {\n                \"target\": \"app/resources/data/rest/status.json\",\n                \"idProperty\": \"key\"\n            }\n        },\n        \"requestPriorityStore\":{\n            \"type\": \"dojo/store/JsonRest\",\n            \"observable\": true,\n            \"params\": {\n                \"target\": \"app/resources/data/rest/priority.json\",\n                \"idProperty\": \"id\"\n            }\n        },\n        \"requestUnitTypeStore\":{\n            \"type\": \"dojo/store/JsonRest\",\n            \"observable\": true,\n            \"params\": {\n                \"target\": \"app/resources/data/rest/unittype.json\",\n                \"idProperty\": \"key\"\n            }\n        },\n        \"searchFieldsStore\":{\n            \"type\": \"dojo/store/JsonRest\",\n            \"observable\": true,\n            \"params\": {\n                \"target\": \"app/resources/data/rest/sortfields.json\",\n                \"idProperty\": \"key\"\n            }\n        }\n    },\n\n\n    //Mandatory, one or a set of views view1+view2+view3\n    \"defaultView\": \"home\",\n\n    //Optional, App level stings\n    \"nls\": \"app/nls/app_strings\",\n    //\"transition\": \"slide\",\n    \"defaultTransition\" : \"slide\",\n    //Mandatory, Specify Application child views\n    \"views\": {\n        \"home\":{\n            //Mandatory for defaultViews\n            \"template\": \"app/views/home/home.html\",\n            \"controller\" : \"app/views/home/home.js\",\n        },\n        \"requestList\":{\n            \"template\": \"app/views/list/list.html\",\n            \"controller\" : \"app/views/list/list.js\",\n            \"nls\": \"app/views/list/nls/list-strings\"\n        },\n        \"requestItemDetails\":{\n            \"template\": \"app/views/details/details.html\",\n            \"controller\" : \"app/views/details/details.js\",\n            \"nls\": \"app/views/details/nls/details-strings\"\n        },\n        \"requestItemDetailsEdit\":{\n            \"template\": \"app/views/edit/edit.html\",\n            \"controller\" : \"app/views/edit/edit.js\",\n            \"nls\": \"app/views/details/nls/details-strings\", //shares strings with details view\n        },\n        \"requestListSearch\":{\n            \"template\": \"app/views/search/search.html\",\n            \"controller\" : \"app/views/search/search.js\"\n        }\n    },\n    \"has\": {\n        \"html5history\": {\n            \"controllers\": [\n                //\"dojox/app/controllers/History\"\n                \"app/views/controllers/CustomHistory\"\n            ]\n        },\n        \"!html5history\": {\n            \"controllers\": [\n                \"dojox/app/controllers/HistoryHash\"\n            ]\n        }\n    }\n}\n",
 'url:app/views/home/home.html':"<div class=\"view mblView\">\n  <h1 data-dojo-type=\"dojox/mobile/Heading\">\n    ${nls.app_name}\n  </h1>\n  <!-- Transition to a different view using ListItem 'startTransition' Event -->\n  <ul data-dojo-type=\"dojox/mobile/EdgeToEdgeList\">\n    <li data-dojo-type=\"dojox/mobile/ListItem\"\n    data-dojo-props=\"clickable:true,target:'requestList'\">\n    ${nls.my_requests}\n  </li>\n</ul>\n</div>",
 'url:app/views/list/list.html':"<div class=\"view mblView\">\n  <h1 data-dojo-type=\"dojox/mobile/Heading\" data-dojo-props=\"back: '${nls.back}'\">\n    ${nls.requests}\n\n    <!--//TODO: hide for now until we have add function implemented\n    <button data-dojo-type=\"dojox/mobile/ToolBarButton\" style=\"position: absolute; right: 0\"\n        data-dojo-attach-point=\"createButton\"\n        data-dojo-attach-point=\"add\">\n    ${nls.add}\n    </button>\n    -->\n  </h1>\n\n  <!-- hide for now until advance search is implemented\n  <button data-dojo-type=\"dojox/mobile/Button\"\n          data-dojo-attach-point=\"searchButton\">\n  ${nls.search}\n  </button>\n  -->\n\n  <!-- target and clickable are set in the ul/StoreList to be inherent by li/children being created see list.js for paramsToInherit: \"target,clickable\"-->\n  <ul data-dojo-type=\"dojox/mobile/EdgeToEdgeStoreList\"\n      id=\"requestsList\"\n      data-dojo-attach-point=\"requests\"\n      data-dojo-props=\"store: this.loadedStores.requestsListStore,\n      itemRenderer: this.RequestListItem,\n      itemMap:{description:'label'}, labelProperty:'description',\n      target: 'requestItemDetails',\n      clickable: true\"\n      data-dojo-mixins=\"dojox/mobile/FilteredListMixin\">\n  </ul>\n  <!-- FIXME: We should use itemMap and then use event delegation with query selector on ul\n              Uncomment this when event delegation is implemented\n              bug #5 https://github.com/csantanapr/dapp-examples/issues/5\n  <ul data-dojo-type=\"dojox/mobile/EdgeToEdgeStoreList\"\n      data-dojo-attach-point=\"requests\"\n      data-dojo-props=\"store: this.loadedStores.requestsListStore,itemMap:{description:'label'}\">\n  </ul>\n   -->\n\n</div>",
 'url:app/views/details/details.html':"<div class=\"view mblView\">\n  <h1 data-dojo-type=\"dojox/mobile/Heading\"\n      data-dojo-props=\"back: '${nls.back}' \">\n    ${nls.details}\n\n    <!-- class editButton use in css files-->\n    <button class=\"editButton\"\n            data-dojo-type=\"dojox/mobile/ToolBarButton\"\n            data-dojo-attach-point=\"editButton\"\n            data-dojo-props=\"target: 'requestItemDetailsEdit',\n            transitionOptions : {\n                    'transition': 'fade'\n                  }\n            \">\n    ${nls.edit}\n    </button>\n  </h1>\n\n\n  <div data-dojo-type=\"dojox/mobile/RoundRect\">\n    <div data-dojo-type=\"dojox/mobile/FormLayout\"\n         data-dojo-attach-point=\"formLayout\">\n\n      <fieldset>\n        <label for=\"reqid\">${nls.id}</label>\n        <input type=\"text\" name=\"id\" data-dojo-type=\"dojox/mobile/TextBox\"\n             data-dojo-props=\"readOnly: true, placeHolder: '${nls.id}'\" data-dojo-attach-point=\"reqid\">\n      </fieldset>\n\n      <fieldset>\n        <label for=\"requestType\">${nls.requestType}</label>\n        <input name=\"requestType\" data-dojo-type=\"dojox/mobile/TextBox\"\n               data-dojo-props=\"readOnly: true, placeHolder: '${nls.requestType}', usesOpener:true\" data-dojo-attach-point=\"requestType\">\n      </fieldset>\n\n      <fieldset>\n        <label for=\"description\">${nls.description}</label>\n        <textarea name=\"description\" data-dojo-type=\"dojox/mobile/ExpandingTextArea\"\n             data-dojo-props=\"readOnly: true, placeHolder: '${nls.description}'\" data-dojo-attach-point=\"description\"></textarea>\n      </fieldset>\n\n      <fieldset>\n      <label for=\"status\">${nls.status}</label>\n      <input name=\"status\" data-dojo-type=\"dojox/mobile/TextBox\"\n           data-dojo-props=\"readOnly: true, placeHolder: '${nls.status}', usesOpener:true\" data-dojo-attach-point=\"status\">\n      </fieldset>\n\n      <fieldset>\n      <label for=\"priority\">${nls.priority}</label>\n      <input name=\"priority\" data-dojo-type=\"dojox/mobile/TextBox\"\n           data-dojo-props=\"readOnly: true, placeHolder: '${nls.priority}', usesOpener:true\" data-dojo-attach-point=\"priority\">\n      </fieldset>\n\n\n      <fieldset>\n        <label for=\"requestedBy\">${nls.requestedBy}</label>\n        <input name=\"requestedBy\" data-dojo-type=\"dojox/mobile/TextBox\"\n             data-dojo-props=\"readOnly: true, placeHolder: '${nls.requestedBy}'\" data-dojo-attach-point=\"requestedBy\">\n      </fieldset>\n\n\n      <fieldset>\n        <label for=\"requestedFinishDate\">${nls.requestedFinishDate}</label>\n        <input name=\"requestedFinishDate\" data-dojo-type=\"dojox/mobile/TextBox\"\n             data-dojo-props=\"readOnly: true, placeHolder: '${nls.requestedFinishDate}', usesOpener:true\" data-dojo-attach-point=\"requestedFinishDate\">\n      </fieldset>\n\n\n      <fieldset>\n        <label for=\"assignedTo\">${nls.assignedTo}</label>\n        <input name=\"assignedTo\" data-dojo-type=\"dojox/mobile/TextBox\"\n             data-dojo-props=\"readOnly: true, placeHolder: '${nls.assignedTo}'\" data-dojo-attach-point=\"assignedTo\">\n      </fieldset>\n\n\n      <fieldset>\n        <label for=\"actualFinishDate\">${nls.actualFinishDate}</label>\n        <input name=\"actualFinishDate\" data-dojo-type=\"dojox/mobile/TextBox\"\n             data-dojo-props=\"readOnly: true, placeHolder: '${nls.actualFinishDate}'\" data-dojo-attach-point=\"actualFinishDate\">\n      </fieldset>\n\n\n      <fieldset>\n        <label for=\"estimatedUnits\">${nls.estimatedUnits}</label>\n        <input name=\"estimatedUnits\" data-dojo-type=\"dojox/mobile/TextBox\"\n             data-dojo-props=\"readOnly: true, placeHolder: '${nls.estimatedUnits}'\" data-dojo-attach-point=\"estimatedUnits\">\n        <input name=\"unitType\" data-dojo-type=\"dojox/mobile/TextBox\"\n             data-dojo-props=\"readOnly: true, placeHolder: '${nls.unitType}', usesOpener:true\" data-dojo-attach-point=\"unitType\">\n      </fieldset>\n\n\n        <fieldset>\n          <label for=\"createdDate\">${nls.createdDate}</label>\n          <input name=\"createdDate\" data-dojo-type=\"dojox/mobile/TextBox\"\n               data-dojo-props=\"readOnly: true, placeHolder: '${nls.createdDate}'\" data-dojo-attach-point=\"createdDate\">\n\n        </fieldset>\n\n\n        <fieldset>\n        <label for=\"updatedDate\">${nls.updatedDate}</label>\n          <input name=\"updatedDate\" data-dojo-type=\"dojox/mobile/TextBox\"\n               data-dojo-props=\"readOnly: true, placeHolder: '${nls.updatedDate}'\" data-dojo-attach-point=\"updatedDate\">\n        </fieldset>\n\n      </div> <!-- end dojox/mobile/FormLayout -->\n    </div> <!-- end dojox.mobile.RoundRect -->\n\n</div>",
-'url:app/views/edit/edit.html':"<div class=\"view mblView\">\n  <h1 data-dojo-type=\"dojox/mobile/Heading\">\n    ${nls.details}\n\n    <!-- class cancelButton use in css files-->\n    <button data-dojo-type=\"dojox/mobile/ToolBarButton\"\n            data-dojo-props=\"back: true\"\n            >\n    ${nls.cancel}\n    </button>\n\n    <!-- class saveButton use in css files-->\n    <button class=\"saveButton\"\n            data-dojo-type=\"dojox/mobile/ToolBarButton\"\n            data-dojo-attach-point=\"saveButton\"\n            data-dojo-attach-event=\"onClick: _saveForm\"\n            data-dojo-props=\"back: true\"> <!-- Do a back for now until save function is implemented -->\n    ${nls.save}\n    </button>\n  </h1>\n\n\n  <div data-dojo-type=\"dojox/mobile/RoundRect\">\n    <div data-dojo-type=\"dojox/mobile/FormLayout\"\n         data-dojo-attach-point=\"formLayout\">\n\n      <fieldset>\n        <label for=\"reqid\">${nls.id}</label>\n        <input type=\"text\" name=\"id\" data-dojo-type=\"dojox/mobile/TextBox\"\n             data-dojo-props=\"readOnly: true, placeHolder: '${nls.id}'\" data-dojo-attach-point=\"reqid\">\n      </fieldset>\n\n      <fieldset>\n        <label for=\"requestType\">${nls.requestType}</label>\n        <input name=\"requestType\" data-dojo-type=\"dojox/mobile/TextBox\"\n               data-dojo-props=\"readOnly: true, placeHolder: '${nls.requestType}', usesOpener:true\" data-dojo-attach-point=\"requestType\">\n      </fieldset>\n\n      <fieldset>\n        <label for=\"description\">${nls.description}</label>\n        <textarea name=\"description\" data-dojo-type=\"dojox/mobile/ExpandingTextArea\"\n             data-dojo-props=\"placeHolder: '${nls.description}'\" data-dojo-attach-point=\"description\"></textarea>\n      </fieldset>\n\n      <fieldset>\n      <label for=\"status\">${nls.status}</label>\n      <input name=\"status\" data-dojo-type=\"dojox/mobile/TextBox\"\n           data-dojo-props=\"readOnly: true, placeHolder: '${nls.status}', usesOpener:true\" data-dojo-attach-point=\"status\">\n      </fieldset>\n\n      <fieldset>\n      <label for=\"priority\">${nls.priority}</label>\n      <input name=\"priority\" data-dojo-type=\"dojox/mobile/TextBox\"\n           data-dojo-props=\"readOnly: true, placeHolder: '${nls.priority}', usesOpener:true\" data-dojo-attach-point=\"priority\">\n      </fieldset>\n\n\n      <fieldset>\n        <label for=\"requestedBy\">${nls.requestedBy}</label>\n        <input name=\"requestedBy\" data-dojo-type=\"dojox/mobile/TextBox\"\n             data-dojo-props=\"placeHolder: '${nls.requestedBy}'\" data-dojo-attach-point=\"requestedBy\">\n      </fieldset>\n\n\n      <fieldset>\n        <label for=\"requestedFinishDate\">${nls.requestedFinishDate}</label>\n        <input name=\"requestedFinishDate\" data-dojo-type=\"dojox/mobile/TextBox\"\n             data-dojo-props=\"placeHolder: '${nls.requestedFinishDate}', usesOpener:true\" data-dojo-attach-point=\"requestedFinishDate\">\n      </fieldset>\n\n\n      <fieldset>\n        <label for=\"assignedTo\">${nls.assignedTo}</label>\n        <input name=\"assignedTo\" data-dojo-type=\"dojox/mobile/TextBox\"\n             data-dojo-props=\"placeHolder: '${nls.assignedTo}'\" data-dojo-attach-point=\"assignedTo\">\n      </fieldset>\n\n\n      <fieldset>\n        <label for=\"actualFinishDate\">${nls.actualFinishDate}</label>\n        <input name=\"actualFinishDate\" data-dojo-type=\"dojox/mobile/TextBox\"\n             data-dojo-props=\"placeHolder: '${nls.actualFinishDate}'\" data-dojo-attach-point=\"actualFinishDate\">\n      </fieldset>\n\n\n      <fieldset>\n        <label for=\"estimatedUnits\">${nls.estimatedUnits}</label>\n        <input name=\"estimatedUnits\" data-dojo-type=\"dojox/mobile/TextBox\"\n             data-dojo-props=\"placeHolder: '${nls.estimatedUnits}'\" data-dojo-attach-point=\"estimatedUnits\">\n        <input name=\"unitType\" data-dojo-type=\"dojox/mobile/TextBox\"\n             data-dojo-props=\"readOnly: true, placeHolder: '${nls.unitType}', usesOpener:true\" data-dojo-attach-point=\"unitType\">\n      </fieldset>\n\n\n        <fieldset>\n          <label for=\"createdDate\">${nls.createdDate}</label>\n          <input name=\"createdDate\" data-dojo-type=\"dojox/mobile/TextBox\"\n               data-dojo-props=\"readOnly: true, placeHolder: '${nls.createdDate}'\" data-dojo-attach-point=\"createdDate\">\n\n        </fieldset>\n\n\n        <fieldset>\n          <label for=\"updatedDate\">${nls.updatedDate}</label>\n          <input name=\"updatedDate\"\n                 data-dojo-type=\"dojox/mobile/TextBox\"\n                data-dojo-props=\"readOnly: true, placeHolder: '${nls.updatedDate}'\"\n                data-dojo-attach-point=\"updatedDate\">\n        </fieldset>\n\n      </div> <!-- end dojox/mobile/FormLayout -->\n    </div> <!-- end dojox.mobile.RoundRect -->\n\n\n    <button data-dojo-type=\"dojox/mobile/Button\"\n          data-dojo-attach-point=\"copyButton\"\n          data-dojo-attach-event=\"onClick: _copyForm\">\n    ${nls.duplicate}\n    </button>\n\n\n     <button data-dojo-type=\"dojox/mobile/Button\"\n          data-dojo-attach-event=\"onClick: _deleteRequest\"\n          class=\"mblRedButton\">${nls.remove}\n    </button>\n    <div data-dojo-type=\"dojox/mobile/Opener\"\n         data-dojo-attach-point=\"opener\">\n      <h1 data-dojo-type=\"dojox/mobile/Heading\">\n        Date Picker\n        <button data-dojo-type=\"dojox/mobile/ToolBarButton\"\n                data-dojo-attach-event=\"onClick: _doneOpener\">\n          Done\n        </button>\n        <button data-dojo-type=\"dojox/mobile/ToolBarButton\"\n                data-dojo-attach-event=\"onClick: _cancelOpener\">\n          Cancel\n        </button>\n      </h1>\n      <div data-dojo-type=\"dojox/mobile/DatePicker\"\n           data-dojo-attach-point=\"datePicker\"></div>\n    </div>\n</div>",
+'url:app/views/edit/edit.html':"<div class=\"view mblView\">\n  <h1 data-dojo-type=\"dojox/mobile/Heading\">\n    ${nls.details}\n\n    <!-- class cancelButton use in css files-->\n    <button data-dojo-type=\"dojox/mobile/ToolBarButton\"\n            data-dojo-props=\"back: true\"\n            >\n    ${nls.cancel}\n    </button>\n\n    <!-- class saveButton use in css files-->\n    <button class=\"saveButton\"\n            data-dojo-type=\"dojox/mobile/ToolBarButton\"\n            data-dojo-attach-point=\"saveButton\"\n            data-dojo-attach-event=\"onClick: _saveForm\"\n            data-dojo-props=\"back: true\"> <!-- Do a back for now until save function is implemented -->\n    ${nls.save}\n    </button>\n  </h1>\n\n\n  <div data-dojo-type=\"dojox/mobile/RoundRect\">\n    <form data-dojo-type=\"dojox/mobile/FormLayout\"\n         data-dojo-attach-point=\"formLayout\">\n\n      <fieldset>\n        <label for=\"reqid\">${nls.id}</label>\n        <input type=\"text\" name=\"id\" data-dojo-type=\"dojox/mobile/TextBox\"\n             data-dojo-props=\"readOnly: true, placeHolder: '${nls.id}'\" data-dojo-attach-point=\"reqid\">\n      </fieldset>\n\n      <fieldset>\n        <label for=\"requestType\">${nls.requestType}</label>\n        <input name=\"requestType\" data-dojo-type=\"dojox/mobile/TextBox\"\n               data-dojo-props=\"readOnly: true, placeHolder: '${nls.requestType}', usesOpener:true\" data-dojo-attach-point=\"requestType\">\n      </fieldset>\n\n      <fieldset>\n        <label for=\"description\">${nls.description}</label>\n        <textarea name=\"description\" data-dojo-type=\"dojox/mobile/ExpandingTextArea\"\n             data-dojo-props=\"placeHolder: '${nls.description}'\" data-dojo-attach-point=\"description\"></textarea>\n      </fieldset>\n\n      <fieldset>\n      <label for=\"status\">${nls.status}</label>\n      <input name=\"status\" data-dojo-type=\"dojox/mobile/TextBox\"\n           data-dojo-props=\"readOnly: true, placeHolder: '${nls.status}', usesOpener:true\" data-dojo-attach-point=\"status\">\n      </fieldset>\n\n      <fieldset>\n      <label for=\"priority\">${nls.priority}</label>\n      <input name=\"priority\" data-dojo-type=\"dojox/mobile/TextBox\"\n           data-dojo-props=\"readOnly: true, placeHolder: '${nls.priority}', usesOpener:true\" data-dojo-attach-point=\"priority\">\n      </fieldset>\n\n\n      <fieldset>\n        <label for=\"requestedBy\">${nls.requestedBy}</label>\n        <input name=\"requestedBy\" data-dojo-type=\"dojox/mobile/TextBox\"\n             data-dojo-props=\"placeHolder: '${nls.requestedBy}'\" data-dojo-attach-point=\"requestedBy\">\n      </fieldset>\n\n\n      <fieldset>\n        <label for=\"requestedFinishDate\">${nls.requestedFinishDate}</label>\n        <input name=\"requestedFinishDate\" data-dojo-type=\"dojox/mobile/TextBox\"\n             data-dojo-props=\"placeHolder: '${nls.requestedFinishDate}', usesOpener:true\" data-dojo-attach-point=\"requestedFinishDate\">\n      </fieldset>\n\n\n      <fieldset>\n        <label for=\"assignedTo\">${nls.assignedTo}</label>\n        <input name=\"assignedTo\" data-dojo-type=\"dojox/mobile/TextBox\"\n             data-dojo-props=\"placeHolder: '${nls.assignedTo}'\" data-dojo-attach-point=\"assignedTo\">\n      </fieldset>\n\n\n      <fieldset>\n        <label for=\"actualFinishDate\">${nls.actualFinishDate}</label>\n        <input name=\"actualFinishDate\" data-dojo-type=\"dojox/mobile/TextBox\"\n             data-dojo-props=\"placeHolder: '${nls.actualFinishDate}'\" data-dojo-attach-point=\"actualFinishDate\">\n      </fieldset>\n\n\n      <fieldset>\n        <label for=\"estimatedUnits\">${nls.estimatedUnits}</label>\n        <input name=\"estimatedUnits\" data-dojo-type=\"dojox/mobile/TextBox\"\n             data-dojo-props=\"placeHolder: '${nls.estimatedUnits}'\" data-dojo-attach-point=\"estimatedUnits\">\n        <input name=\"unitType\" data-dojo-type=\"dojox/mobile/TextBox\"\n             data-dojo-props=\"readOnly: true, placeHolder: '${nls.unitType}', usesOpener:true\" data-dojo-attach-point=\"unitType\">\n      </fieldset>\n\n\n        <fieldset>\n          <label for=\"createdDate\">${nls.createdDate}</label>\n          <input name=\"createdDate\" data-dojo-type=\"dojox/mobile/TextBox\"\n               data-dojo-props=\"readOnly: true, placeHolder: '${nls.createdDate}'\" data-dojo-attach-point=\"createdDate\">\n\n        </fieldset>\n\n\n        <fieldset>\n          <label for=\"updatedDate\">${nls.updatedDate}</label>\n          <input name=\"updatedDate\"\n                 data-dojo-type=\"dojox/mobile/TextBox\"\n                data-dojo-props=\"readOnly: true, placeHolder: '${nls.updatedDate}'\"\n                data-dojo-attach-point=\"updatedDate\">\n        </fieldset>\n\n      </form> <!-- end dojox/mobile/FormLayout -->\n    </div> <!-- end dojox.mobile.RoundRect -->\n\n\n    <button data-dojo-type=\"dojox/mobile/Button\"\n          data-dojo-attach-point=\"copyButton\"\n          data-dojo-attach-event=\"onClick: _copyForm\">\n    ${nls.duplicate}\n    </button>\n\n\n     <button data-dojo-type=\"dojox/mobile/Button\"\n          data-dojo-attach-event=\"onClick: _showConfirmDelete\"\n          class=\"mblRedButton\">${nls.remove}\n    </button>\n\n\n    <div class=\"dateOpener\" data-dojo-type=\"dojox/mobile/Opener\"\n         data-dojo-attach-point=\"opener\">\n      <h1 data-dojo-type=\"dojox/mobile/Heading\">\n        <button data-dojo-type=\"dojox/mobile/ToolBarButton\"\n                data-dojo-attach-event=\"onClick: _cancelOpener\">\n          ${nls.cancel}\n        </button>\n        <button class=\"doneButton\" data-dojo-type=\"dojox/mobile/ToolBarButton\"\n                data-dojo-attach-event=\"onClick: _doneOpener\">\n          ${nls.done}\n        </button>\n\n      </h1>\n      <div data-dojo-type=\"dojox/mobile/DatePicker\"\n           data-dojo-attach-point=\"datePicker\"></div>\n    </div><!-- end Opener -->\n\n    <div data-dojo-type=\"dojox/mobile/SimpleDialog\"\n         data-dojo-attach-point=\"confirmDelete\">\n      <div class=\"mblSimpleDialogTitle\">${nls.confirm}</div>\n      <div class=\"mblSimpleDialogText\">${nls.confirm_delete}</div>\n      <button data-dojo-type=\"dojox/mobile/Button\"\n              class=\"mblSimpleDialogButton\"\n              data-dojo-attach-event=\"onClick: _hideConfirmDelete\">\n      ${nls.cancel}\n      </button>\n      <button data-dojo-type=\"dojox/mobile/Button\"\n              class=\"mblSimpleDialogButton\"\n              data-dojo-attach-event=\"onClick: _deleteRequest\">\n      ${nls.ok}\n      </button>\n    </div>\n</div>",
 'url:app/views/search/search.html':"<div class=\"view mblView\">\n  <h1 data-dojo-type=\"dojox/mobile/Heading\" data-dojo-props=\"back: '${nls.back}'\">\n    search here..\n  </h1>\n</div>",
 '*now':function(r){r(['dojo/i18n!*preload*app/nls/main*["ar","ca","cs","da","de","el","en","en-gb","en-us","es","es-es","fi","fi-fi","fr","fr-fr","he","he-il","hu","it","it-it","ja","ja-jp","ko","ko-kr","nl","nl-nl","nb","pl","pt","pt-br","pt-pt","ru","sk","sl","sv","th","tr","zh","zh-tw","zh-cn","ROOT"]']);}
 }});
@@ -24598,9 +24852,8 @@ define("app/main", [
     'dojox/json/ref',
     'dojo/text!app/config.json',
     'dojo/domReady!'
-], function (win, has, Application, json, config) {
+], function (win, has, dApp, json, config) {
     'use strict';
-    win.global.myapp = {};
 
     // populate has flag on whether html5 history is correctly supported or not
     has.add("html5history", !has("ie") || has("ie") > 9);
@@ -24609,6 +24862,5 @@ define("app/main", [
     //has.add("app-log-api", true);
 
     //Start the App
-    win.global.myapp.App = new Application(json.fromJson(config));
-
+    dApp(json.fromJson(config));
 });
