@@ -1,0 +1,18 @@
+[
+	{
+		"key": "hours",
+		"description": "Units in hours"
+	},
+	{
+		"key": "days",
+		"description": "Units in days"
+	},
+	{
+		"key": "weeks",
+		"description": "Units in weeks"
+	},
+	{
+		"key": "months",
+		"description": "Units in months"
+	}
+]

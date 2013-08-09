@@ -1,0 +1,45 @@
+{
+	"identifier": "id",
+	"items": [
+		{
+			"id": "jsmith@gmail.com",
+			"first_name": "Joe",
+			"middle_name": "P",
+			"last_name": "Smith",
+			"administrator": false,
+			"password": null
+		},
+		{
+			"id": "suestatler@gmail.com",
+			"first_name": "Sue",
+			"middle_name": null,
+			"last_name": "Statler",
+			"administrator": true,
+			"password": "12abcd"
+		},
+		{
+			"id": "bjones@gmail.com",
+			"first_name": "Bill",
+			"middle_name": "A",
+			"last_name": "Jones",
+			"administrator": true,
+			"password": "ab1234"
+		},
+		{
+			"id": "mjohnson@gmail.com",
+			"first_name": "Mary",
+			"middle_name": "A",
+			"last_name": "Johnson",
+			"administrator": false,
+			"password": null
+		},
+		{
+			"id": "devans@gmail.com",
+			"first_name": "Dan",
+			"middle_name": null,
+			"last_name": "Evans",
+			"administrator": true,
+			"password": "1a2b3c"
+		}
+	]
+}

@@ -87,20 +87,47 @@
                         }],
                 "idProperty":"id"
             }
-        }/*,"requests":{
+        },
+        "requestTypeStore":{
             "type": "dojo/store/JsonRest",
             "observable": true,
             "params": {
-                "target": "app/resources/data/rest/requests.json"
+                "target": "app/resources/data/rest/requesttype.json",
+                "idProperty": "key"
             }
-        },"requests":{
+        },
+        "requestStatusStore":{
             "type": "dojo/store/JsonRest",
             "observable": true,
             "params": {
-                "target": "http://localhost:3000/items"
+                "target": "app/resources/data/rest/status.json",
+                "idProperty": "key"
             }
-        }*/
-
+        },
+        "requestPriorityStore":{
+            "type": "dojo/store/JsonRest",
+            "observable": true,
+            "params": {
+                "target": "app/resources/data/rest/priority.json",
+                "idProperty": "id"
+            }
+        },
+        "requestUnitTypeStore":{
+            "type": "dojo/store/JsonRest",
+            "observable": true,
+            "params": {
+                "target": "app/resources/data/rest/unittype.json",
+                "idProperty": "key"
+            }
+        },
+        "searchFieldsStore":{
+            "type": "dojo/store/JsonRest",
+            "observable": true,
+            "params": {
+                "target": "app/resources/data/rest/sortfields.json",
+                "idProperty": "key"
+            }
+        }
     },
 
 

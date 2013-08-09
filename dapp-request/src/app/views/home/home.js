@@ -17,7 +17,7 @@ define([
 ], function ($, on) {
     'use strict';
 
-    var view, // set in init() to save in closure reference to this view controller instance
+    var viewWidget, // set in init() to save in closure reference to this view controller instance
         viewNode; // set in init() to save in closure reference to this view dom node
 
 
@@ -27,26 +27,25 @@ define([
         init: function () {
             // summary:
             //      view life cycle init()
+
+
             console.log(this.name + " view:init()");
 
             //save the view node in clousure to use as scope for dom manipulatation and query
             viewNode = this.domNode;
-            view = this;
-
+            viewWidget = this;
         },
 
         beforeActivate: function (previousView, data) {
             // summary:
             //      view life cycle beforeActivate()
             console.log(this.name + " view:beforeActivate(" + (previousView ? previousView.name : "") + ",data)");
-
         },
 
         afterActivate: function (previousView, data) {
             // summary:
             //      view life cycle afterActivate()
             console.log(this.name + " view:afterActivate(" + (previousView ? previousView.name : "") + ",data)");
-
         },
 
         beforeDeactivate: function (nextView, data) {

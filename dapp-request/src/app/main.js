@@ -12,9 +12,8 @@ define([
     'dojox/json/ref',
     'dojo/text!app/config.json',
     'dojo/domReady!'
-], function (win, has, Application, json, config) {
+], function (win, has, dApp, json, config) {
     'use strict';
-    win.global.myapp = {};
 
     // populate has flag on whether html5 history is correctly supported or not
     has.add("html5history", !has("ie") || has("ie") > 9);
@@ -23,6 +22,5 @@ define([
     //has.add("app-log-api", true);
 
     //Start the App
-    win.global.myapp.App = new Application(json.fromJson(config));
-
+    dApp(json.fromJson(config));
 });
