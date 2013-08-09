@@ -32,5 +32,6 @@ define({
     remove: "Borrar",
     request_details: 'Detalles del Pedido',
     confirm_delete: 'Remover Pedido?',
-    done: 'Completar'
+    done: 'Completar',
+    confirm: 'Confirmar'
 });

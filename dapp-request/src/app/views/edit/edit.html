@@ -120,9 +120,11 @@
 
 
      <button data-dojo-type="dojox/mobile/Button"
-          data-dojo-attach-event="onClick: _deleteRequest"
+          data-dojo-attach-event="onClick: _showConfirmDelete"
           class="mblRedButton">${nls.remove}
     </button>
+
+
     <div class="dateOpener" data-dojo-type="dojox/mobile/Opener"
          data-dojo-attach-point="opener">
       <h1 data-dojo-type="dojox/mobile/Heading">
@@ -138,5 +140,21 @@
       </h1>
       <div data-dojo-type="dojox/mobile/DatePicker"
            data-dojo-attach-point="datePicker"></div>
+    </div><!-- end Opener -->
+
+    <div data-dojo-type="dojox/mobile/SimpleDialog"
+         data-dojo-attach-point="confirmDelete">
+      <div class="mblSimpleDialogTitle">${nls.confirm}</div>
+      <div class="mblSimpleDialogText">${nls.confirm_delete}</div>
+      <button data-dojo-type="dojox/mobile/Button"
+              class="mblSimpleDialogButton"
+              data-dojo-attach-event="onClick: _hideConfirmDelete">
+      ${nls.cancel}
+      </button>
+      <button data-dojo-type="dojox/mobile/Button"
+              class="mblSimpleDialogButton"
+              data-dojo-attach-event="onClick: _deleteRequest">
+      ${nls.ok}
+      </button>
     </div>
 </div>

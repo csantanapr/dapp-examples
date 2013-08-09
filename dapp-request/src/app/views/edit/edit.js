@@ -23,7 +23,8 @@ define([
     'dojox/mobile/Opener',
     'dojox/mobile/DatePicker',
     'dojox/mobile/SpinWheelDatePicker',
-    'dojox/mobile/ValuePickerDatePicker'
+    'dojox/mobile/ValuePickerDatePicker',
+    'dojox/mobile/SimpleDialog'
 ], function ($, on, when, domClass, win) {
     'use strict';
 
@@ -159,23 +160,19 @@ define([
             //      Deletes the item being edited and returns back to the list
 
             var promise = null,
-                id = viewWidget.params.id,
-                transition = 'slide';
+                id = viewWidget.params.id;
             if (!id) {
                 // no item passed in
                 return promise;
             }
 
-            //cofirm result is a boolean value indicating whether OK or Cancel was selected (true means OK).
-            if (win.global.confirm(viewWidget.nls.confirm_delete)) {
-                promise = viewWidget.loadedStores.requestsListStore.remove(id);
+            promise = viewWidget.loadedStores.requestsListStore.remove(id);
 
-                when(promise, function () {
-                    // we want to be back to list, which is 2 levels back
-                    viewWidget.app.transitionToView(event.target, { target: 'requestList', reverse: 'true'});
-                });
-            }
-
+            when(promise, function () {
+                // we want to be back to list, which is 2 levels back
+                viewWidget._hideConfirmDelete();
+                viewWidget.app.transitionToView(viewWidget.domNode, { target: 'requestList', reverse: 'true'});
+            });
         },
         _saveForm: function () {
             // summary:
@@ -243,6 +240,17 @@ define([
 
             console.log("cancel opener");
             viewWidget.opener.hide();
+        },
+        _hideConfirmDelete : function (event) {
+            // summary:
+            //      Hides the delere confirm dialog
+            console.log("cancel delete confirm");
+            viewWidget.confirmDelete.hide();
+        },
+        _showConfirmDelete: function (event) {
+            // summary:
+            //      Displays the confirm dialog to user
+            viewWidget.confirmDelete.show();
         }
     };
 
