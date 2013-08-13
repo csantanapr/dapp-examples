@@ -10,6 +10,7 @@ define([
     'dojo/when',
     'dojo/dom-class',
     'dojo/_base/window',
+    'dojo/sniff',
     'dojo/NodeList-manipulate',
     // Load dojo/NodeList-manipulate to get JQuery syntax: see below this file for function syntax
     'dojo/text!app/views/edit/edit.html',
@@ -25,7 +26,7 @@ define([
     'dojox/mobile/SpinWheelDatePicker',
     'dojox/mobile/ValuePickerDatePicker',
     'dojox/mobile/SimpleDialog'
-], function ($, on, when, domClass, win) {
+], function ($, on, when, domClass, win, has) {
     'use strict';
 
     var viewWidget, // set in init() to save in closure reference to this view controller instance
@@ -44,7 +45,7 @@ define([
 
             //add class to identify view for css rules
             domClass.add(viewNode, this.name);
-            this.attachHandlers();
+            this._attachHandlers();
 
         },
 
@@ -199,12 +200,14 @@ define([
                 request[reqfield] = value;
             }
         },
-        attachHandlers: function () {
+        _attachHandlers: function () {
             // summary:
             //      Attach listeners to form inputs on click
+            if (has('ios') || has('android')) {
+                on(this.requestedFinishDate, "click", viewWidget._showDateOpener.bind(this.requestedFinishDate));
+                on(this.actualFinishDate, "click", viewWidget._showDateOpener.bind(this.actualFinishDate));
+            }
 
-            on(this.requestedFinishDate, "click", viewWidget._showDateOpener.bind(this.requestedFinishDate));
-            on(this.actualFinishDate, "click", viewWidget._showDateOpener.bind(this.actualFinishDate));
         },
         _showDateOpener: function (event) {
             // summary:

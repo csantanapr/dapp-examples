@@ -1,109 +1,131 @@
 <div class="view mblView">
   <h1 data-dojo-type="dojox/mobile/Heading"
-      data-dojo-props="back: '${nls.back}' ">
-    ${nls.details}
+        data-dojo-props="back: '${nls.back}' ">
+      ${nls.details}
 
-    <!-- class editButton use in css files-->
-    <button class="editButton"
-            data-dojo-type="dojox/mobile/ToolBarButton"
-            data-dojo-attach-point="editButton"
-            data-dojo-props="target: 'requestItemDetailsEdit',
-            transitionOptions : {
-                    'transition': 'fade'
-                  }
-            ">
-    ${nls.edit}
-    </button>
-  </h1>
+      <!-- class editButton use in css files-->
+      <button class="editButton"
+              data-dojo-type="dojox/mobile/ToolBarButton"
+              data-dojo-attach-point="editButton"
+              data-dojo-props="target: 'requestItemDetailsEdit',
+              transitionOptions : {
+                      'transition': 'fade'
+                    }
+              ">
+      ${nls.edit}
+      </button>
+  </h1> <!-- ends dojox/mobile/Heading -->
 
 
   <div data-dojo-type="dojox/mobile/RoundRect">
-    <div data-dojo-type="dojox/mobile/FormLayout"
-         data-dojo-attach-point="formLayout">
-
+    <form>
       <fieldset>
-        <label for="reqid">${nls.id}</label>
-        <input type="text" name="id" data-dojo-type="dojox/mobile/TextBox"
-             data-dojo-props="readOnly: true, placeHolder: '${nls.id}'" data-dojo-attach-point="reqid">
-      </fieldset>
-
-      <fieldset>
-        <label for="requestType">${nls.requestType}</label>
-        <input name="requestType" data-dojo-type="dojox/mobile/TextBox"
-               data-dojo-props="readOnly: true, placeHolder: '${nls.requestType}', usesOpener:true" data-dojo-attach-point="requestType">
-      </fieldset>
-
-      <fieldset>
-        <label for="description">${nls.description}</label>
-        <textarea name="description" data-dojo-type="dojox/mobile/ExpandingTextArea"
-             data-dojo-props="readOnly: true, placeHolder: '${nls.description}'" data-dojo-attach-point="description"></textarea>
-      </fieldset>
-
-      <fieldset>
-      <label for="status">${nls.status}</label>
-      <input name="status" data-dojo-type="dojox/mobile/TextBox"
-           data-dojo-props="readOnly: true, placeHolder: '${nls.status}', usesOpener:true" data-dojo-attach-point="status">
-      </fieldset>
-
-      <fieldset>
-      <label for="priority">${nls.priority}</label>
-      <input name="priority" data-dojo-type="dojox/mobile/TextBox"
-           data-dojo-props="readOnly: true, placeHolder: '${nls.priority}', usesOpener:true" data-dojo-attach-point="priority">
-      </fieldset>
-
-
-      <fieldset>
-        <label for="requestedBy">${nls.requestedBy}</label>
-        <input name="requestedBy" data-dojo-type="dojox/mobile/TextBox"
-             data-dojo-props="readOnly: true, placeHolder: '${nls.requestedBy}'" data-dojo-attach-point="requestedBy">
-      </fieldset>
-
-
-      <fieldset>
-        <label for="requestedFinishDate">${nls.requestedFinishDate}</label>
-        <input name="requestedFinishDate" data-dojo-type="dojox/mobile/TextBox"
-             data-dojo-props="readOnly: true, placeHolder: '${nls.requestedFinishDate}', usesOpener:true" data-dojo-attach-point="requestedFinishDate">
-      </fieldset>
-
-
-      <fieldset>
-        <label for="assignedTo">${nls.assignedTo}</label>
-        <input name="assignedTo" data-dojo-type="dojox/mobile/TextBox"
-             data-dojo-props="readOnly: true, placeHolder: '${nls.assignedTo}'" data-dojo-attach-point="assignedTo">
-      </fieldset>
-
-
-      <fieldset>
-        <label for="actualFinishDate">${nls.actualFinishDate}</label>
-        <input name="actualFinishDate" data-dojo-type="dojox/mobile/TextBox"
-             data-dojo-props="readOnly: true, placeHolder: '${nls.actualFinishDate}'" data-dojo-attach-point="actualFinishDate">
-      </fieldset>
-
-
-      <fieldset>
-        <label for="estimatedUnits">${nls.estimatedUnits}</label>
-        <input name="estimatedUnits" data-dojo-type="dojox/mobile/TextBox"
-             data-dojo-props="readOnly: true, placeHolder: '${nls.estimatedUnits}'" data-dojo-attach-point="estimatedUnits">
-        <input name="unitType" data-dojo-type="dojox/mobile/TextBox"
-             data-dojo-props="readOnly: true, placeHolder: '${nls.unitType}', usesOpener:true" data-dojo-attach-point="unitType">
-      </fieldset>
-
-
-        <fieldset>
-          <label for="createdDate">${nls.createdDate}</label>
-          <input name="createdDate" data-dojo-type="dojox/mobile/TextBox"
-               data-dojo-props="readOnly: true, placeHolder: '${nls.createdDate}'" data-dojo-attach-point="createdDate">
-
+        <label>${nls.id}:
+          <input  name="id"
+                  type="text"
+                  placeholder="${nls.id}"
+                  readonly="readonly"
+                  data-dojo-type="dojox/mobile/TextBox"
+                  data-dojo-attach-point="reqid">
+        </label>
+        <label>${nls.requestType}:
+          <input  name="requestType"
+                  type="text"
+                  placeholder="${nls.requestType}"
+                  readonly="readonly"
+                  data-dojo-type="dojox/mobile/TextBox"
+                  data-dojo-attach-point="requestType">
+        </label>
+        <label>${nls.description}:
+          <textarea name="description"
+                    placeholder="${nls.description}"
+                    readonly="readonly"
+                    data-dojo-type="dojox/mobile/ExpandingTextArea"
+                    data-dojo-attach-point="description">
+          </textarea>
+        </label>
+        <label>${nls.status}:
+          <input  name="status"
+                  type="text"
+                  placeholder="${nls.status}"
+                  readonly="readonly"
+                  data-dojo-type="dojox/mobile/TextBox"
+                  data-dojo-attach-point="status">
+        </label>
+        <label>${nls.priority}:
+          <input  name="priority"
+                  type="text"
+                  placeholder="${nls.priority}"
+                  readonly="readonly"
+                  data-dojo-type="dojox/mobile/TextBox"
+                  data-dojo-attach-point="priority">
+        </label>
+        <label>${nls.requestedBy}:
+          <input  name="requestedBy"
+                  type="email"
+                  placeholder="${nls.requestedBy}"
+                  readonly="readonly"
+                  data-dojo-type="dojox/mobile/TextBox"
+                  data-dojo-attach-point="requestedBy">
+        </label>
+        <label>${nls.requestedFinishDate}:
+          <input  name="requestedFinishDate"
+                  type="date"
+                  placeholder="${nls.requestedFinishDate}"
+                  readonly="readonly"
+                  data-dojo-type="dojox/mobile/TextBox"
+                  data-dojo-attach-point="requestedFinishDate">
+        </label>
+        <label>${nls.assignedTo}:
+          <input  name="assignedTo"
+                  type="email"
+                  placeholder="${nls.assignedTo}"
+                  readonly="readonly"
+                  data-dojo-type="dojox/mobile/TextBox"
+                  data-dojo-attach-point="assignedTo">
+        </label>
+        <label>${nls.actualFinishDate}:
+          <input  name="actualFinishDate"
+                  type="date"
+                  readonly="readonly"
+                  placeholder="${nls.actualFinishDate}"
+                  data-dojo-type="dojox/mobile/TextBox"
+                  data-dojo-attach-point="actualFinishDate">
+        </label>
+        <label>${nls.estimatedUnits}:
+          <input  name="estimatedUnits"
+                  type="number"
+                  placeholder="${nls.estimatedUnits}"
+                  readonly="readonly"
+                  min="0"
+                  data-dojo-type="dojox/mobile/TextBox"
+                  data-dojo-attach-point="estimatedUnits">
+        </label>
+        <label>${nls.unitType}:
+          <input  name="unitType"
+                  type="text"
+                  placeholder="${nls.unitType}"
+                  readonly="readonly"
+                  data-dojo-type="dojox/mobile/TextBox"
+                  data-dojo-attach-point="unitType">
+        </label>
+        <label>${nls.createdDate}:
+          <input  name="createdDate"
+                  type="datetime"
+                  placeholder="${nls.createdDate}"
+                  readonly="readonly"
+                  data-dojo-type="dojox/mobile/TextBox"
+                  data-dojo-attach-point="createdDate">
+        </label>
+        <label>${nls.updatedDate}:
+          <input  name="updatedDate"
+                  type="datetime"
+                  placeholder="${nls.updatedDate}"
+                  readonly="readonly"
+                  data-dojo-type="dojox/mobile/TextBox"
+                  data-dojo-attach-point="updatedDate">
+        </label>
         </fieldset>
-
-
-        <fieldset>
-        <label for="updatedDate">${nls.updatedDate}</label>
-          <input name="updatedDate" data-dojo-type="dojox/mobile/TextBox"
-               data-dojo-props="readOnly: true, placeHolder: '${nls.updatedDate}'" data-dojo-attach-point="updatedDate">
-        </fieldset>
-
-      </div> <!-- end dojox/mobile/FormLayout -->
+      </form> <!-- end dojox/mobile/FormLayout -->
     </div> <!-- end dojox.mobile.RoundRect -->
-
 </div>

@@ -21,140 +21,151 @@
 
 
   <div data-dojo-type="dojox/mobile/RoundRect">
-    <form data-dojo-type="dojox/mobile/FormLayout"
-         data-dojo-attach-point="formLayout">
-
+    <form>
       <fieldset>
-        <label for="reqid">${nls.id}</label>
-        <input type="text" name="id" data-dojo-type="dojox/mobile/TextBox"
-             data-dojo-props="readOnly: true, placeHolder: '${nls.id}'" data-dojo-attach-point="reqid">
+        <label>${nls.id}:
+          <input  name="id"
+                  type="text"
+                  placeholder="${nls.id}"
+                  readonly="readonly"
+                  data-dojo-type="dojox/mobile/TextBox"
+                  data-dojo-attach-point="reqid">
+        </label>
+        <label>${nls.requestType}:
+          <input  name="requestType"
+                  type="text"
+                  placeholder="${nls.requestType}"
+                  data-dojo-type="dojox/mobile/TextBox"
+                  data-dojo-attach-point="requestType">
+        </label>
+        <label>${nls.description}:
+          <textarea name="description"
+                    placeholder="${nls.description}"
+                    data-dojo-type="dojox/mobile/ExpandingTextArea"
+                    data-dojo-attach-point="description">
+          </textarea>
+        </label>
+        <label>${nls.status}:
+          <input  name="status"
+                  type="text"
+                  placeholder="${nls.status}"
+                  data-dojo-type="dojox/mobile/TextBox"
+                  data-dojo-attach-point="status">
+        </label>
+        <label>${nls.priority}:
+          <input  name="priority"
+                  type="text"
+                  placeholder="${nls.priority}"
+                  data-dojo-type="dojox/mobile/TextBox"
+                  data-dojo-attach-point="priority">
+        </label>
+        <label>${nls.requestedBy}:
+          <input  name="requestedBy"
+                  type="email"
+                  placeholder="${nls.requestedBy}"
+                  data-dojo-type="dojox/mobile/TextBox"
+                  data-dojo-attach-point="requestedBy">
+        </label>
+        <label>${nls.requestedFinishDate}:
+          <input  name="requestedFinishDate"
+                  type="date"
+                  placeholder="${nls.requestedFinishDate}"
+                  data-dojo-type="dojox/mobile/TextBox"
+                  data-dojo-attach-point="requestedFinishDate">
+        </label>
+        <label>${nls.assignedTo}:
+          <input  name="assignedTo"
+                  type="email"
+                  placeholder="${nls.assignedTo}"
+                  data-dojo-type="dojox/mobile/TextBox"
+                  data-dojo-attach-point="assignedTo">
+        </label>
+        <label>${nls.actualFinishDate}:
+          <input  name="actualFinishDate"
+                  type="date"
+                  placeholder="${nls.actualFinishDate}"
+                  data-dojo-type="dojox/mobile/TextBox"
+                  data-dojo-attach-point="actualFinishDate">
+        </label>
+        <label>${nls.estimatedUnits}:
+          <input  name="estimatedUnits"
+                  type="number"
+                  min="0"
+                  placeholder="${nls.estimatedUnits}"
+                  data-dojo-type="dojox/mobile/TextBox"
+                  data-dojo-attach-point="estimatedUnits">
+        </label>
+        <label>${nls.unitType}:
+          <input  name="unitType"
+                  type="text"
+                  placeholder="${nls.unitType}"
+                  data-dojo-type="dojox/mobile/TextBox"
+                  data-dojo-attach-point="unitType">
+        </label>
+        <label>${nls.createdDate}:
+          <input  name="createdDate"
+                  type="datetime"
+                  placeholder="${nls.createdDate}"
+                  readonly="readonly"
+                  data-dojo-type="dojox/mobile/TextBox"
+                  data-dojo-attach-point="createdDate">
+        </label>
+        <label>${nls.updatedDate}:
+          <input  name="updatedDate"
+                  type="datetime"
+                  placeholder="${nls.updatedDate}"
+                  readonly="readonly"
+                  data-dojo-type="dojox/mobile/TextBox"
+                  data-dojo-attach-point="updatedDate">
+        </label>
       </fieldset>
-
-      <fieldset>
-        <label for="requestType">${nls.requestType}</label>
-        <input name="requestType" data-dojo-type="dojox/mobile/TextBox"
-               data-dojo-props="readOnly: true, placeHolder: '${nls.requestType}', usesOpener:true" data-dojo-attach-point="requestType">
-      </fieldset>
-
-      <fieldset>
-        <label for="description">${nls.description}</label>
-        <textarea name="description" data-dojo-type="dojox/mobile/ExpandingTextArea"
-             data-dojo-props="placeHolder: '${nls.description}'" data-dojo-attach-point="description"></textarea>
-      </fieldset>
-
-      <fieldset>
-      <label for="status">${nls.status}</label>
-      <input name="status" data-dojo-type="dojox/mobile/TextBox"
-           data-dojo-props="readOnly: true, placeHolder: '${nls.status}', usesOpener:true" data-dojo-attach-point="status">
-      </fieldset>
-
-      <fieldset>
-      <label for="priority">${nls.priority}</label>
-      <input name="priority" data-dojo-type="dojox/mobile/TextBox"
-           data-dojo-props="readOnly: true, placeHolder: '${nls.priority}', usesOpener:true" data-dojo-attach-point="priority">
-      </fieldset>
+    </form> <!-- end dojox/mobile/FormLayout -->
+  </div> <!-- end dojox.mobile.RoundRect -->
 
 
-      <fieldset>
-        <label for="requestedBy">${nls.requestedBy}</label>
-        <input name="requestedBy" data-dojo-type="dojox/mobile/TextBox"
-             data-dojo-props="placeHolder: '${nls.requestedBy}'" data-dojo-attach-point="requestedBy">
-      </fieldset>
+  <button data-dojo-type="dojox/mobile/Button"
+        data-dojo-attach-point="copyButton"
+        data-dojo-attach-event="onClick: _copyForm">
+  ${nls.duplicate}
+  </button>
 
 
-      <fieldset>
-        <label for="requestedFinishDate">${nls.requestedFinishDate}</label>
-        <input name="requestedFinishDate" data-dojo-type="dojox/mobile/TextBox"
-             data-dojo-props="placeHolder: '${nls.requestedFinishDate}', usesOpener:true" data-dojo-attach-point="requestedFinishDate">
-      </fieldset>
+   <button data-dojo-type="dojox/mobile/Button"
+        data-dojo-attach-event="onClick: _showConfirmDelete"
+        class="mblRedButton">${nls.remove}
+  </button>
 
 
-      <fieldset>
-        <label for="assignedTo">${nls.assignedTo}</label>
-        <input name="assignedTo" data-dojo-type="dojox/mobile/TextBox"
-             data-dojo-props="placeHolder: '${nls.assignedTo}'" data-dojo-attach-point="assignedTo">
-      </fieldset>
+  <div class="dateOpener" data-dojo-type="dojox/mobile/Opener"
+       data-dojo-attach-point="opener">
+    <h1 data-dojo-type="dojox/mobile/Heading">
+      <button data-dojo-type="dojox/mobile/ToolBarButton"
+              data-dojo-attach-event="onClick: _cancelOpener">
+        ${nls.cancel}
+      </button>
+      <button class="doneButton" data-dojo-type="dojox/mobile/ToolBarButton"
+              data-dojo-attach-event="onClick: _doneOpener">
+        ${nls.done}
+      </button>
 
+    </h1>
+    <div data-dojo-type="dojox/mobile/DatePicker"
+         data-dojo-attach-point="datePicker"></div>
+  </div><!-- end Opener -->
 
-      <fieldset>
-        <label for="actualFinishDate">${nls.actualFinishDate}</label>
-        <input name="actualFinishDate" data-dojo-type="dojox/mobile/TextBox"
-             data-dojo-props="placeHolder: '${nls.actualFinishDate}'" data-dojo-attach-point="actualFinishDate">
-      </fieldset>
-
-
-      <fieldset>
-        <label for="estimatedUnits">${nls.estimatedUnits}</label>
-        <input name="estimatedUnits" data-dojo-type="dojox/mobile/TextBox"
-             data-dojo-props="placeHolder: '${nls.estimatedUnits}'" data-dojo-attach-point="estimatedUnits">
-        <input name="unitType" data-dojo-type="dojox/mobile/TextBox"
-             data-dojo-props="readOnly: true, placeHolder: '${nls.unitType}', usesOpener:true" data-dojo-attach-point="unitType">
-      </fieldset>
-
-
-        <fieldset>
-          <label for="createdDate">${nls.createdDate}</label>
-          <input name="createdDate" data-dojo-type="dojox/mobile/TextBox"
-               data-dojo-props="readOnly: true, placeHolder: '${nls.createdDate}'" data-dojo-attach-point="createdDate">
-
-        </fieldset>
-
-
-        <fieldset>
-          <label for="updatedDate">${nls.updatedDate}</label>
-          <input name="updatedDate"
-                 data-dojo-type="dojox/mobile/TextBox"
-                data-dojo-props="readOnly: true, placeHolder: '${nls.updatedDate}'"
-                data-dojo-attach-point="updatedDate">
-        </fieldset>
-
-      </form> <!-- end dojox/mobile/FormLayout -->
-    </div> <!-- end dojox.mobile.RoundRect -->
-
-
+  <div data-dojo-type="dojox/mobile/SimpleDialog"
+       data-dojo-attach-point="confirmDelete">
+    <div class="mblSimpleDialogTitle">${nls.confirm}</div>
+    <div class="mblSimpleDialogText">${nls.confirm_delete}</div>
     <button data-dojo-type="dojox/mobile/Button"
-          data-dojo-attach-point="copyButton"
-          data-dojo-attach-event="onClick: _copyForm">
-    ${nls.duplicate}
+            class="mblSimpleDialogButton"
+            data-dojo-attach-event="onClick: _hideConfirmDelete">
+    ${nls.cancel}
     </button>
-
-
-     <button data-dojo-type="dojox/mobile/Button"
-          data-dojo-attach-event="onClick: _showConfirmDelete"
-          class="mblRedButton">${nls.remove}
+    <button data-dojo-type="dojox/mobile/Button"
+            class="mblSimpleDialogButton"
+            data-dojo-attach-event="onClick: _deleteRequest">
+    ${nls.ok}
     </button>
-
-
-    <div class="dateOpener" data-dojo-type="dojox/mobile/Opener"
-         data-dojo-attach-point="opener">
-      <h1 data-dojo-type="dojox/mobile/Heading">
-        <button data-dojo-type="dojox/mobile/ToolBarButton"
-                data-dojo-attach-event="onClick: _cancelOpener">
-          ${nls.cancel}
-        </button>
-        <button class="doneButton" data-dojo-type="dojox/mobile/ToolBarButton"
-                data-dojo-attach-event="onClick: _doneOpener">
-          ${nls.done}
-        </button>
-
-      </h1>
-      <div data-dojo-type="dojox/mobile/DatePicker"
-           data-dojo-attach-point="datePicker"></div>
-    </div><!-- end Opener -->
-
-    <div data-dojo-type="dojox/mobile/SimpleDialog"
-         data-dojo-attach-point="confirmDelete">
-      <div class="mblSimpleDialogTitle">${nls.confirm}</div>
-      <div class="mblSimpleDialogText">${nls.confirm_delete}</div>
-      <button data-dojo-type="dojox/mobile/Button"
-              class="mblSimpleDialogButton"
-              data-dojo-attach-event="onClick: _hideConfirmDelete">
-      ${nls.cancel}
-      </button>
-      <button data-dojo-type="dojox/mobile/Button"
-              class="mblSimpleDialogButton"
-              data-dojo-attach-event="onClick: _deleteRequest">
-      ${nls.ok}
-      </button>
-    </div>
+  </div>
 </div>
