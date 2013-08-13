@@ -2,12 +2,13 @@
 Series of example Single Page Apps utilizing the [dapp-boilerplate](https://github.com/csantanapr/dapp-boilerplate) and [dojox_application](https://github.com/dmachi/dojox_application)
 
 
-## Request App
-- [dapp-request](https://github.com/csantanapr/dapp-examples/tree/master/dapp-request)
+## Work Request App
+- [dapp-request](https://github.com/csantanapr/dapp-examples/tree/master/dapp-request) using static HTML templates and manually coded data binding in controller.
+- dapp-request-polymer [dapp-request](https://github.com/csantanapr/dapp-examples/tree/master/dapp-request) with reactive templates using [Polymer MDV](https://github.com/Polymer/mdv)
+- dapp-request-backbone [dapp-request](https://github.com/csantanapr/dapp-examples/tree/master/dapp-request) using BackboneJS Model for data 
 - dapp-helloworld
 - dapp-kitchensink
 - dapp-backbone
-- dapp-angularjs
 - dapp-jquery
 - dapp-jquerymobile
 - dapp-bootstrap3
