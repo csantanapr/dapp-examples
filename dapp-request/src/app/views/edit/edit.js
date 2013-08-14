@@ -203,11 +203,9 @@ define([
         _attachHandlers: function () {
             // summary:
             //      Attach listeners to form inputs on click
-            if (has('ios') || has('android')) {
-                on(this.requestedFinishDate, "click", viewWidget._showDateOpener.bind(this.requestedFinishDate));
-                on(this.actualFinishDate, "click", viewWidget._showDateOpener.bind(this.actualFinishDate));
-            }
 
+            on(this.requestedFinishDate, "click", viewWidget._showDateOpener.bind(this.requestedFinishDate));
+            on(this.actualFinishDate, "click", viewWidget._showDateOpener.bind(this.actualFinishDate));
         },
         _showDateOpener: function (event) {
             // summary:

@@ -49,6 +49,7 @@
           <input  name="status"
                   type="text"
                   placeholder="${nls.status}"
+
                   data-dojo-type="dojox/mobile/TextBox"
                   data-dojo-attach-point="status">
         </label>
@@ -56,6 +57,7 @@
           <input  name="priority"
                   type="text"
                   placeholder="${nls.priority}"
+
                   data-dojo-type="dojox/mobile/TextBox"
                   data-dojo-attach-point="priority">
         </label>
@@ -63,12 +65,15 @@
           <input  name="requestedBy"
                   type="email"
                   placeholder="${nls.requestedBy}"
+
                   data-dojo-type="dojox/mobile/TextBox"
                   data-dojo-attach-point="requestedBy">
         </label>
         <label>${nls.requestedFinishDate}:
           <input  name="requestedFinishDate"
-                  type="date"
+                  type="text"
+                  placeholder="${nls.requestedFinishDate}"
+
                   data-dojo-type="dojox/mobile/TextBox"
                   data-dojo-attach-point="requestedFinishDate">
         </label>
@@ -76,20 +81,24 @@
           <input  name="assignedTo"
                   type="email"
                   placeholder="${nls.assignedTo}"
+
                   data-dojo-type="dojox/mobile/TextBox"
                   data-dojo-attach-point="assignedTo">
         </label>
         <label>${nls.actualFinishDate}:
           <input  name="actualFinishDate"
-                  type="date"
+                  type="text"
+                  placeholder="${nls.actualFinishDate}"
+
                   data-dojo-type="dojox/mobile/TextBox"
                   data-dojo-attach-point="actualFinishDate">
         </label>
         <label>${nls.estimatedUnits}:
           <input  name="estimatedUnits"
                   type="number"
-                  min="0"
                   placeholder="${nls.estimatedUnits}"
+
+                  min="0"
                   data-dojo-type="dojox/mobile/TextBox"
                   data-dojo-attach-point="estimatedUnits">
         </label>
@@ -97,19 +106,22 @@
           <input  name="unitType"
                   type="text"
                   placeholder="${nls.unitType}"
+
                   data-dojo-type="dojox/mobile/TextBox"
                   data-dojo-attach-point="unitType">
         </label>
         <label>${nls.createdDate}:
           <input  name="createdDate"
-                  type="datetime"
+                  type="text"
+                  placeholder="${nls.createdDate}"
                   readonly="readonly"
                   data-dojo-type="dojox/mobile/TextBox"
                   data-dojo-attach-point="createdDate">
         </label>
         <label>${nls.updatedDate}:
           <input  name="updatedDate"
-                  type="datetime"
+                  type="text"
+                  placeholder="${nls.updatedDate}"
                   readonly="readonly"
                   data-dojo-type="dojox/mobile/TextBox"
                   data-dojo-attach-point="updatedDate">
