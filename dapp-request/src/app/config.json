@@ -93,7 +93,7 @@
             "observable": true,
             "params": {
                 "target": "app/resources/data/rest/requesttype.json",
-                "idProperty": "key"
+                "idProperty": "id"
             }
         },
         "requestStatusStore":{

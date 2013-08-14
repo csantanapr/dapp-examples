@@ -9,6 +9,7 @@ define([
     'dojo/on',
     'dojo/when',
     'dojo/dom-class',
+    'dojo/Deferred',
     'dojo/NodeList-manipulate',
     // Load dojo/NodeList-manipulate to get JQuery syntax: see below this file for function syntax
     'dojo/text!app/views/details/details.html',
@@ -19,16 +20,23 @@ define([
     'dojox/mobile/TextBox',
     'dojox/mobile/RoundRect',
     'dojox/mobile/ExpandingTextArea'
-], function ($, on, when, domClass) {
+], function ($, on, when, domClass, Deferred) {
     'use strict';
 
     var viewWidget, // set in init() to save in closure reference to this view controller instance
-        viewNode;   // set in init() to save in closure reference to this view dom node
+        viewNode,   // set in init() to save in closure reference to this view dom node
+        itemToRender, // model to save and edit
+        requestTypeMap, // to be use as cache for possible values for requestType
+        statusMap,  // to be use as cache for possible values for status
+        priorityMap, // to be use as cache for possible values for priority
+        unitTypeMap;   // to be use as cache for possible values for unitType
+
     return {
 
         init: function () {
             // summary:
             //      view life cycle init()
+
             console.log(this.name + " view:init()");
 
             //save the view node in clousure to use as scope for dom manipulatation and query
@@ -37,6 +45,12 @@ define([
 
             //add class to identify view for css rules
             domClass.add(viewNode, this.name);
+
+            // populate user visible values to data values
+            requestTypeMap = viewWidget._setupSelectMap(viewWidget.loadedStores.requestTypeStore, "description");
+            statusMap = viewWidget._setupSelectMap(viewWidget.loadedStores.requestStatusStore, "description");
+            priorityMap = viewWidget._setupSelectMap(viewWidget.loadedStores.requestPriorityStore, "description");
+            unitTypeMap = viewWidget._setupSelectMap(viewWidget.loadedStores.requestUnitTypeStore, "description");
         },
 
         beforeActivate: function (previousView, data) {
@@ -44,8 +58,8 @@ define([
             //      view life cycle beforeActivate()
             console.log(this.name + " view:beforeActivate(" + (previousView ? previousView.name : "") + ",data)");
 
-            // get the id of the displayed contact from the params
-            this._renderItem(this.params.id);
+            // get the id of the displayed request from the params
+            itemToRender = this._renderItem(this.params.id);
 
         },
 
@@ -54,19 +68,8 @@ define([
             //      view life cycle afterActivate()
             console.log(this.name + " view:afterActivate(" + (previousView ? previousView.name : "") + ",data)");
 
-            if (this.editButton) {
-                if (this.editButton.transitionOptions) {
-                    if (this.editButton.transitionOptions.params) {
-                        this.editButton.transitionOptions.params.id = this.params.id;
-                    } else {
-                        this.editButton.transitionOptions.params = { 'id': this.params.id};
-                    }
-                } else {
-                    this.editButton.transitionOptions = {
-                        params: { 'id': this.params.id}
-                    };
-                }
-            }
+            viewWidget._setupEditButton();
+
         },
 
         beforeDeactivate: function (nextView, data) {
@@ -91,6 +94,27 @@ define([
         /*****
          * Custom Code for View Controller
          *****/
+        _setupSelectMap: function (store, value) {
+            // summary
+            //  Creates the map to be use to translate user values to data values
+            var deferred,
+                map;
+
+            deferred = new Deferred();
+
+            when(store.query(), function (results) {
+                map = {};
+                results.forEach(function (item) {
+
+                    map[item[store.idProperty]] = item[value];
+                });
+                deferred.resolve(map);
+                console.log("map resolved");
+            });
+
+            return deferred.promise;
+        },
+
         _renderItem: function (id) {
             // summary:
             //      Fetch data and render ui
@@ -102,26 +126,50 @@ define([
 
 
             promise = viewWidget.loadedStores.requestsListStore.get(id);
-            return when(promise, function (request) {
+            when(promise, function (request) {
                 viewWidget.reqid.set("value", request ? request.id : null);
-                viewWidget.requestType.set("value", request ? request.requestType : null);
-                //viewWidget._initFieldValue(request, "requestType", viewWidget.loadedStores.requestTypeStore);
-                viewWidget.description.set("value", request ? request.description : null);
-                viewWidget.status.set("value", request ? request.status : null);
-                //viewWidget._initFieldValue(request, "status", viewWidget.loadedStores.requestStatusStore);
-                viewWidget.priority.set("value", request ? request.priority : null);
-                //viewWidget._initFieldValue(request, "priority", viewWidget.loadedStores.requestPriorityStore);
 
+                //the display value for user needs to be look in map from store
+                requestTypeMap.then(function (map) {
+                    viewWidget.requestType.set("value", request ? map[request.requestType] : null);
+                });
+                statusMap.then(function (map) {
+                    viewWidget.status.set("value", request ? map[request.status] : null);
+                });
+                priorityMap.then(function (map) {
+                    viewWidget.priority.set("value", request ? map[request.priority] : null);
+                });
+                unitTypeMap.then(function (map) {
+                    viewWidget.unitType.set("value", request ? map[request.unitType] : null);
+                });
+
+                // values display to user as found in data
+                viewWidget.description.set("value", request ? request.description : null);
                 viewWidget.requestedBy.set("value", request ? request.requestedBy : null);
                 viewWidget.requestedFinishDate.set("value", request ? request.requestedFinishDate : null);
                 viewWidget.assignedTo.set("value", request ? request.assignedTo : null);
                 viewWidget.actualFinishDate.set("value", request ? request.actualFinishDate : null);
                 viewWidget.estimatedUnits.set("value", request ? request.estimatedUnits : null);
-                viewWidget.unitType.set("value", request ? request.unitType : null);
-                //viewWidget._initFieldValue(request, "unitType", viewWidget.loadedStores.requestUnitTypeStore);
                 viewWidget.createdDate.set("value", request ? request.createdDate : null);
                 viewWidget.updatedDate.set("value", request ? request.updatedDate : null);
             });
+            return promise;
+        },
+
+        _setupEditButton: function () {
+            if (viewWidget.editButton) {
+                if (viewWidget.editButton.transitionOptions) {
+                    if (viewWidget.editButton.transitionOptions.params) {
+                        viewWidget.editButton.transitionOptions.params.id = viewWidget.params.id;
+                    } else {
+                        viewWidget.editButton.transitionOptions.params = { 'id': viewWidget.params.id};
+                    }
+                } else {
+                    viewWidget.editButton.transitionOptions = {
+                        params: { 'id': viewWidget.params.id}
+                    };
+                }
+            }
         }
     };
 

@@ -10,7 +10,7 @@ define([
     'dojo/when',
     'dojo/dom-class',
     'dojo/_base/window',
-    'dojo/sniff',
+    'dojo/Deferred',
     'dojo/NodeList-manipulate',
     // Load dojo/NodeList-manipulate to get JQuery syntax: see below this file for function syntax
     'dojo/text!app/views/edit/edit.html',
@@ -26,17 +26,23 @@ define([
     'dojox/mobile/SpinWheelDatePicker',
     'dojox/mobile/ValuePickerDatePicker',
     'dojox/mobile/SimpleDialog'
-], function ($, on, when, domClass, win, has) {
+], function ($, on, when, domClass, win, Deferred) {
     'use strict';
 
     var viewWidget, // set in init() to save in closure reference to this view controller instance
         viewNode,   // set in init() to save in closure reference to this view dom node
-        itemToEdit; // model to save and edit
+        itemToEdit, // model to save and edit
+        requestTypeMap, // to be use as cache for possible values for requestType
+        statusMap,  // to be use as cache for possible values for status
+        priorityMap, // to be use as cache for possible values for priority
+        unitTypeMap;   // to be use as cache for possible values for unitType
+
     return {
 
         init: function () {
             // summary:
             //      view life cycle init()
+
             console.log(this.name + " view:init()");
 
             //save the view node in clousure to use as scope for dom manipulatation and query
@@ -45,8 +51,14 @@ define([
 
             //add class to identify view for css rules
             domClass.add(viewNode, this.name);
-            this._attachHandlers();
 
+            // populate user visible values to data values
+            requestTypeMap = viewWidget._setupSelectMap(viewWidget.loadedStores.requestTypeStore, "description");
+            statusMap = viewWidget._setupSelectMap(viewWidget.loadedStores.requestStatusStore, "description");
+            priorityMap = viewWidget._setupSelectMap(viewWidget.loadedStores.requestPriorityStore, "description");
+            unitTypeMap = viewWidget._setupSelectMap(viewWidget.loadedStores.requestUnitTypeStore, "description");
+            // attach event listener on the view
+            this._attachHandlers();
         },
 
         beforeActivate: function (previousView, data) {
@@ -54,7 +66,7 @@ define([
             //      view life cycle beforeActivate()
             console.log(this.name + " view:beforeActivate(" + (previousView ? previousView.name : "") + ",data)");
 
-            // get the id of the displayed contact from the params
+            // get the id of the displayed request from the params
             itemToEdit = this._renderItem(this.params.id);
 
         },
@@ -85,9 +97,73 @@ define([
             //      view life cycle destroy()
             console.log(this.name + " view:destory()");
         },
+
         /*****
          * Custom Code for View Controller
          *****/
+        _setupSelectMap: function (store, value) {
+            // summary
+            //  Creates the map to be use to translate user values to data values
+            var deferred,
+                map;
+
+            deferred = new Deferred();
+
+            when(store.query(), function (results) {
+                map = {};
+                results.forEach(function (item) {
+
+                    map[item[store.idProperty]] = item[value];
+                });
+                deferred.resolve(map);
+                console.log("map resolved");
+            });
+
+            return deferred.promise;
+        },
+
+        _renderItem: function (id) {
+            // summary:
+            //      Fetch data and render ui
+            var promise = null;
+            if (!id) {
+                // no item passed in
+                return promise;
+            }
+
+
+            promise = viewWidget.loadedStores.requestsListStore.get(id);
+            when(promise, function (request) {
+                viewWidget.reqid.set("value", request ? request.id : null);
+
+                //the display value for user needs to be look in map from store
+                requestTypeMap.then(function (map) {
+                    viewWidget.requestType.set("value", request ? map[request.requestType] : null);
+                });
+                statusMap.then(function (map) {
+                    viewWidget.status.set("value", request ? map[request.status] : null);
+                });
+                priorityMap.then(function (map) {
+                    viewWidget.priority.set("value", request ? map[request.priority] : null);
+                });
+                unitTypeMap.then(function (map) {
+                    viewWidget.unitType.set("value", request ? map[request.unitType] : null);
+                });
+
+
+                // values display to user as found in data
+                viewWidget.description.set("value", request ? request.description : null);
+                viewWidget.requestedBy.set("value", request ? request.requestedBy : null);
+                viewWidget.requestedFinishDate.set("value", request ? request.requestedFinishDate : null);
+                viewWidget.assignedTo.set("value", request ? request.assignedTo : null);
+                viewWidget.actualFinishDate.set("value", request ? request.actualFinishDate : null);
+                viewWidget.estimatedUnits.set("value", request ? request.estimatedUnits : null);
+                viewWidget.createdDate.set("value", request ? request.createdDate : null);
+                viewWidget.updatedDate.set("value", request ? request.updatedDate : null);
+            });
+            return promise;
+        },
+
         _copyForm: function () {
             // summary:
             //      Copies the form data
@@ -105,39 +181,7 @@ define([
                 });
             });
         },
-        _renderItem: function (id) {
-            // summary:
-            //      Fetch data and render ui
-            var promise = null;
-            if (!id) {
-                // no item passed in
-                return promise;
-            }
 
-
-            promise = viewWidget.loadedStores.requestsListStore.get(id);
-            when(promise, function (request) {
-                viewWidget.reqid.set("value", request ? request.id : null);
-                viewWidget.requestType.set("value", request ? request.requestType : null);
-                //viewWidget._initFieldValue(request, "requestType", viewWidget.loadedStores.requestTypeStore);
-                viewWidget.description.set("value", request ? request.description : null);
-                viewWidget.status.set("value", request ? request.status : null);
-                //viewWidget._initFieldValue(request, "status", viewWidget.loadedStores.requestStatusStore);
-                viewWidget.priority.set("value", request ? request.priority : null);
-                //viewWidget._initFieldValue(request, "priority", viewWidget.loadedStores.requestPriorityStore);
-
-                viewWidget.requestedBy.set("value", request ? request.requestedBy : null);
-                viewWidget.requestedFinishDate.set("value", request ? request.requestedFinishDate : null);
-                viewWidget.assignedTo.set("value", request ? request.assignedTo : null);
-                viewWidget.actualFinishDate.set("value", request ? request.actualFinishDate : null);
-                viewWidget.estimatedUnits.set("value", request ? request.estimatedUnits : null);
-                viewWidget.unitType.set("value", request ? request.unitType : null);
-                //viewWidget._initFieldValue(request, "unitType", viewWidget.loadedStores.requestUnitTypeStore);
-                viewWidget.createdDate.set("value", request ? request.createdDate : null);
-                viewWidget.updatedDate.set("value", request ? request.updatedDate : null);
-            });
-            return promise;
-        },
         _saveRequest: function (request) {
             // summary:
             //      Gets value from the form on the html and updates the input request
@@ -156,6 +200,7 @@ define([
 
             return request;
         },
+
         _deleteRequest: function (event) {
             // summary:
             //      Deletes the item being edited and returns back to the list
@@ -175,6 +220,7 @@ define([
                 viewWidget.app.transitionToView(viewWidget.domNode, { target: 'requestList', reverse: 'true'});
             });
         },
+
         _saveForm: function () {
             // summary:
             //      Updates the itemtoEdit with values from form and sends put to store with new values
@@ -191,6 +237,7 @@ define([
                 }
             });
         },
+
         _setRequestValue: function (widget, request, reqfield) {
             // summary:
             //  Only updates the request from widget if value is defined
@@ -200,6 +247,7 @@ define([
                 request[reqfield] = value;
             }
         },
+
         _attachHandlers: function () {
             // summary:
             //      Attach listeners to form inputs on click
@@ -207,6 +255,7 @@ define([
             on(this.requestedFinishDate, "click", viewWidget._showDateOpener.bind(this.requestedFinishDate));
             on(this.actualFinishDate, "click", viewWidget._showDateOpener.bind(this.actualFinishDate));
         },
+
         _showDateOpener: function (event) {
             // summary:
             //      Show DateOpener
@@ -222,6 +271,7 @@ define([
             viewWidget.opener.show(event.target);
             viewWidget.opener.formWidget = DateTextBox;
         },
+
         _doneOpener : function (event) {
             // summary:
             //  Done selecting new date
@@ -235,6 +285,7 @@ define([
             formWidget.set("value", datePicker.get("value"));
             opener.hide();
         },
+
         _cancelOpener : function (event) {
             // summary:
             //      Cancel date editing
@@ -242,12 +293,14 @@ define([
             console.log("cancel opener");
             viewWidget.opener.hide();
         },
+
         _hideConfirmDelete : function (event) {
             // summary:
             //      Hides the delere confirm dialog
             console.log("cancel delete confirm");
             viewWidget.confirmDelete.hide();
         },
+
         _showConfirmDelete: function (event) {
             // summary:
             //      Displays the confirm dialog to user
