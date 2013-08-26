@@ -9,6 +9,27 @@
     ${nls.add}
     </button>
     -->
+	<button data-dojo-type="dojox/mobile/ToolBarButton"
+		style="float:right"
+		data-dojo-attach-point="search"
+		data-dojo-props="target: 'requestListSearch',
+              transitionOptions : {
+                      'transition': 'fade'
+                    }"
+		>
+		${nls.search}
+	</button>
+	<button data-dojo-type="dojox/mobile/ToolBarButton"
+		style="float:right"
+		data-dojo-attach-point="sort"
+		data-dojo-props="target: 'requestListSort',
+              transitionOptions : {
+                      'transition': 'fade'
+                    }"
+		>
+		${nls.sort}
+	</button>
+    
   </h1>
 
   <!-- hide for now until advance search is implemented

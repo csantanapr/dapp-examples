@@ -11,7 +11,11 @@ define([
     'dojo/NodeList-manipulate',
     // Load dojo/NodeList-manipulate to get JQuery syntax: see below this file for function syntax
     'dojo/text!app/views/search/search.html',
-    'dojox/mobile/Heading'
+    'dojox/mobile/Heading',
+    'dojox/mobile/FormLayout',
+    'dojox/mobile/ComboBox',
+    'dojox/mobile/RoundRect',
+    'dojox/mobile/TextBox'
 ], function ($, on) {
     'use strict';
 
@@ -78,6 +82,44 @@ define([
             //      Example of a custom view controller callback for event listener
             console.log(this.name + "doSomething(" + event + ");");
 
+        },
+        _search: function(event){
+        	var searchQuery = {
+        			'id': view.reqid.get("value"),
+        			'status': view.status.get("value"),
+        			'requestedBy': view.requestedBy.get("value"),
+        			'requestedFinishFromDate': view.requestedFinishFromDate.get("value"),
+        			'requestedFinishToDate': view.requestedFinishToDate.get("value"),
+        			'assignedTo': view.assignedTo.get("value")
+        	};
+        	
+        	var searchFunction = function(request){
+        		console.log("search: ");
+        		console.log(request);
+            	if(searchQuery.id && request.id != parseInt(searchQuery.id)){
+            		return false;
+            	}
+            	if(searchQuery.status && request.status != searchQuery.status){
+            		return false;
+            	}
+            	if(searchQuery.requestedBy && request.requestedBy != searchQuery.requestedBy){
+            		return false;
+            	}
+            	if(searchQuery.assignedTo && request.assignedTo != searchQuery.assignedTo){
+            		return false;
+            	}
+            	if(searchQuery.requestedFinishFromDate && searchQuery.requestedFinishToDate){
+            		var fromDate = new Date(searchQuery.requestedFinishFromDate);
+            		var toDate = new Date(searchQuery.requestedFinishToDate);
+            		var requestedFinishDate = new Date(request.requestedFinishDate);
+            		if(!(fromDate < requestedFinishDate && requestedFinishDate < toDate)){
+            			return false;
+            		}
+            	}
+            	return true;
+        	};
+        	
+        	view.app.transitionToView(view.domNode, { target: 'requestList', reverse: 'true', 'data': {'searchQuery': searchQuery, 'searchFunction': searchFunction}});
         }
     };
 

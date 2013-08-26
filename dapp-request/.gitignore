@@ -1,1 +1,5 @@
 dist/
+src/dijit/
+src/dojo/
+src/dojox/
+src/util/
