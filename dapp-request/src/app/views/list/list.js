@@ -81,6 +81,15 @@ define([
             // summary:
             //      view life cycle beforeActivate()
             console.log(this.name + " view:beforeActivate(" + (previousView ? previousView.name : "") + ",data)");
+            if(data && (data.searchQuery || data.sort)){
+            	console.log("test query");
+            	var searchQuery = data.searchQuery;
+            	var sort = null;
+            	if(data.sort){
+            		sort = {'sort': data.sort};
+            	}
+            	this.requests.setQuery(data.searchFunction, sort);
+            };
 
         },
 

@@ -1,5 +1,56 @@
 <div class="view mblView">
   <h1 data-dojo-type="dojox/mobile/Heading" data-dojo-props="back: '${nls.back}'">
-    search here..
+    ${nls.search}
+    <button data-dojo-type="dojox/mobile/ToolBarButton" 
+		style="float:right"
+		data-dojo-attach-point="submit"
+        data-dojo-attach-event="onClick: _search">
+    	${nls.submit}
+    </button>
   </h1>
+    <div data-dojo-type="dojox/mobile/RoundRect">
+    <form>
+      <fieldset>
+        <label>${nls.id}:
+          <input  name="id"
+                  type="text"
+                  data-dojo-type="dojox/mobile/TextBox"
+                  data-dojo-attach-point="reqid">
+        </label>
+        <label>${nls.status}:
+          <input  name="status" labelAttr="description" searchAttr="key"
+                  type="text"
+                  data-dojo-type="dojox/mobile/ComboBox"
+                  data-dojo-props="store: this.loadedStores.requestStatusStore"
+                  data-dojo-attach-point="status">
+        </label>
+        <label>${nls.requestedBy}:
+          <input  name="requestedBy"
+                  type="email"
+                  data-dojo-type="dojox/mobile/TextBox"
+                  data-dojo-attach-point="requestedBy">
+        </label>
+        <label>${nls.requestedFinishDate}:
+        </label>
+        <label>
+          <input  name="requestedFinishFromDate"
+                  type="text"
+                  data-dojo-type="dojox/mobile/TextBox"
+                  data-dojo-attach-point="requestedFinishFromDate">
+          ${nls.to} 
+          <input  name="requestedFinishToDate"
+                  type="text"
+                  data-dojo-type="dojox/mobile/TextBox"
+                  data-dojo-attach-point="requestedFinishToDate">
+        </label>
+        <label>${nls.assignedTo}:
+          <input  name="assignedTo"
+                  type="email"
+                  data-dojo-type="dojox/mobile/TextBox"
+                  data-dojo-attach-point="assignedTo">
+        </label>
+      </fieldset>
+    </form> <!-- end dojox/mobile/FormLayout -->
+  </div> <!-- end dojox.mobile.RoundRect -->
+  
 </div>

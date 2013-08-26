@@ -74,7 +74,7 @@
                             "id": 102,
                             "requestType": "consulting",
                             "description": "A Description text for id=102",
-                            "status": "close",
+                            "status": "closed",
                             "priority": "2-medium",
                             "requestedBy": "sdoe@gmail.com",
                             "requestedFinishDate": "2013-03-20",
@@ -162,7 +162,13 @@
         },
         "requestListSearch":{
             "template": "app/views/search/search.html",
-            "controller" : "app/views/search/search.js"
+            "controller" : "app/views/search/search.js",
+            "nls": "app/views/search/nls/search-strings"
+        },
+        "requestListSort":{
+            "template": "app/views/sort/sort.html",
+            "controller" : "app/views/sort/sort.js",
+            "nls": "app/views/sort/nls/sort-strings"
         }
     },
     "has": {
