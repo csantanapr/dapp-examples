@@ -4,15 +4,18 @@ Series of example Single Page Apps utilizing the [dapp-boilerplate](https://gith
 
 ## Work Request App
 - [dapp-request](https://github.com/csantanapr/dapp-examples/tree/master/dapp-request) using static HTML templates and manually coded data binding in controller.
+
+## Kitchen sink
+- [dapp-kitchensink](https://github.com/csantanapr/dapp-examples/tree/master/dapp-kitchensink) using templates, views, nodejs, mongodb
+
+## Other Apps
 - dapp-request-polymer [dapp-request](https://github.com/csantanapr/dapp-examples/tree/master/dapp-request) with reactive templates using [Polymer MDV](https://github.com/Polymer/mdv)
-- dapp-request-backbone [dapp-request](https://github.com/csantanapr/dapp-examples/tree/master/dapp-request) using BackboneJS Model for data 
+- dapp-request-backbone [dapp-request](https://github.com/csantanapr/dapp-examples/tree/master/dapp-request) using BackboneJS Model for data
 - dapp-helloworld
-- dapp-kitchensink
 - dapp-backbone
 - dapp-jquery
 - dapp-jquerymobile
 - dapp-bootstrap3
-- dapp-mongodb
 - dapp-handlebars
 
 
