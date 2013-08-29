@@ -1,16 +1,14 @@
 {
-  "name": "dapp-examples",
+  "name": "dapp-request",
   "version": "0.1.0",
   "description": "Examples Single Page Apps using Dojo App Framework",
   "private": true,
-  "main": "index.js",
+  "main": "src/app/main.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "open http://localhost:4000 && node server",
-    "build": "bash build.sh",
-    "mongodb": "mongodb",
-    "service": "node server",
-    "cordova": "bash build.sh && bash cordova.sh"
+    "start": "grunt server",
+    "build": "grunt build",
+    "cordova": "grunt cordova"
   },
   "repository": {
     "type": "git",
@@ -40,6 +38,16 @@
   "devDependencies": {
     "uglify-js": "~1.x",
     "http-server": "~0.5.5",
-    "cordova": "~3.0.4"
+    "cordova": "~3.0.6"
+  },
+  "volo": {
+    "baseUrl": "components",
+    "dependencies": {
+      "dojo": "github:dojo/dojo/1.9.1",
+      "dojox": "github:dojo/dojox/1.9.1",
+      "dijit": "github:dojo/dijit/1.9.1",
+      "util": "github:dojo/util/1.9.1",
+      "dojox_application": "github:dmachi/dojox_application/master"
+    }
   }
 }
