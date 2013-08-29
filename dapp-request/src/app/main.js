@@ -1,26 +1,30 @@
 /*global define, console*/
-/*jslint todo: true */
-/*jshint todo: true */
 
 /**
  * Bootstrap dApp Application
  **/
+
 define([
-    'dojo/_base/window',
     'dojo/sniff',
     'dojox/app/main',
     'dojox/json/ref',
     'dojo/text!app/config.json',
+    'dojo/_base/config',
     'dojo/domReady!'
-], function (win, has, dApp, json, config) {
+], function (has, dApp, json, config, dojoConfig) {
     'use strict';
+    var appConfig = json.fromJson(config);
+
+    if (dojoConfig.isDebug) {
+        //really a hack, need tofix this and make more flexible
+        appConfig.loaderConfig.paths.app = "../src/app";
+    }
 
     // populate has flag on whether html5 history is correctly supported or not
     has.add("html5history", !has("ie") || has("ie") > 9);
 
-    //TODO: Just for debugging this enables built in logging
-    //has.add("app-log-api", true);
-
     //Start the App
-    dApp(json.fromJson(config));
+    dApp(appConfig);
+
+
 });

@@ -2,7 +2,7 @@
     //Mandatory
     "id": "App",
     //Optional
-    "name": "requuest-App",
+    "name": "request-App",
     //Optional
     "description": "Example dApp, Work Order Requests App",
     //Optional, but very useful for views properties
