@@ -120,15 +120,15 @@ A brief tour
 * Add View Templates, View Controllers, and Object Stores (i.e. Models) starting by modifying the `src/app/config.json`
 * The provided directory structure for css, html, and js for your App is defined in config.json, you can change to a different convention
 
-Useful resources
-----------------
+### Useful resources
+
 
 * [Dojox/App Tutorial](http://dojotoolkit.org/documentation/tutorials/1.9/dojox_app)
 * [Dojox/App Reference](http://dojotoolkit.org/reference-guide/dojox/app.html#dojox-app)
 
 
-Dual License
---
+### Dual License
+
 Licensed under the [same
 terms](https://github.com/dojo/dojo/blob/master/LICENSE) as the Dojo
 Toolkit.
