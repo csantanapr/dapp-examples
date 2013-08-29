@@ -1,125 +1,103 @@
 /*jslint nomen: true */
-/*jshint nomen: true */
-/*global _, define, console*/
+/*global define, console*/
 define([
-    'dojo/query!css3',
-    //query is the core of dojo dom query
-    // the return is NodeList that has full set of functions
-    // most of the function have same syntax as jquery see bellow this file for summary
-    'dojo/on',
-    'dojox/mobile/ListItem',
-    'dojo/NodeList-manipulate',
-    // Load dojo/NodeList-manipulate to get JQuery syntax: see below this file for function syntax
     'dojo/text!app/views/search/search.html',
+    'dojox/mobile/ListItem',
     'dojox/mobile/Heading',
     'dojox/mobile/FormLayout',
     'dojox/mobile/ComboBox',
     'dojox/mobile/RoundRect',
     'dojox/mobile/TextBox'
-], function ($, on) {
+], function () {
     'use strict';
 
-    var view, // set in init(params) to save in closure reference to this view controller instance
-        viewNode; // set in init(params) to save in closure reference to this view dom node
+    var viewWidget; // set in init(params) to save in closure reference to this view controller instance
+
 
 
 
     return {
 
-        init: function (params) {
+        init: function () {
             // summary:
             //      view life cycle init()
             console.log(this.name + " view:init()");
 
             //save the view node in clousure to use as scope for dom manipulatation and query
-            viewNode = this.domNode;
-            view = this;
+            viewWidget = this;
 
         },
-
-        beforeActivate: function (view, data) {
+        beforeActivate: function (previousView, data) {
             // summary:
             //      view life cycle beforeActivate()
-            console.log(this.name + " view:beforeActivate(view,data)");
+            console.log(this.name + " view:beforeActivate(" + (previousView ? previousView.name : "") + ",data)" + data);
         },
 
-        afterActivate: function (view, data) {
+        afterActivate: function (previousView, data) {
             // summary:
             //      view life cycle afterActivate()
-            console.log(this.name + " view:afterActivate(view,data)");
+            console.log(this.name + " view:afterActivate(" + (previousView ? previousView.name : "") + ",data)" + data);
         },
 
-        beforeDeactivate: function (view, data) {
+        beforeDeactivate: function (nextView, data) {
             // summary:
             //      view life cycle beforeDeactivate()
-            console.log(this.name + " view:beforeDeactivate(view,data)");
+            console.log(this.name + " view:beforeDeactivate(" + (nextView ? nextView.name : "") + ",data)" + data);
+
         },
 
-        afterDeactivate: function (view, data) {
+        afterDeactivate: function (nextView, data) {
             // summary:
             //      view life cycle afterDeactivate()
-            console.log(this.name + " view:afterDeactivate(view,data)");
-        },
+            console.log(this.name + " view:afterDeactivate(" + (nextView ? nextView.name : "") + ",data)" + data);
 
-        destroy: function (params) {
-            // summary:
-            //      view life cycle destroy()
-            console.log(this.name + " view:destory()");
         },
         /*****
          * Custom Code for View Controller
          *****/
+        _search: function () {
+            var searchQuery,
+                searchFunction,
+                fromDate,
+                toDate,
+                requestedFinishDate;
 
-        _formatterTmpl : function (value, key) {
-            // summary:
-            //      Use to format template properties using the convention ${foo:_formatterTmpl}
-            console.log(this.name + "_formatterTmpl(" + value + "," + "key" + ");");
+            searchQuery = {
+                'id': viewWidget.reqid.get("value"),
+                'status': viewWidget.status.get("value"),
+                'requestedBy': viewWidget.requestedBy.get("value"),
+                'requestedFinishFromDate': viewWidget.requestedFinishFromDate.get("value"),
+                'requestedFinishToDate': viewWidget.requestedFinishToDate.get("value"),
+                'assignedTo': viewWidget.assignedTo.get("value")
+            };
+            searchFunction = function (request) {
 
-        },
-        doSomething: function (event) {
-            console.log('did something');
-            // summary:
-            //      Example of a custom view controller callback for event listener
-            console.log(this.name + "doSomething(" + event + ");");
+                console.log("search: ");
+                console.log(request);
+                if (searchQuery.id && request.id !== searchQuery.id) {
+                    return false;
+                }
+                if (searchQuery.status && request.status !== searchQuery.status) {
+                    return false;
+                }
+                if (searchQuery.requestedBy && request.requestedBy !== searchQuery.requestedBy) {
+                    return false;
+                }
+                if (searchQuery.assignedTo && request.assignedTo !== searchQuery.assignedTo) {
+                    return false;
+                }
+                if (searchQuery.requestedFinishFromDate && searchQuery.requestedFinishToDate) {
+                    fromDate = new Date(searchQuery.requestedFinishFromDate);
+                    toDate = new Date(searchQuery.requestedFinishToDate);
+                    requestedFinishDate = new Date(request.requestedFinishDate);
+                    if (!(fromDate < requestedFinishDate && requestedFinishDate < toDate)) {
+                        return false;
+                    }
+                }
+                return true;
+            };
 
-        },
-        _search: function(event){
-        	var searchQuery = {
-        			'id': view.reqid.get("value"),
-        			'status': view.status.get("value"),
-        			'requestedBy': view.requestedBy.get("value"),
-        			'requestedFinishFromDate': view.requestedFinishFromDate.get("value"),
-        			'requestedFinishToDate': view.requestedFinishToDate.get("value"),
-        			'assignedTo': view.assignedTo.get("value")
-        	};
-        	
-        	var searchFunction = function(request){
-        		console.log("search: ");
-        		console.log(request);
-            	if(searchQuery.id && request.id != parseInt(searchQuery.id)){
-            		return false;
-            	}
-            	if(searchQuery.status && request.status != searchQuery.status){
-            		return false;
-            	}
-            	if(searchQuery.requestedBy && request.requestedBy != searchQuery.requestedBy){
-            		return false;
-            	}
-            	if(searchQuery.assignedTo && request.assignedTo != searchQuery.assignedTo){
-            		return false;
-            	}
-            	if(searchQuery.requestedFinishFromDate && searchQuery.requestedFinishToDate){
-            		var fromDate = new Date(searchQuery.requestedFinishFromDate);
-            		var toDate = new Date(searchQuery.requestedFinishToDate);
-            		var requestedFinishDate = new Date(request.requestedFinishDate);
-            		if(!(fromDate < requestedFinishDate && requestedFinishDate < toDate)){
-            			return false;
-            		}
-            	}
-            	return true;
-        	};
-        	
-        	view.app.transitionToView(view.domNode, { target: 'requestList', reverse: 'true', 'data': {'searchQuery': searchQuery, 'searchFunction': searchFunction}});
+            viewWidget.app.transitionToView(viewWidget.domNode, { target: 'requestList', reverse: 'true', 'data': {'searchQuery': searchQuery, 'searchFunction': searchFunction}});
         }
     };
 

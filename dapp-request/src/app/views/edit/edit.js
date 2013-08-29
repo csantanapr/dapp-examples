@@ -1,11 +1,6 @@
 /*jslint nomen: true */
-/*jshint nomen: true */
 /*global _, define, console*/
 define([
-    'dojo/query!css3',
-    //query is the core of dojo dom query
-    // the return is NodeList that has full set of functions
-    // most of the function have same syntax as jquery see bellow this file for summary
     'dojo/on',
     'dojo/when',
     'dojo/dom-class',
@@ -26,7 +21,7 @@ define([
     'dojox/mobile/SpinWheelDatePicker',
     'dojox/mobile/ValuePickerDatePicker',
     'dojox/mobile/SimpleDialog'
-], function ($, on, when, domClass, win, Deferred) {
+], function (on, when, domClass, win, Deferred) {
     'use strict';
 
     var viewWidget, // set in init() to save in closure reference to this view controller instance
@@ -64,7 +59,7 @@ define([
         beforeActivate: function (previousView, data) {
             // summary:
             //      view life cycle beforeActivate()
-            console.log(this.name + " view:beforeActivate(" + (previousView ? previousView.name : "") + ",data)");
+            console.log(this.name + " view:beforeActivate(" + (previousView ? previousView.name : "") + ",data)" + data);
 
             // get the id of the displayed request from the params
             itemToEdit = this._renderItem(this.params.id);
@@ -74,21 +69,21 @@ define([
         afterActivate: function (previousView, data) {
             // summary:
             //      view life cycle afterActivate()
-            console.log(this.name + " view:afterActivate(" + (previousView ? previousView.name : "") + ",data)");
+            console.log(this.name + " view:afterActivate(" + (previousView ? previousView.name : "") + ",data)" + data);
 
         },
 
         beforeDeactivate: function (nextView, data) {
             // summary:
             //      view life cycle beforeDeactivate()
-            console.log(this.name + " view:beforeDeactivate(" + (nextView ? nextView.name : "") + ",data)");
+            console.log(this.name + " view:beforeDeactivate(" + (nextView ? nextView.name : "") + ",data)" + data);
 
         },
 
         afterDeactivate: function (nextView, data) {
             // summary:
             //      view life cycle afterDeactivate()
-            console.log(this.name + " view:afterDeactivate(" + (nextView ? nextView.name : "") + ",data)");
+            console.log(this.name + " view:afterDeactivate(" + (nextView ? nextView.name : "") + ",data)" + data);
 
         },
 
@@ -201,7 +196,7 @@ define([
             return request;
         },
 
-        _deleteRequest: function (event) {
+        _deleteRequest: function () {
             // summary:
             //      Deletes the item being edited and returns back to the list
 
@@ -224,8 +219,7 @@ define([
         _saveForm: function () {
             // summary:
             //      Updates the itemtoEdit with values from form and sends put to store with new values
-            var id = viewWidget.reqid.get("value"),
-                itemStore = viewWidget.loadedStores.requestsListStore;
+            var itemStore = viewWidget.loadedStores.requestsListStore;
 
             when(itemToEdit, function (request) {
                 if (request) {
@@ -272,7 +266,7 @@ define([
             viewWidget.opener.formWidget = DateTextBox;
         },
 
-        _doneOpener : function (event) {
+        _doneOpener : function () {
             // summary:
             //  Done selecting new date
 
@@ -286,7 +280,7 @@ define([
             opener.hide();
         },
 
-        _cancelOpener : function (event) {
+        _cancelOpener : function () {
             // summary:
             //      Cancel date editing
 
@@ -294,14 +288,14 @@ define([
             viewWidget.opener.hide();
         },
 
-        _hideConfirmDelete : function (event) {
+        _hideConfirmDelete : function () {
             // summary:
             //      Hides the delere confirm dialog
             console.log("cancel delete confirm");
             viewWidget.confirmDelete.hide();
         },
 
-        _showConfirmDelete: function (event) {
+        _showConfirmDelete: function () {
             // summary:
             //      Displays the confirm dialog to user
             viewWidget.confirmDelete.show();

@@ -1,6 +1,6 @@
 /*global define*/
 define({
-	sort: "Ordenar",
+    sort: "Ordenar",
     sortfirst: "Primero",
     sortsecond: "Segundo",
     field: "campo",

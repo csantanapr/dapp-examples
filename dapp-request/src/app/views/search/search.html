@@ -1,7 +1,7 @@
 <div class="view mblView">
   <h1 data-dojo-type="dojox/mobile/Heading" data-dojo-props="back: '${nls.back}'">
     ${nls.search}
-    <button data-dojo-type="dojox/mobile/ToolBarButton" 
+    <button data-dojo-type="dojox/mobile/ToolBarButton"
 		style="float:right"
 		data-dojo-attach-point="submit"
         data-dojo-attach-event="onClick: _search">
@@ -18,10 +18,14 @@
                   data-dojo-attach-point="reqid">
         </label>
         <label>${nls.status}:
-          <input  name="status" labelAttr="description" searchAttr="key"
+            <!--
+                 labelAttr="description" searchAttr="key"
+            -->
+          <input  name="status"
                   type="text"
                   data-dojo-type="dojox/mobile/ComboBox"
-                  data-dojo-props="store: this.loadedStores.requestStatusStore"
+                  data-dojo-props="store: this.loadedStores.requestStatusStore,
+                                   labelAttr: 'description', searchAttr: 'key'"
                   data-dojo-attach-point="status">
         </label>
         <label>${nls.requestedBy}:
@@ -37,7 +41,7 @@
                   type="text"
                   data-dojo-type="dojox/mobile/TextBox"
                   data-dojo-attach-point="requestedFinishFromDate">
-          ${nls.to} 
+          ${nls.to}
           <input  name="requestedFinishToDate"
                   type="text"
                   data-dojo-type="dojox/mobile/TextBox"
@@ -52,5 +56,5 @@
       </fieldset>
     </form> <!-- end dojox/mobile/FormLayout -->
   </div> <!-- end dojox.mobile.RoundRect -->
-  
+
 </div>

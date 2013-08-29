@@ -1,12 +1,6 @@
 /*jslint nomen: true */
-/*jshint nomen: true */
 /*global _, define, console, history*/
 define([
-    'dojo/query!css3',
-    //query is the core of dojo dom query
-    // the return is NodeList that has full set of functions
-    // most of the function have same syntax as jquery see bellow this file for summary
-    'dojo/on',
     'dojo/when',
     'dojo/dom-class',
     'dojo/Deferred',
@@ -20,12 +14,11 @@ define([
     'dojox/mobile/TextBox',
     'dojox/mobile/RoundRect',
     'dojox/mobile/ExpandingTextArea'
-], function ($, on, when, domClass, Deferred) {
+], function (when, domClass, Deferred) {
     'use strict';
 
     var viewWidget, // set in init() to save in closure reference to this view controller instance
         viewNode,   // set in init() to save in closure reference to this view dom node
-        itemToRender, // model to save and edit
         requestTypeMap, // to be use as cache for possible values for requestType
         statusMap,  // to be use as cache for possible values for status
         priorityMap, // to be use as cache for possible values for priority
@@ -56,17 +49,17 @@ define([
         beforeActivate: function (previousView, data) {
             // summary:
             //      view life cycle beforeActivate()
-            console.log(this.name + " view:beforeActivate(" + (previousView ? previousView.name : "") + ",data)");
+            console.log(this.name + " view:beforeActivate(" + (previousView ? previousView.name : "") + ",data)" + data);
 
             // get the id of the displayed request from the params
-            itemToRender = this._renderItem(this.params.id);
+            this._renderItem(this.params.id);
 
         },
 
         afterActivate: function (previousView, data) {
             // summary:
             //      view life cycle afterActivate()
-            console.log(this.name + " view:afterActivate(" + (previousView ? previousView.name : "") + ",data)");
+            console.log(this.name + " view:afterActivate(" + (previousView ? previousView.name : "") + ",data)" + data);
 
             viewWidget._setupEditButton();
 
@@ -75,14 +68,14 @@ define([
         beforeDeactivate: function (nextView, data) {
             // summary:
             //      view life cycle beforeDeactivate()
-            console.log(this.name + " view:beforeDeactivate(" + (nextView ? nextView.name : "") + ",data)");
+            console.log(this.name + " view:beforeDeactivate(" + (nextView ? nextView.name : "") + ",data)" + data);
 
         },
 
         afterDeactivate: function (nextView, data) {
             // summary:
             //      view life cycle afterDeactivate()
-            console.log(this.name + " view:afterDeactivate(" + (nextView ? nextView.name : "") + ",data)");
+            console.log(this.name + " view:afterDeactivate(" + (nextView ? nextView.name : "") + ",data)" + data);
 
         },
 

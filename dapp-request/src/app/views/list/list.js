@@ -1,19 +1,8 @@
-/*jslint nomen: true todo: true */
-/*jshint nomen: true todo: true */
-/*global _, define, console*/
+/*global define, console*/
+
 define([
     'dojo/_base/declare',
     'dojox/mobile/ListItem',
-    'dojo/query!css3',
-    //query is the core of dojo dom query
-    // the return is NodeList that has full set of functions
-    // most of the function have same syntax as jquery see bellow this file for summary
-    'dojo/on',
-    'dojo/_base/lang',
-    'dijit/registry',
-    'dojo/_base/array',
-    'dojo/NodeList-manipulate',
-    // Load dojo/NodeList-manipulate to get JQuery syntax: see below this file for function syntax
     'dojo/text!app/views/list/list.html',
     'dojox/mobile/Heading',
     'dojox/mobile/EdgeToEdgeStoreList',
@@ -21,15 +10,13 @@ define([
     'dojox/mobile/FilteredListMixin',
     'dojox/mobile/ToolBarButton',
     'dojox/mobile/Button'
-], function (declare, ListItem, $, on, lang, registry, array) {
+], function (declare, ListItem) {
     'use strict';
 
-    var viewWidget, // set in init() to save in closure reference to this view controller instance
-        viewNode,
-        RequestListItem = declare(ListItem, {
+    var RequestListItem = declare(ListItem, {
             paramsToInherit: "target,clickable",
             postMixInProperties: function () {
-                //TODO: Talk to dojo expert about this. calling this cause an error
+                //Talk to dojo expert about this. calling this cause an error
                 //"TypeError: 'caller', 'callee', and 'arguments' properties may not be accessed on strict mode functions or the arguments objects for calls to them
                 //at inherited [as __inherited] (http://localhost:8080/dojo/_base/declare.js:98:16)
                 //this.inherited(arguments);
@@ -53,12 +40,8 @@ define([
             //      view life cycle init()
             console.log(this.name + " view:init()");
 
-            //save the view node in clousure to use as scope for dom manipulatation and query
-            viewNode = this.domNode;
-            viewWidget = this;
-
             /* hide for now
-            //TODO: split this code into sub methods
+            //split this code into sub methods
             this.createButton.on("click", lang.hitch(this, function () {
                 viewWidget.requests.deselectAll();
                 this.app.transitionToView(this.domNode, {
@@ -67,7 +50,7 @@ define([
             }));
 */
 
-            /* TODO: remove when we have advance search implemented
+            /* remove when we have advance search implemented
             this.searchButton.on("click", lang.hitch(this, function () {
                 this.app.transitionToView(this.domNode, {
                     target: "requestListSearch"
@@ -80,37 +63,39 @@ define([
         beforeActivate: function (previousView, data) {
             // summary:
             //      view life cycle beforeActivate()
-            console.log(this.name + " view:beforeActivate(" + (previousView ? previousView.name : "") + ",data)");
-            if(data && (data.searchQuery || data.sort)){
-            	console.log("test query");
-            	var searchQuery = data.searchQuery;
-            	var sort = null;
-            	if(data.sort){
-            		sort = {'sort': data.sort};
-            	}
-            	this.requests.setQuery(data.searchFunction, sort);
-            };
+
+            var sort;
+
+            console.log(this.name + " view:beforeActivate(" + (previousView ? previousView.name : "") + ",data)" + data);
+            if (data && (data.searchQuery || data.sort)) {
+                console.log("test query");
+                sort = null;
+                if (data.sort) {
+                    sort = {'sort': data.sort};
+                }
+                this.requests.setQuery(data.searchFunction, sort);
+            }
 
         },
 
         afterActivate: function (previousView, data) {
             // summary:
             //      view life cycle afterActivate()
-            console.log(this.name + " view:afterActivate(" + (previousView ? previousView.name : "") + ",data)");
+            console.log(this.name + " view:afterActivate(" + (previousView ? previousView.name : "") + ",data)" + data);
 
         },
 
         beforeDeactivate: function (nextView, data) {
             // summary:
             //      view life cycle beforeDeactivate()
-            console.log(this.name + " view:beforeDeactivate(" + (nextView ? nextView.name : "") + ",data)");
+            console.log(this.name + " view:beforeDeactivate(" + (nextView ? nextView.name : "") + ",data)" + data);
 
         },
 
         afterDeactivate: function (nextView, data) {
             // summary:
             //      view life cycle afterDeactivate()
-            console.log(this.name + " view:afterDeactivate(" + (nextView ? nextView.name : "") + ",data)");
+            console.log(this.name + " view:afterDeactivate(" + (nextView ? nextView.name : "") + ",data)" + data);
 
         },
 

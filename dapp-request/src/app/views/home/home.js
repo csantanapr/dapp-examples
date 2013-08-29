@@ -1,12 +1,6 @@
 /*jslint nomen: true */
-/*jshint nomen: true */
 /*global _, define, console*/
 define([
-    'dojo/query!css3',
-    //query is the core of dojo dom query
-    // the return is NodeList that has full set of functions
-    // most of the function have same syntax as jquery see bellow this file for summary
-    'dojo/on',
     'dojox/mobile/ListItem',
     'dojo/NodeList-manipulate',
     // Load dojo/NodeList-manipulate to get JQuery syntax: see below this file for function syntax
@@ -14,13 +8,8 @@ define([
     'dojox/mobile/Heading',
     'dojox/mobile/EdgeToEdgeList',
     'dojox/mobile/ListItem'
-], function ($, on) {
+], function () {
     'use strict';
-
-    var viewWidget, // set in init() to save in closure reference to this view controller instance
-        viewNode; // set in init() to save in closure reference to this view dom node
-
-
 
     return {
 
@@ -28,62 +17,38 @@ define([
             // summary:
             //      view life cycle init()
 
-
             console.log(this.name + " view:init()");
 
-            //save the view node in clousure to use as scope for dom manipulatation and query
-            viewNode = this.domNode;
-            viewWidget = this;
         },
 
         beforeActivate: function (previousView, data) {
             // summary:
             //      view life cycle beforeActivate()
-            console.log(this.name + " view:beforeActivate(" + (previousView ? previousView.name : "") + ",data)");
+            console.log(this.name + " view:beforeActivate(" + (previousView ? previousView.name : "") + ",data)" + data);
         },
 
         afterActivate: function (previousView, data) {
             // summary:
             //      view life cycle afterActivate()
-            console.log(this.name + " view:afterActivate(" + (previousView ? previousView.name : "") + ",data)");
+            console.log(this.name + " view:afterActivate(" + (previousView ? previousView.name : "") + ",data)" + data);
         },
 
         beforeDeactivate: function (nextView, data) {
             // summary:
             //      view life cycle beforeDeactivate()
-            console.log(this.name + " view:beforeDeactivate(" + (nextView ? nextView.name : "") + ",data)");
+            console.log(this.name + " view:beforeDeactivate(" + (nextView ? nextView.name : "") + ",data)" + data);
 
         },
 
         afterDeactivate: function (nextView, data) {
             // summary:
             //      view life cycle afterDeactivate()
-            console.log(this.name + " view:afterDeactivate(" + (nextView ? nextView.name : "") + ",data)");
+            console.log(this.name + " view:afterDeactivate(" + (nextView ? nextView.name : "") + ",data)" + data);
 
-        },
-
-        destroy: function () {
-            // summary:
-            //      view life cycle destroy()
-            console.log(this.name + " view:destory()");
-        },
+        }
         /*****
          * Custom Code for View Controller
          *****/
-
-        _formatterTmpl : function (value, key) {
-            // summary:
-            //      Use to format template properties using the convention ${foo:_formatterTmpl}
-            console.log(this.name + "_formatterTmpl(" + value + "," + "key" + ");");
-
-        },
-        doSomething: function (event) {
-            console.log('did something');
-            // summary:
-            //      Example of a custom view controller callback for event listener
-            console.log(this.name + "doSomething(" + event + ");");
-
-        }
     };
 
 

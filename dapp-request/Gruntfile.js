@@ -249,7 +249,7 @@ module.exports = function (grunt) {
     grunt.registerTask('lint', ['jshint', 'jslint', 'csslint', 'htmlhint']);
     //web dev tasks
     grunt.registerTask('web_build', [
-       // 'lint',
+        'lint',
         'copy:web_dojox_app_hack',
         'dojo',
         'copy:web_index',
@@ -267,7 +267,7 @@ module.exports = function (grunt) {
 
         grunt.task.run([
             'copy:web_dojox_app_hack',
-            //'lint',
+            'lint',
             'connect:livereload',
             'open:server',
             'watch'

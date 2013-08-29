@@ -1,54 +1,56 @@
 <div class="view mblView">
   <h1 data-dojo-type="dojox/mobile/Heading" data-dojo-props="back: '${nls.back}'">
     ${nls.sort}
-    <button data-dojo-type="dojox/mobile/ToolBarButton" 
+    <button data-dojo-type="dojox/mobile/ToolBarButton"
 		style="float:right"
 		data-dojo-attach-point="submit"
-        data-dojo-attach-event="onClick: _sort"> 
+        data-dojo-attach-event="onClick: _sort">
     	${nls.submit}
     </button>
-    
+
   </h1>
     <div data-dojo-type="dojox/mobile/RoundRect">
     <form>
       <fieldset>
         <label>${nls.sortfirst} ${nls.field}:
-    		<input  name="sortfirst" labelAttr="label" searchAttr="key"
+    		<input  name="sortfirst"
                   type="text"
                   data-dojo-type="dojox/mobile/ComboBox"
-                  data-dojo-props="store: this.loadedStores.searchFieldsStore"
-                  data-dojo-attach-point="sortfirstField"> 
+                  data-dojo-props="store: this.loadedStores.searchFieldsStore,
+                                   labelAttr: 'label', searchAttr: 'key'"
+                  data-dojo-attach-point="sortfirstField">
          </label>
-         <label>${nls.sortfirst} ${nls.order}:  
+         <label>${nls.sortfirst} ${nls.order}:
            <select data-dojo-type="dijit/form/DataList"
-  			data-dojo-props='id:"sortFirstDataList"'>
-			      <option selected>Ascending</option>
+  			data-dojo-props="id: 'sortFirstDataList'">
+			      <option selected="selected">Ascending</option>
 			      <option>Descending</option>
 			</select>
 			<input type="text" data-dojo-type="dojox/mobile/ComboBox"
-			  data-dojo-props='list:"sortFirstDataList"'
-			  data-dojo-attach-point="sortfirstOrder">         
+			  data-dojo-props="list: 'sortFirstDataList'"
+			  data-dojo-attach-point="sortfirstOrder">
         </label>
         <label>${nls.sortsecond} ${nls.field}:
-            <input  name="sortsecond"  labelAttr="label" searchAttr="key"
+            <input  name="sortsecond"
                   type="text"
                   data-dojo-type="dojox/mobile/ComboBox"
-                  data-dojo-props="store: this.loadedStores.searchFieldsStore"
+                  data-dojo-props="store: this.loadedStores.searchFieldsStore,
+                                   labelAttr: 'label', searchAttr: 'key'"
                   data-dojo-attach-point="sortsecondField">
-        
+
         </label>
-         <label>${nls.sortsecond} ${nls.order}:      
+         <label>${nls.sortsecond} ${nls.order}:
            <select data-dojo-type="dijit/form/DataList"
-  			data-dojo-props='id:"sortSecondDataList"'>
-			      <option selected>Ascending</option>
+  			data-dojo-props="id: 'sortSecondDataList'">
+			      <option selected="selected">Ascending</option>
 			      <option>Descending</option>
 			</select>
 			<input type="text" data-dojo-type="dojox/mobile/ComboBox"
-			  data-dojo-props='list:"sortSecondDataList"'
-			  data-dojo-attach-point="sortsecondOrder">         
+			  data-dojo-props="list: 'sortSecondDataList'"
+			  data-dojo-attach-point="sortsecondOrder">
         </label>
         </fieldset>
       </form> <!-- end dojox/mobile/FormLayout -->
     </div> <!-- end dojox.mobile.RoundRect -->
-  
+
 </div>

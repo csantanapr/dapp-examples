@@ -1,7 +1,7 @@
 /*global define*/
 define({
     root: {
-    	search: "Search",
+        search: "Search",
         submit: "Submit",
         id: "Id",
         status: "Status",
