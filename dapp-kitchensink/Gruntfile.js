@@ -48,15 +48,6 @@ module.exports = function (grunt) {
                 src: ['<%= yeoman.src %>/**/*.css']
             }
         },
-        validation: { // Grunt w3c validation plugin
-            options: {
-                reset: true,
-                stoponerror: true
-            },
-            files: {
-                src: ['<%= yeoman.src %>/*.html']
-            }
-        },
         htmlhint: {
             options: {
                 'id-unique': true,
@@ -139,7 +130,7 @@ module.exports = function (grunt) {
                           // example with your directory structure
                           //   dest = 'dist/www/'
                           //   src = 'dist-index.html'
-                            return dest + 'index.html';
+                            return dest + '/index.html';
                         }
                     }
                 ]
@@ -264,7 +255,7 @@ module.exports = function (grunt) {
     // Default task.
 
     //Linting tasks
-    grunt.registerTask('lint', ['jshint', 'jslint', 'csslint', 'validation', 'htmlhint']);
+    grunt.registerTask('lint', ['jshint', 'jslint', 'csslint', 'htmlhint']);
     //web dev tasks
     grunt.registerTask('web_build', ['lint', 'copy:web_dojox_app_hack', 'dojo', 'copy:web_index', 'copy:web']);
     //main build tasks
