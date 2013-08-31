@@ -26,6 +26,8 @@ define([
 
     var viewWidget, // set in init() to save in closure reference to this view controller instance
         viewNode,
+        _searchFunction,
+        _sort,
         RequestListItem = declare(ListItem, {
             paramsToInherit: "target,clickable",
             postMixInProperties: function () {
@@ -81,14 +83,10 @@ define([
             // summary:
             //      view life cycle beforeActivate()
             console.log(this.name + " view:beforeActivate(" + (previousView ? previousView.name : "") + ",data)");
-            if(data && (data.searchQuery || data.sort)){
-            	console.log("test query");
-            	var searchQuery = data.searchQuery;
-            	var sort = null;
-            	if(data.sort){
-            		sort = {'sort': data.sort};
-            	}
-            	this.requests.setQuery(data.searchFunction, sort);
+            if(data && (data.searchFunction || data.sort)){
+            	viewWidget._searchFunction = data.searchFunction ? data.searchFunction : viewWidget._searchFunction;
+            	viewWidget._sort = data.sort ? {'sort': data.sort} : viewWidget._sort;
+            	this.requests.setQuery(viewWidget._searchFunction, viewWidget._sort);
             };
 
         },

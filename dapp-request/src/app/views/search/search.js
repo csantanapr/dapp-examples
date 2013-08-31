@@ -7,21 +7,28 @@ define([
     // the return is NodeList that has full set of functions
     // most of the function have same syntax as jquery see bellow this file for summary
     'dojo/on',
+    'dojo/date/stamp',
+    'dojo/query',
+    'dojo/_base/lang',
     'dojox/mobile/ListItem',
     'dojo/NodeList-manipulate',
     // Load dojo/NodeList-manipulate to get JQuery syntax: see below this file for function syntax
     'dojo/text!app/views/search/search.html',
     'dojox/mobile/Heading',
     'dojox/mobile/FormLayout',
-    'dojox/mobile/ComboBox',
     'dojox/mobile/RoundRect',
-    'dojox/mobile/TextBox'
-], function ($, on) {
+    'dojox/mobile/TextBox',
+    'dojox/mobile/Overlay',
+    'dojox/mobile/DatePicker',
+    'dojox/mobile/ToolBarButton',
+    'dojox/mobile/RoundRectStoreList'
+], function ($, on, stamp, query, lang) {
     'use strict';
 
     var view, // set in init(params) to save in closure reference to this view controller instance
         viewNode; // set in init(params) to save in closure reference to this view dom node
-
+    var _openerItem = null, // used for item displayed in opener
+    	_openerStore = null; // used for store of item in opener
 
 
     return {
@@ -34,7 +41,11 @@ define([
             //save the view node in clousure to use as scope for dom manipulatation and query
             viewNode = this.domNode;
             view = this;
-
+            this._attachHandlers();
+            this.loadedStores.requestStatusStore.query().then(function(items){
+            	view.status.set("value", items[0].key);	
+            });
+            
         },
 
         beforeActivate: function (view, data) {
@@ -84,9 +95,10 @@ define([
 
         },
         _search: function(event){
+        	var statusValue = view.status.get("searchkey")=== "Any" ? "" : view.status.get("searchkey");  
         	var searchQuery = {
         			'id': view.reqid.get("value"),
-        			'status': view.status.get("value"),
+        			'status': statusValue,
         			'requestedBy': view.requestedBy.get("value"),
         			'requestedFinishFromDate': view.requestedFinishFromDate.get("value"),
         			'requestedFinishToDate': view.requestedFinishToDate.get("value"),
@@ -94,6 +106,10 @@ define([
         	};
         	
         	var searchFunction = function(request){
+        		var fromDate;
+        		var toDate;
+        		var requestedFinishDate;
+        		
         		console.log("search: ");
         		console.log(request);
             	if(searchQuery.id && request.id != parseInt(searchQuery.id)){
@@ -109,9 +125,9 @@ define([
             		return false;
             	}
             	if(searchQuery.requestedFinishFromDate && searchQuery.requestedFinishToDate){
-            		var fromDate = new Date(searchQuery.requestedFinishFromDate);
-            		var toDate = new Date(searchQuery.requestedFinishToDate);
-            		var requestedFinishDate = new Date(request.requestedFinishDate);
+            		fromDate = new Date(searchQuery.requestedFinishFromDate);
+            		toDate = new Date(searchQuery.requestedFinishToDate);
+            		requestedFinishDate = new Date(request.requestedFinishDate);
             		if(!(fromDate < requestedFinishDate && requestedFinishDate < toDate)){
             			return false;
             		}
@@ -119,7 +135,94 @@ define([
             	return true;
         	};
         	
-        	view.app.transitionToView(view.domNode, { target: 'requestList', reverse: 'true', 'data': {'searchQuery': searchQuery, 'searchFunction': searchFunction}});
+        	view.app.transitionToView(view.domNode, { target: 'requestList', reverse: 'true', 'data': {'searchFunction': searchFunction}});
+        },
+        
+
+        _attachHandlers: function () {
+            // summary:
+            //      Attach listeners to form inputs on click
+
+            on(this.requestedFinishFromDate, "click", view._showDateOpener.bind(this.requestedFinishFromDate));
+            on(this.requestedFinishToDate, "click", view._showDateOpener.bind(this.requestedFinishToDate));
+            on(this.status, "click", view._showOpener.bind(this.status, this.loadedStores.requestStatusStore));
+			on(this.srchchecklist, "click", view._handleOpenerClick);
+        },
+
+        _showOpener: function(store, event){
+        	
+			view._openerStore = store;
+			view._openerItem = this;
+			view.openerHeader.set("label",this.get("placeHolder"));
+			view.srchchecklist.setStore(store);
+			
+			var selval = this.get("value");
+			view.srchchecklist.getChildren().forEach(function(child){
+				if(child.label == selval){
+					child.set("checked",true);
+				}
+			});
+			
+			view.opener.show(event.target);
+        },
+
+		_handleOpenerClick: function (){
+			view.opener.hide(true);
+			var selVal = "";
+			query(".mblListItemChecked", view.srchchecklist.domNode).forEach(function(node){
+				selVal = lang.trim(node.innerText || node.textContent || '');
+			});
+			
+			view._openerStore.query({description: selVal}).forEach(function(item){
+				if(item.description === selVal){
+					view._openerItem.searchkey=item.key;
+				}
+			});
+			
+			view._openerItem.set("value",selVal);
+		},
+
+        _showDateOpener: function (event) {
+            // summary:
+            //      Show DateOpener
+
+            var DateTextBox = this;
+            view.dateOpenerHeader.set("label",DateTextBox.get("placeHolder"));
+            console.log("_showDateOpener(event)");
+            view.dateOpener.onHide = function () {
+                console.log("hiding dateOpener");
+            };
+            view.dateOpener.onShow = function () {
+                console.log("showing dateOpener");
+            };
+            
+			var dateval = DateTextBox.get("value") ? DateTextBox.get("value") : stamp.toISOString(new Date(), {selector: "date"});
+			view.datePicker.set("value", dateval);
+
+            view.dateOpener.show(event.target);
+            view.dateOpener.formWidget = DateTextBox;
+        },
+
+        _doneDateOpener : function (event) {
+            // summary:
+            //  Done selecting new date
+
+            var dateOpener = view.dateOpener,
+                formWidget = view.dateOpener.formWidget,
+                datePicker = view.datePicker;
+
+            console.log("done dateOpener");
+
+            formWidget.set("value", datePicker.get("value"));
+            dateOpener.hide();
+        },
+
+        _cancelDateOpener : function (event) {
+            // summary:
+            //      Cancel date editing
+
+            console.log("cancel dateOpener");
+            view.dateOpener.hide();
         }
     };
 

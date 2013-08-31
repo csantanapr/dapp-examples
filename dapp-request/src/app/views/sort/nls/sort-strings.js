@@ -6,7 +6,9 @@ define({
         sortsecond: "2nd",
         field: "field",
         order: "order",
-        submit: "Submit"
+        submit: "Submit",
+        ascending: "Ascending",
+        descending: "Descending"
     },
     es: true
 });

@@ -16,8 +16,8 @@
 		"label": "Status"
 	},
 	{
-		"key": "label",
-		"label": "Label"
+		"key": "description",
+		"label": "Description"
 	},
 	{
 		"key": "priority",

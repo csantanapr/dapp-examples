@@ -5,5 +5,7 @@ define({
     sortsecond: "Segundo",
     field: "campo",
     order: "orden",
-    submit: "Presentar"
+    submit: "Presentar",
+    ascending: "Ascendente",
+    descending: "Descendente"
 });

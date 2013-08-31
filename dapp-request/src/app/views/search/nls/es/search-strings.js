@@ -6,6 +6,10 @@ define({
     status: "Estado",
     requestedBy: "Pedido por",
     requestedFinishDate: "Acabado requerido desde/hasta Fecha",
+    fromDate: "Desde la fecha",
+    toDate: "Conocer",
     assignedTo: "Asignado a",
-    to: "a"
+    to: "a",
+    cancel: "Cancelar",
+    done: "Completar"
 });
