@@ -3,3 +3,6 @@ src/dijit/
 src/dojo/
 src/dojox/
 src/util/
+components
+node_modules
+npm-debug.log

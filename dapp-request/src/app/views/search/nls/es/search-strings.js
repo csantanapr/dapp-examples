@@ -1,7 +1,7 @@
 /*global define*/
 define({
-	search: "Buscar",
-	submit: "Presentar",
+    search: "Buscar",
+    submit: "Presentar",
     id: "Id",
     status: "Estado",
     requestedBy: "Pedido por",

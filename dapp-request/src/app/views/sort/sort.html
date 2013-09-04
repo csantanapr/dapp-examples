@@ -1,52 +1,52 @@
 <div class="view mblView">
   <h1 data-dojo-type="dojox/mobile/Heading" data-dojo-props="back: '${nls.back}'">
     ${nls.sort}
-    <button data-dojo-type="dojox/mobile/ToolBarButton" 
+    <button data-dojo-type="dojox/mobile/ToolBarButton"
 		style="float:right"
 		data-dojo-attach-point="submit"
-        data-dojo-attach-event="onClick: _sort"> 
+        data-dojo-attach-event="onClick: _sort">
     	${nls.submit}
     </button>
-    
+
   </h1>
     <div data-dojo-type="dojox/mobile/RoundRect">
 	    <div data-dojo-type="dojox/mobile/FormLayout">
 	      <div>
 	        <label for="sortfirst">${nls.sortfirst} ${nls.field}:</label>
 	        <fieldset>
-	    		<input id="sortfirst" name="sortfirst" 
-	    			  type="text" 
+	    		<input id="sortfirst" name="sortfirst"
+	    			  type="text"
 	                  data-dojo-type="dojox/mobile/TextBox"
-	                  data-dojo-attach-point="sortfirstField"> 
+	                  data-dojo-attach-point="sortfirstField">
 				<input id="sortfirstOrder" name="sortfirstOrder"
 					type="text" data-dojo-type="dojox/mobile/TextBox"
-				  	data-dojo-attach-point="sortfirstOrder">         
+				  	data-dojo-attach-point="sortfirstOrder">
 	         </fieldset>
 	      </div>
 	      <div>
 	        <label for="sortsecond">${nls.sortsecond} ${nls.field}:</label>
 	        <fieldset>
-	            <input id="sortsecond" name="sortsecond" 
+	            <input id="sortsecond" name="sortsecond"
 	                  type="text"
 	                  data-dojo-type="dojox/mobile/TextBox"
 	                  data-dojo-attach-point="sortsecondField">
 				<input id="sortsecondOrder" name="sortsecondOrder"
 					type="text" data-dojo-type="dojox/mobile/TextBox"
-				  	data-dojo-attach-point="sortsecondOrder">                 
+				  	data-dojo-attach-point="sortsecondOrder">
 	        </fieldset>
 	      </div>
 	    </div> <!-- end dojox/mobile/FormLayout -->
     </div> <!-- end dojox.mobile.RoundRect -->
-    
+
     <div data-dojo-type="dojox/mobile/Overlay"
        data-dojo-attach-point="opener">
 	    <h1 data-dojo-type="dojox/mobile/Heading" data-dojo-attach-point="openerHeader">
 	    </h1>
-		<div data-dojo-Type="dojox/mobile/ScrollableView" selected="true" height="auto">
+		<div data-dojo-type="dojox/mobile/ScrollableView" selected="true" height="auto">
 			<ul data-dojo-attach-point="sortchecklist" data-dojo-type="dojox/mobile/RoundRectStoreList"
 				data-dojo-props="labelProperty: 'description', select:'single'">
 			</ul>
 		</div>
   </div><!-- end Opener -->
-  
+
 </div>

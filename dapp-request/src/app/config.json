@@ -2,7 +2,7 @@
     //Mandatory
     "id": "App",
     //Optional
-    "name": "requuest-App",
+    "name": "request-App",
     //Optional
     "description": "Example dApp, Work Order Requests App",
     //Optional, but very useful for views properties
@@ -68,7 +68,7 @@
                             "estimatedUnits": 0,
                             "unitType": "days",
                             "createdDate": "2013-02-20T19:20:30",
-                            "updatedDate": "2013-03-21T15:21:30",
+                            "updatedDate": "2013-03-21T15:21:30"
                         },
                         {
                             "id": 102,
@@ -83,7 +83,7 @@
                             "estimatedUnits": 10,
                             "unitType": "days",
                             "createdDate": "2013-01-20T19:20:30",
-                            "updatedDate": "2013-02-21T15:21:30",
+                            "updatedDate": "2013-02-21T15:21:30"
                         }],
                 "idProperty":"id"
             }
@@ -143,7 +143,7 @@
         "home":{
             //Mandatory for defaultViews
             "template": "app/views/home/home.html",
-            "controller" : "app/views/home/home.js",
+            "controller" : "app/views/home/home.js"
         },
         "requestList":{
             "template": "app/views/list/list.html",
@@ -158,7 +158,7 @@
         "requestItemDetailsEdit":{
             "template": "app/views/edit/edit.html",
             "controller" : "app/views/edit/edit.js",
-            "nls": "app/views/details/nls/details-strings", //shares strings with details view
+            "nls": "app/views/details/nls/details-strings"
         },
         "requestListSearch":{
             "template": "app/views/search/search.html",

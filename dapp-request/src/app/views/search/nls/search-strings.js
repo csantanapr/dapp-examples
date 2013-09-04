@@ -1,7 +1,7 @@
 /*global define*/
 define({
     root: {
-    	search: "Search",
+        search: "Search",
         submit: "Submit",
         id: "Id",
         status: "Status",
@@ -12,7 +12,7 @@ define({
         assignedTo: "Assigned To",
         to: "To",
         cancel: "Cancel",
-        done: "Done"        
+        done: "Done"
     },
     es: true
 });
