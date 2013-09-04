@@ -7,8 +7,12 @@ define({
         status: "Status",
         requestedBy: "Requested By",
         requestedFinishDate: "Requested Finish From/To Date",
+        fromDate: "From Date",
+        toDate: "To Date",
         assignedTo: "Assigned To",
-        to: "To"
+        to: "To",
+        cancel: "Cancel",
+        done: "Done"
     },
     es: true
 });

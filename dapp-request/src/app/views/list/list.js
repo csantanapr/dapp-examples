@@ -1,3 +1,4 @@
+/*jslint nomen: true */
 /*global define, console*/
 
 define([
@@ -13,23 +14,26 @@ define([
 ], function (declare, ListItem) {
     'use strict';
 
-    var RequestListItem = declare(ListItem, {
-            paramsToInherit: "target,clickable",
-            postMixInProperties: function () {
-                //Talk to dojo expert about this. calling this cause an error
-                //"TypeError: 'caller', 'callee', and 'arguments' properties may not be accessed on strict mode functions or the arguments objects for calls to them
-                //at inherited [as __inherited] (http://localhost:8080/dojo/_base/declare.js:98:16)
-                //this.inherited(arguments);
-                var store_item_id = this.id;
-                this.id = "request_" + this.id; //FIXME: really ugly hack to get unique dom node id,  this might be a bug on dojo EdgeToEdgeStoreList to generating a dynamic id
-                this.transitionOptions = {
-                    params: {
-                        "id" : store_item_id
-                    }
-                };
+    var viewWidget, // set in init() to save in closure reference to this view controller instance
+        RequestListItem;
 
-            }
-        });
+    RequestListItem = declare(ListItem, {
+        paramsToInherit: "target,clickable",
+        postMixInProperties: function () {
+            //Talk to dojo expert about this. calling this cause an error
+            //"TypeError: 'caller', 'callee', and 'arguments' properties may not be accessed on strict mode functions or the arguments objects for calls to them
+            //at inherited [as __inherited] (http://localhost:8080/dojo/_base/declare.js:98:16)
+            //this.inherited(arguments);
+            var store_item_id = this.id;
+            this.id = "request_" + this.id; //FIXME: really ugly hack to get unique dom node id,  this might be a bug on dojo EdgeToEdgeStoreList to generating a dynamic id
+            this.transitionOptions = {
+                params: {
+                    "id" : store_item_id
+                }
+            };
+
+        }
+    });
 
 
 
@@ -39,6 +43,9 @@ define([
             // summary:
             //      view life cycle init()
             console.log(this.name + " view:init()");
+
+            //save the view node in clousure to use as scope for dom manipulatation and query
+            viewWidget = this;
 
             /* hide for now
             //split this code into sub methods
@@ -64,16 +71,11 @@ define([
             // summary:
             //      view life cycle beforeActivate()
 
-            var sort;
-
-            console.log(this.name + " view:beforeActivate(" + (previousView ? previousView.name : "") + ",data)" + data);
-            if (data && (data.searchQuery || data.sort)) {
-                console.log("test query");
-                sort = null;
-                if (data.sort) {
-                    sort = {'sort': data.sort};
-                }
-                this.requests.setQuery(data.searchFunction, sort);
+            console.log(this.name + " view:beforeActivate(" + (previousView ? previousView.name : "") + ",data)");
+            if (data && (data.searchFunction || data.sort)) {
+                viewWidget._searchFunction = data.searchFunction ||  viewWidget._searchFunction;
+                viewWidget._sort = data.sort ? {'sort': data.sort} : viewWidget._sort;
+                this.requests.setQuery(viewWidget._searchFunction, viewWidget._sort);
             }
 
         },

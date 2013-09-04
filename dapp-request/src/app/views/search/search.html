@@ -1,7 +1,7 @@
 <div class="view mblView">
   <h1 data-dojo-type="dojox/mobile/Heading" data-dojo-props="back: '${nls.back}'">
     ${nls.search}
-    <button data-dojo-type="dojox/mobile/ToolBarButton"
+    <button data-dojo-type="dojox/mobile/ToolBarButton" 
 		style="float:right"
 		data-dojo-attach-point="submit"
         data-dojo-attach-event="onClick: _search">
@@ -9,52 +9,89 @@
     </button>
   </h1>
     <div data-dojo-type="dojox/mobile/RoundRect">
-    <form>
-      <fieldset>
-        <label>${nls.id}:
-          <input  name="id"
-                  type="text"
-                  data-dojo-type="dojox/mobile/TextBox"
-                  data-dojo-attach-point="reqid">
-        </label>
-        <label>${nls.status}:
-            <!--
-                 labelAttr="description" searchAttr="key"
-            -->
-          <input  name="status"
-                  type="text"
-                  data-dojo-type="dojox/mobile/ComboBox"
-                  data-dojo-props="store: this.loadedStores.requestStatusStore,
-                                   labelAttr: 'description', searchAttr: 'key'"
-                  data-dojo-attach-point="status">
-        </label>
-        <label>${nls.requestedBy}:
-          <input  name="requestedBy"
-                  type="email"
-                  data-dojo-type="dojox/mobile/TextBox"
-                  data-dojo-attach-point="requestedBy">
-        </label>
-        <label>${nls.requestedFinishDate}:
-        </label>
-        <label>
-          <input  name="requestedFinishFromDate"
-                  type="text"
-                  data-dojo-type="dojox/mobile/TextBox"
-                  data-dojo-attach-point="requestedFinishFromDate">
-          ${nls.to}
-          <input  name="requestedFinishToDate"
-                  type="text"
-                  data-dojo-type="dojox/mobile/TextBox"
-                  data-dojo-attach-point="requestedFinishToDate">
-        </label>
-        <label>${nls.assignedTo}:
-          <input  name="assignedTo"
-                  type="email"
-                  data-dojo-type="dojox/mobile/TextBox"
-                  data-dojo-attach-point="assignedTo">
-        </label>
-      </fieldset>
-    </form> <!-- end dojox/mobile/FormLayout -->
-  </div> <!-- end dojox.mobile.RoundRect -->
+    	<div data-dojo-type="dojox/mobile/FormLayout">
+	      <div>
+	        <label for="id">${nls.id}:</label>
+        	<fieldset>
+	          <input  id="id" name="id"
+	                  type="text"
+	                  data-dojo-type="dojox/mobile/TextBox"
+	                  data-dojo-attach-point="reqid">
+	        </fieldset>
+	      </div>
+	      <div>
+	        <label for="status">${nls.status}:</label>
+        	<fieldset>
+	          <input  id="status" name="status" 
+	                  type="text"
+	                  data-dojo-type="dojox/mobile/TextBox"
+	                  data-dojo-props="placeHolder: '${nls.status}'"
+	                  data-dojo-attach-point="status">
+			</fieldset>
+	      </div>
+	      <div>
+	        <label for="requestedBy">${nls.requestedBy}:</label>
+	        <fieldset>
+	          <input  id="requestedBy" name="requestedBy"
+	                  type="email"
+	                  data-dojo-type="dojox/mobile/TextBox"
+	                  data-dojo-attach-point="requestedBy">
+	         </fieldset>
+          </div>
+          <div>
+        	<label for="requestedFinishFromDate">${nls.requestedFinishDate}:</label>
+	        <fieldset>
+	          <input id="requestedFinishFromDate" name="requestedFinishFromDate"
+	                  type="text"
+	                  data-dojo-type="dojox/mobile/TextBox"
+	                  data-dojo-props="placeHolder: '${nls.fromDate}'"
+	                  data-dojo-attach-point="requestedFinishFromDate">
+	          <input id="requestedFinishToDate" name="requestedFinishToDate"
+	                  type="text"
+	                  data-dojo-type="dojox/mobile/TextBox"
+	                  data-dojo-props="placeHolder: '${nls.toDate}'"
+	                  data-dojo-attach-point="requestedFinishToDate">
+	        </fieldset>
+	      </div>
+		  <div>
+        	<label for="assignedTo">${nls.assignedTo}:</label>
+        	<fieldset>
+	          <input id="assignedTo" name="assignedTo"
+	                  type="email"
+	                  data-dojo-type="dojox/mobile/TextBox"
+	                  data-dojo-attach-point="assignedTo">
+        	</fieldset>
+      	  </div>
+    	</div> <!-- end dojox/mobile/FormLayout -->
+ 	</div> <!-- end dojox.mobile.RoundRect -->
+ 	
+    <div data-dojo-type="dojox/mobile/Overlay"
+       data-dojo-attach-point="dateOpener">
+	    <h1 data-dojo-type="dojox/mobile/Heading" data-dojo-attach-point="dateOpenerHeader">
+	      <button data-dojo-type="dojox/mobile/ToolBarButton"
+	              data-dojo-attach-event="onClick: _cancelDateOpener">
+	        ${nls.cancel}
+	      </button>
+	      <button class="doneButton" data-dojo-type="dojox/mobile/ToolBarButton"
+				  style="float:right"
+	              data-dojo-attach-event="onClick: _doneDateOpener">
+	        ${nls.done}
+	      </button>
+	
+	    </h1>
+	    <div data-dojo-type="dojox/mobile/DatePicker"
+	         data-dojo-attach-point="datePicker"></div>
+  </div><!-- end Date Opener -->
 
+    <div data-dojo-type="dojox/mobile/Overlay"
+       data-dojo-attach-point="opener">
+	    <h1 data-dojo-type="dojox/mobile/Heading" data-dojo-attach-point="openerHeader">
+	    </h1>
+		<!-- <div data-dojo-Type="dojox/mobile/ScrollableView"> -->
+			<ul data-dojo-attach-point="srchchecklist" data-dojo-type="dojox/mobile/RoundRectStoreList"
+				data-dojo-props=" labelProperty: 'description', select:'single'">
+			</ul>
+		<!-- </div>  -->
+  </div><!-- end Opener -->
+  
 </div>
