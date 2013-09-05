@@ -6,6 +6,12 @@
 .requestItemDetailsEdit .saveButton {
     float: right;
 }
+.requestItemDetailsEdit .deleteButton {
+    float: right;
+}
+.requestItemDetailsEdit .duplicateButton {
+    float: right;
+}
 .dateOpener .doneButton {
     float: right;
 }

@@ -9,14 +9,25 @@
     ${nls.cancel}
     </button>
 
-    <!-- class saveButton use in css files-->
     <button class="saveButton"
             data-dojo-type="dojox/mobile/ToolBarButton"
             data-dojo-attach-point="saveButton"
             data-dojo-attach-event="onClick: _saveForm"
-            data-dojo-props="back: true"> <!-- Do a back for now until save function is implemented -->
+            data-dojo-props="back: true">
     ${nls.save}
     </button>
+    <button class="duplicateButton"
+            data-dojo-type="dojox/mobile/ToolBarButton"
+            data-dojo-attach-point="copyButton"
+            data-dojo-attach-event="onClick: _copyForm">
+    ${nls.duplicate}
+    </button>
+    <button class="mblRedButton deleteButton"
+            data-dojo-type="dojox/mobile/ToolBarButton"
+            data-dojo-attach-event="onClick: _showConfirmDelete">
+    ${nls.remove}
+    </button>
+
   </h1>
 
 
@@ -130,21 +141,6 @@
       </fieldset>
     </form> <!-- end dojox/mobile/FormLayout -->
   </div> <!-- end dojox.mobile.RoundRect -->
-
-
-  <button data-dojo-type="dojox/mobile/Button"
-        data-dojo-attach-point="copyButton"
-        data-dojo-attach-event="onClick: _copyForm">
-  ${nls.duplicate}
-  </button>
-
-
-   <button data-dojo-type="dojox/mobile/Button"
-        data-dojo-attach-event="onClick: _showConfirmDelete"
-        class="mblRedButton">${nls.remove}
-  </button>
-
-
   <div class="dateOpener" data-dojo-type="dojox/mobile/Opener"
        data-dojo-attach-point="opener">
     <h1 data-dojo-type="dojox/mobile/Heading">
@@ -160,7 +156,7 @@
     </h1>
     <div data-dojo-type="dojox/mobile/DatePicker"
          data-dojo-attach-point="datePicker"></div>
-  </div><!-- end Opener -->
+  </div><!-- end Date Opener -->
 
   <div data-dojo-type="dojox/mobile/SimpleDialog"
        data-dojo-attach-point="confirmDelete">
@@ -185,6 +181,6 @@
                             itemMap:{description:'label'},
                             store: this.loadedStores.requestTypeStore">
       </ul>
-    </div><!-- end Opener -->
+    </div><!-- end Select Opener -->
 
 </div>
