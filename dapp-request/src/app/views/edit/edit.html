@@ -176,5 +176,15 @@
             data-dojo-attach-event="onClick: _deleteRequest">
     ${nls.ok}
     </button>
-  </div>
+  </div> <!-- end of SimpleDialog -->
+  <div class="dateOpener" data-dojo-type="dojox/mobile/Opener"
+         data-dojo-attach-point="openerSelect">
+      <ul data-dojo-attach-point="selectCheckList" data-dojo-type="dojox/mobile/RoundRectStoreList"
+          data-dojo-props="labelProperty: 'description',
+                            select:'single',
+                            itemMap:{description:'label'},
+                            store: this.loadedStores.requestTypeStore">
+      </ul>
+    </div><!-- end Opener -->
+
 </div>

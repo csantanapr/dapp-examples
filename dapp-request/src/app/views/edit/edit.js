@@ -6,6 +6,7 @@ define([
     'dojo/dom-class',
     'dojo/_base/window',
     'dojo/Deferred',
+    'dojo/aspect',
     'dojo/NodeList-manipulate',
     // Load dojo/NodeList-manipulate to get JQuery syntax: see below this file for function syntax
     'dojo/text!app/views/edit/edit.html',
@@ -20,8 +21,9 @@ define([
     'dojox/mobile/DatePicker',
     'dojox/mobile/SpinWheelDatePicker',
     'dojox/mobile/ValuePickerDatePicker',
-    'dojox/mobile/SimpleDialog'
-], function (on, when, domClass, win, Deferred) {
+    'dojox/mobile/SimpleDialog',
+    'dojox/mobile/RoundRectStoreList'
+], function (on, when, domClass, win, Deferred, aspect) {
     'use strict';
 
     var viewWidget, // set in init() to save in closure reference to this view controller instance
@@ -53,7 +55,7 @@ define([
             priorityMap = viewWidget._setupSelectMap(viewWidget.loadedStores.requestPriorityStore, "description");
             unitTypeMap = viewWidget._setupSelectMap(viewWidget.loadedStores.requestUnitTypeStore, "description");
             // attach event listener on the view
-            this._attachHandlers();
+            viewWidget._attachHandlers();
         },
 
         beforeActivate: function (previousView, data) {
@@ -134,15 +136,19 @@ define([
                 //the display value for user needs to be look in map from store
                 requestTypeMap.then(function (map) {
                     viewWidget.requestType.set("value", request ? map[request.requestType] : null);
+                    viewWidget.requestType.store = viewWidget.loadedStores.requestTypeStore;
                 });
                 statusMap.then(function (map) {
                     viewWidget.status.set("value", request ? map[request.status] : null);
+                    viewWidget.status.store = viewWidget.loadedStores.requestStatusStore;
                 });
                 priorityMap.then(function (map) {
                     viewWidget.priority.set("value", request ? map[request.priority] : null);
+                    viewWidget.priority.store = viewWidget.loadedStores.requestPriorityStore;
                 });
                 unitTypeMap.then(function (map) {
                     viewWidget.unitType.set("value", request ? map[request.unitType] : null);
+                    viewWidget.unitType.store = viewWidget.loadedStores.requestUnitTypeStore;
                 });
 
 
@@ -246,8 +252,64 @@ define([
             // summary:
             //      Attach listeners to form inputs on click
 
-            on(this.requestedFinishDate, "click", viewWidget._showDateOpener.bind(this.requestedFinishDate));
-            on(this.actualFinishDate, "click", viewWidget._showDateOpener.bind(this.actualFinishDate));
+            //add listeners on form fields type date picker
+            on(viewWidget.requestedFinishDate, "click", viewWidget._showDateOpener.bind(this.requestedFinishDate));
+            on(viewWidget.actualFinishDate, "click", viewWidget._showDateOpener.bind(this.actualFinishDate));
+            //add listener on form field type checklist
+            on(viewWidget.requestType, "click", viewWidget._showSelectOpener.bind(viewWidget.requestType));
+            on(viewWidget.status, "click", viewWidget._showSelectOpener.bind(viewWidget.status));
+            on(viewWidget.priority, "click", viewWidget._showSelectOpener.bind(viewWidget.priority));
+            on(viewWidget.unitType, "click", viewWidget._showSelectOpener.bind(viewWidget.unitType));
+
+            //add listener to checklist
+            aspect.after(viewWidget.selectCheckList, "onCheckStateChanged", viewWidget._onCheckStateChanged, true);
+        },
+
+        _showSelectOpener: function (event) {
+            //summary:
+            //      Show Select Opener
+            var opener,
+                formWidget;
+
+            opener = viewWidget.openerSelect;
+            formWidget = opener.formWidget = this;
+            opener.formWidget = formWidget;
+
+            console.log("_showDateOpener(event)");
+            opener.onHide = function () {
+                console.log("hiding opener");
+            };
+            opener.onShow = function () {
+                console.log("showing opener");
+            };
+            viewWidget.selectCheckList.setStore(formWidget.store);
+            opener.show(event.target);
+
+        },
+        _onCheckStateChanged: function (listItem, newState) {
+            // summary:
+            //      Stub function to connect to from your application.
+            // description:
+            //      Called when the check state has been changed.
+
+            var formWidget,
+                valueSelected,
+                opener;
+
+            // we only care about the value being selected
+            if (!newState) {
+                return;
+            }
+            opener = viewWidget.openerSelect;
+            formWidget = opener.formWidget;
+            valueSelected = listItem.label;
+
+            console.log("_onCheckStateChanged");
+            console.log("listItem" + listItem);
+            console.log("newState" + newState);
+
+            formWidget.set("value", valueSelected);
+            opener.hide();
         },
 
         _showDateOpener: function (event) {
