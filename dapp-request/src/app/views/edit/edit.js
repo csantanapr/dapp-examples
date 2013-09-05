@@ -122,49 +122,91 @@ define([
         _renderItem: function (id) {
             // summary:
             //      Fetch data and render ui
-            var promise = null;
+            var promise;
+
+            promise = null;
             if (!id) {
                 // no item passed in
                 return promise;
             }
 
-
             promise = viewWidget.loadedStores.requestsListStore.get(id);
             when(promise, function (request) {
-                viewWidget.reqid.set("value", request ? request.id : null);
 
-                //the display value for user needs to be look in map from store
-                requestTypeMap.then(function (map) {
-                    viewWidget.requestType.set("value", request ? map[request.requestType] : null);
-                    viewWidget.requestType.store = viewWidget.loadedStores.requestTypeStore;
-                });
-                statusMap.then(function (map) {
-                    viewWidget.status.set("value", request ? map[request.status] : null);
-                    viewWidget.status.store = viewWidget.loadedStores.requestStatusStore;
-                });
-                priorityMap.then(function (map) {
-                    viewWidget.priority.set("value", request ? map[request.priority] : null);
-                    viewWidget.priority.store = viewWidget.loadedStores.requestPriorityStore;
-                });
-                unitTypeMap.then(function (map) {
-                    viewWidget.unitType.set("value", request ? map[request.unitType] : null);
-                    viewWidget.unitType.store = viewWidget.loadedStores.requestUnitTypeStore;
-                });
-
-
-                // values display to user as found in data
-                viewWidget.description.set("value", request ? request.description : null);
-                viewWidget.requestedBy.set("value", request ? request.requestedBy : null);
-                viewWidget.requestedFinishDate.set("value", request ? request.requestedFinishDate : null);
-                viewWidget.assignedTo.set("value", request ? request.assignedTo : null);
-                viewWidget.actualFinishDate.set("value", request ? request.actualFinishDate : null);
-                viewWidget.estimatedUnits.set("value", request ? request.estimatedUnits : null);
-                viewWidget.createdDate.set("value", request ? request.createdDate : null);
-                viewWidget.updatedDate.set("value", request ? request.updatedDate : null);
+                viewWidget._renderRequest(request);
             });
             return promise;
         },
+        _renderRequest: function (request) {
+            // summary:
+            //      Render the request data
 
+            if (!request) {
+                viewWidget._clearForm();
+                return;
+            }
+
+            //the display value for user needs to be look in map from store
+            requestTypeMap.then(function (map) {
+                viewWidget.requestType.set({
+                    "value": map[request.requestType],
+                    "storeValue": request.requestType,
+                    "store": viewWidget.loadedStores.requestTypeStore
+                });
+            });
+            statusMap.then(function (map) {
+                viewWidget.status.set({
+                    "value": map[request.status],
+                    "storeValue": request.status,
+                    "store": viewWidget.loadedStores.requestStatusStore
+                });
+            });
+            priorityMap.then(function (map) {
+                viewWidget.priority.set({
+                    "value": map[request.priority],
+                    "storeValue": request.priority,
+                    "store": viewWidget.loadedStores.requestPriorityStore
+                });
+            });
+            unitTypeMap.then(function (map) {
+                viewWidget.unitType.set({
+                    "value": map[request.unitType],
+                    "storeValue": request.unitType,
+                    "store": viewWidget.loadedStores.requestUnitTypeStore
+                });
+            });
+
+            // values display to user as found in data
+            viewWidget.reqid.set("value", request.id);
+            viewWidget.description.set("value", request.description);
+            viewWidget.requestedBy.set("value", request.requestedBy);
+            viewWidget.requestedFinishDate.set("value", request.requestedFinishDate);
+            viewWidget.assignedTo.set("value", request.assignedTo);
+            viewWidget.actualFinishDate.set("value", request.actualFinishDate);
+            viewWidget.estimatedUnits.set("value", request.estimatedUnits);
+            viewWidget.createdDate.set("value", request.createdDate);
+            viewWidget.updatedDate.set("value", request.updatedDate);
+
+
+
+        },
+        _clearForm: function () {
+            // summary:
+            //      Clears the form fields
+            viewWidget.reqid.set("value", null);
+            viewWidget.requestType.set("value", null);
+            viewWidget.status.set("value", null);
+            viewWidget.priority.set("value", null);
+            viewWidget.unitType.set("value", null);
+            viewWidget.description.set("value", null);
+            viewWidget.requestedBy.set("value", null);
+            viewWidget.requestedFinishDate.set("value", null);
+            viewWidget.assignedTo.set("value", null);
+            viewWidget.actualFinishDate.set("value", null);
+            viewWidget.estimatedUnits.set("value", null);
+            viewWidget.createdDate.set("value", null);
+            viewWidget.updatedDate.set("value", null);
+        },
         _copyForm: function () {
             // summary:
             //      Copies the form data
@@ -245,7 +287,7 @@ define([
             // summary:
             //  Only updates the request from widget if value is defined
 
-            var value = widget.get("value");
+            var value = widget.get("storeValue") || widget.get("value");
             if (value !== undefined) {
                 request[reqfield] = value;
             }
@@ -297,6 +339,7 @@ define([
 
             var formWidget,
                 valueSelected,
+                value,
                 opener;
 
             // we only care about the value being selected
@@ -306,12 +349,16 @@ define([
             opener = viewWidget.openerSelect;
             formWidget = opener.formWidget;
             valueSelected = listItem.label;
+            value = listItem[formWidget.store.idProperty];
 
             console.log("_onCheckStateChanged");
             console.log("listItem" + listItem);
             console.log("newState" + newState);
 
-            formWidget.set("value", valueSelected);
+            formWidget.set({
+                "value": valueSelected,
+                "storeValue": value
+            });
             opener.hide();
         },
 
