@@ -6,16 +6,11 @@
     <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no"/>
     <meta name="apple-mobile-web-app-capable" content="yes"/>
     <link rel="apple-touch-icon" href="app/views/images/icon1.png"/>
-
-
-    <link rel="stylesheet" href="dojox/mobile/themes/custom/custom.css">
-
-    <!-- Application-specific CSS should be stored in your application’s package to ensure portability and to allow
-         the build system to combine & minify it. -->
-    <link rel="stylesheet" href="app/views/css/app.css">
+    <link rel="stylesheet" href="dojox/mobile/themes/custom/custom.css"/>
+    <link rel="stylesheet" href="app/views/css/app.css"/>
 </head>
 <body>
-    <!-- Example on showing how to support multiple locals, to test run App with url for testing purposes
+    <!-- Example on showing how to support multiple locales, only for testing purposes
          http://localhost:8080/src/index.html?locale=es-es
     -->
     <script>
@@ -24,10 +19,24 @@
         locale: location.search.match(/locale=([\w\-]+)/) ? RegExp.$1 : "en-us"
     };
     </script>
-    <script data-dojo-config="async: 1, isDebug: 0, tlmSiblingOfDojo: 1" src="dojo/dojo.js">
+    <!-- Source/Development/not build/
+    <script type="text/javascript"
+            src="../components/dojo/dojo.js"
+            data-dojo-config="async: true, isDebug: true,
+            baseUrl: '../',
+            paths: {
+                'app': 'src/app',
+                'dojo': 'components/dojo',
+                'dojox': 'components/dojox',
+                'dijit': 'components/dijit'
+            }">
     </script>
-
-
+    -->
+    <!-- Compile/Distribution/built iajoief'iaf'ioFoo bar -->
+    <script type="text/javascript"
+            src="dojo/dojo.js"
+            data-dojo-config="async: true, isDebug: false">
+    </script>
     <script type="text/javascript">
         require([ 'app/main' ]);
     </script>
