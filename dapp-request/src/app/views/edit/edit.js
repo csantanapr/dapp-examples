@@ -223,6 +223,8 @@ define([
                     }
                 });
             });
+
+            viewWidget._hideOpenerMore();
         },
 
         _saveRequest: function (request) {
@@ -410,7 +412,23 @@ define([
         _showConfirmDelete: function () {
             // summary:
             //      Displays the confirm dialog to user
+            viewWidget._hideOpenerMore();
             viewWidget.confirmDelete.show();
+        },
+
+        _showMoreOpener: function (event) {
+            // summary:
+            //      Show More Action Sheet
+
+            console.log("cancel opener");
+            viewWidget.openerMore.show(event.target);
+
+        },
+
+        _hideOpenerMore: function () {
+            // summary:
+            //     Hides More Action Sheet Opener
+            viewWidget.openerMore.hide();
         }
     };
 

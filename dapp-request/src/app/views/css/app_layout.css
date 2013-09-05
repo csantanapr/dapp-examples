@@ -6,14 +6,16 @@
 .requestItemDetailsEdit .saveButton {
     float: right;
 }
-.requestItemDetailsEdit .deleteButton {
-    float: right;
-}
-.requestItemDetailsEdit .duplicateButton {
+.requestItemDetailsEdit .moreButton {
     float: right;
 }
 .dateOpener .doneButton {
     float: right;
+}
+.actionButton {
+    margin: 0.2em;
+    width: 14em;
+    height: 3em;
 }
 
 /* adjust so the form fields stack */

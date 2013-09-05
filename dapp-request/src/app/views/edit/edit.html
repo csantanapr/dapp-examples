@@ -16,17 +16,13 @@
             data-dojo-props="back: true">
     ${nls.save}
     </button>
-    <button class="duplicateButton"
+
+    <button class="moreButton"
             data-dojo-type="dojox/mobile/ToolBarButton"
-            data-dojo-attach-point="copyButton"
-            data-dojo-attach-event="onClick: _copyForm">
-    ${nls.duplicate}
+            data-dojo-attach-event="onClick: _showMoreOpener">
+    ${nls.more}
     </button>
-    <button class="mblRedButton deleteButton"
-            data-dojo-type="dojox/mobile/ToolBarButton"
-            data-dojo-attach-event="onClick: _showConfirmDelete">
-    ${nls.remove}
-    </button>
+
 
   </h1>
 
@@ -173,7 +169,7 @@
     ${nls.ok}
     </button>
   </div> <!-- end of SimpleDialog -->
-  <div class="dateOpener" data-dojo-type="dojox/mobile/Opener"
+  <div data-dojo-type="dojox/mobile/Opener"
          data-dojo-attach-point="openerSelect">
       <ul data-dojo-attach-point="selectCheckList" data-dojo-type="dojox/mobile/RoundRectStoreList"
           data-dojo-props="labelProperty: 'description',
@@ -181,6 +177,23 @@
                             itemMap:{description:'label'},
                             store: this.loadedStores.requestTypeStore">
       </ul>
-    </div><!-- end Select Opener -->
-
+  </div><!-- end Select Opener -->
+  <div data-dojo-type="dojox/mobile/Opener"
+         data-dojo-attach-point="openerMore">
+    <button class="actionButton"
+            data-dojo-type="dojox/mobile/Button"
+            data-dojo-attach-event="onClick: _copyForm">
+    ${nls.duplicate}
+    </button><br>
+    <button class="mblRedButton actionButton"
+            data-dojo-type="dojox/mobile/Button"
+            data-dojo-attach-event="onClick: _showConfirmDelete">
+    ${nls.remove}
+    </button><br>
+    <button class="actionButton"
+            data-dojo-type="dojox/mobile/Button"
+            data-dojo-attach-event="onClick: _hideOpenerMore">
+    ${nls.cancel}
+    </button>
+  </div><!-- end More Opener -->
 </div>
