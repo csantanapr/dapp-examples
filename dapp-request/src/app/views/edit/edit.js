@@ -310,6 +310,8 @@ define([
 
             //add listener to checklist
             aspect.after(viewWidget.selectCheckList, "onCheckStateChanged", viewWidget._onCheckStateChanged, true);
+
+            on(viewWidget.openerSelect, "click", viewWidget._hideSelectOpener);
         },
 
         _showSelectOpener: function (event) {
@@ -361,9 +363,14 @@ define([
                 "value": valueSelected,
                 "storeValue": value
             });
+        },
+        _hideSelectOpener: function () {
+            // summary:
+            //      Hides the Select Opener
+            var opener;
+            opener = viewWidget.openerSelect;
             opener.hide();
         },
-
         _showDateOpener: function (event) {
             // summary:
             //      Show DateOpener
