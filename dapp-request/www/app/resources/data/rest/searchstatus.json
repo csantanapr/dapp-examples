@@ -1,0 +1,15 @@
+[
+    {
+        "key": "Any",
+        "description": "Any"
+    },
+    {
+        "key": "open",
+        "description": "An Open Request"
+    },
+    {
+        "key": "closed",
+        "description": "A Closed Request"
+    }
+]
+

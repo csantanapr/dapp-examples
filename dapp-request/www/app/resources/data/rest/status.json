@@ -1,9 +1,5 @@
 [
 	{
-		"key": "Any",
-		"description": "Any"
-	},
-	{
 		"key": "open",
 		"description": "An Open Request"
 	},

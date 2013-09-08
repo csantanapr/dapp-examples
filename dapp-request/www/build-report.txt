@@ -1,4 +1,4 @@
-Build started: Thu Sep 05 2013 14:42:30 GMT-0400 (EDT)
+Build started: Sun Sep 08 2013 09:48:07 GMT-0400 (EDT)
 Build application version: 1.7.0dev (23930)
 Messages:
 info(100) Assumed module uses legacy loader API.
@@ -1303,7 +1303,7 @@ app/main:
 	dojo/parser
 	dojo/_base/url
 	dojox/app/ViewBase
-	app/views/home/home
+	app/views/list/list
 	dojox/mobile/ListItem
 	dojox/mobile/iconUtils
 	dojox/mobile/_ItemBase
@@ -1312,19 +1312,16 @@ app/main:
 	dojox/mobile/TransitionEvent
 	dojox/mobile/ProgressIndicator
 	dojox/mobile/_css3
-	dojo/NodeList-manipulate
-	app/views/home/home.html
+	app/views/list/list.html
 	dojox/mobile/Heading
 	dojox/mobile/ToolBarButton
 	dojox/mobile/View
 	dojox/mobile/ViewController
 	dojox/mobile/viewRegistry
 	dojox/mobile/transition
+	dojox/mobile/EdgeToEdgeStoreList
 	dojox/mobile/EdgeToEdgeList
 	dojox/mobile/RoundRectList
-	app/views/list/list
-	app/views/list/list.html
-	dojox/mobile/EdgeToEdgeStoreList
 	dojox/mobile/_StoreListMixin
 	dojox/mobile/_StoreMixin
 	dojox/mobile/FilteredListMixin
@@ -1344,6 +1341,7 @@ app/main:
 	dijit/form/_ButtonMixin
 	app/views/list/nls/list-strings
 	app/views/details/details
+	dojo/NodeList-manipulate
 	app/views/details/details.html
 	dojox/mobile/FormLayout
 	dojox/mobile/Container
@@ -1401,4 +1399,4 @@ app/main:
 Process finished normally
 	errors: 0
 	warnings: 53
-	build time: 12.693 seconds
+	build time: 10.018 seconds
