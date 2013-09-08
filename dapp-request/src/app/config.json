@@ -140,7 +140,7 @@
 
 
     //Mandatory, one or a set of views view1+view2+view3
-    "defaultView": "home",
+    "defaultView": "requestList",
 
     //Optional, App level stings
     "nls": "app/nls/app_strings",
@@ -148,11 +148,6 @@
     "defaultTransition" : "slide",
     //Mandatory, Specify Application child views
     "views": {
-        "home":{
-            //Mandatory for defaultViews
-            "template": "app/views/home/home.html",
-            "controller" : "app/views/home/home.js"
-        },
         "requestList":{
             "template": "app/views/list/list.html",
             "controller" : "app/views/list/list.js",
