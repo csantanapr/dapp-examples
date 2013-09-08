@@ -1,4 +1,4 @@
-dist/
+dist
 components
 node_modules
 npm-debug.log
