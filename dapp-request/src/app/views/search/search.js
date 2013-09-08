@@ -34,7 +34,7 @@ define([
             //save the view node in clousure to use as scope for dom manipulatation and query
             view = this;
             this._attachHandlers();
-            this.loadedStores.requestStatusStore.query().then(function (items) {
+            this.loadedStores.requestSearchStatusStore.query().then(function (items) {
                 view.status.set("value", items[0].key);
             });
 
@@ -122,7 +122,7 @@ define([
 
             on(this.requestedFinishFromDate, "click", view._showDateOpener.bind(this.requestedFinishFromDate));
             on(this.requestedFinishToDate, "click", view._showDateOpener.bind(this.requestedFinishToDate));
-            on(this.status, "click", view._showOpener.bind(this.status, this.loadedStores.requestStatusStore));
+            on(this.status, "click", view._showOpener.bind(this.status, this.loadedStores.requestSearchStatusStore));
             on(this.srchchecklist, "click", view._handleOpenerClick);
         },
 

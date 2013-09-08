@@ -104,6 +104,14 @@
                 "idProperty": "key"
             }
         },
+        "requestSearchStatusStore":{
+            "type": "dojo/store/JsonRest",
+            "observable": true,
+            "params": {
+                "target": "app/resources/data/rest/searchstatus.json",
+                "idProperty": "key"
+            }
+        },
         "requestPriorityStore":{
             "type": "dojo/store/JsonRest",
             "observable": true,
