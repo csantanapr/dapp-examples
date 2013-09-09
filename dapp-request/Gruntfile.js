@@ -2,8 +2,11 @@
 
 module.exports = function (grunt) {
     'use strict';
+
+    // show elapsed time at the end
+    require('time-grunt')(grunt);
     // load all grunt tasks
-    require('matchdep').filterDev('grunt-*').forEach(grunt.loadNpmTasks);
+    require('load-grunt-tasks')(grunt);
 
     // configurable paths
     var yeomanConfig = {
@@ -248,13 +251,7 @@ module.exports = function (grunt) {
     //Linting tasks
     grunt.registerTask('lint', ['jshint', 'jslint', 'csslint', 'htmlhint']);
     //web dev tasks
-    grunt.registerTask('web_build', [
-        'lint',
-        'copy:web_dojox_app_hack',
-        'dojo',
-        'copy:web_index',
-        'copy:web'
-    ]);
+    grunt.registerTask('web_build', ['lint', 'cpdxapp', 'dojo', 'copy:web_index', 'copy:web']);
     //main build tasks
     grunt.registerTask('build', ['web_build']);
     grunt.registerTask('build_all', ['web_build', 'cordova']);
@@ -266,7 +263,7 @@ module.exports = function (grunt) {
         }
 
         grunt.task.run([
-            'copy:web_dojox_app_hack',
+            'cpdxapp',
             'lint',
             'connect:livereload',
             'open:server',
@@ -278,5 +275,21 @@ module.exports = function (grunt) {
     grunt.registerTask('cordova_build', ['copy:cordova', 'cordovacli:build']);
     grunt.registerTask('cordova', ['cordova_create', 'cordova_build']);
     grunt.registerTask('cordova_emulate', ['cordova_build', 'cordovacli:emulate_ios', 'cordovacli:emulate_android']);
+
+
+    //components/dojox_application needs to be present in components/dojox/app
+    grunt.task.registerTask('cpdxapp', 'Copies dojox_application to dojox/app', function () {
+        var check;
+
+        check = "components/dojox/app/main.js";
+
+        if (grunt.file.exists(check)) {
+            grunt.log.writeln(check + " exists, no copy necessary");
+        } else {
+            grunt.log.writeln(check + " does not exists, doing copy ");
+            grunt.task.run(['copy:web_dojox_app_hack']);
+        }
+
+    });
 
 };
