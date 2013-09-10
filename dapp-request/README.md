@@ -91,9 +91,9 @@ Node will reward you with much faster builds.
 
 
 ## Running Remote Demo
-- Run from your smartphone [Request App](http://csantanapr.github.io/dapp-examples/dapp-request/dist/www/index.html)
+- Run from your smartphone [Request App](http://csantanapr.github.io/dapp-examples/dapp-request/www/index.html)
 or use the following QR Code:
-- ![QR](http://chart.apis.google.com/chart?cht=qr&chs=350x350&chld=L&choe=UTF-8&chl=http%3A%2F%2Fcsantanapr.github.io%2Fdapp-examples%2Fdapp-request%2Fdist%2Fwww%2Findex.html)
+- ![QR](http://chart.apis.google.com/chart?cht=qr&chs=350x350&chld=L&choe=UTF-8&chl=http%3A%2F%2Fcsantanapr.github.io%2Fdapp-examples%2Fdapp-request%2Fwww%2Findex.html)
 
 ## App Requirements
 The client provided wireframes and some documentation for the desire functionality of the App.
