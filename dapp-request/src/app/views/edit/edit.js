@@ -1,6 +1,7 @@
 /*jslint nomen: true */
-/*global _, define, console*/
+/*global _, define, console, history*/
 define([
+    'dojo/query!css3',
     'dojo/on',
     'dojo/when',
     'dojo/dom-class',
@@ -23,7 +24,7 @@ define([
     'dojox/mobile/ValuePickerDatePicker',
     'dojox/mobile/SimpleDialog',
     'dojox/mobile/RoundRectStoreList'
-], function (on, when, domClass, win, Deferred, aspect) {
+], function ($, on, when, domClass, win, Deferred, aspect) {
     'use strict';
 
     var viewWidget, // set in init() to save in closure reference to this view controller instance
@@ -65,6 +66,8 @@ define([
 
             // get the id of the displayed request from the params
             itemToEdit = this._renderItem(this.params.id);
+
+            viewWidget.saveButton.set('disabled', 'disabled');
 
         },
 
@@ -274,6 +277,8 @@ define([
             //      Updates the itemtoEdit with values from form and sends put to store with new values
             var itemStore = viewWidget.loadedStores.requestsListStore;
 
+            console.log(this.name + "_saveForm");
+
             when(itemToEdit, function (request) {
                 if (request) {
                     // save the updated item into the store
@@ -282,7 +287,10 @@ define([
                     // not found do not update
                     console.log("item not found");
                 }
+                //I'm done here return to previous view
+                history.back();
             });
+
         },
 
         _setRequestValue: function (widget, request, reqfield) {
@@ -312,6 +320,8 @@ define([
             aspect.after(viewWidget.selectCheckList, "onCheckStateChanged", viewWidget._onCheckStateChanged, true);
 
             on(viewWidget.openerSelect, "click", viewWidget._hideSelectOpener);
+
+            on($("textarea, input", viewNode), "change", viewWidget._onChangeForm);
         },
 
         _showSelectOpener: function (event) {
@@ -436,6 +446,12 @@ define([
             // summary:
             //     Hides More Action Sheet Opener
             viewWidget.openerMore.hide();
+        },
+        _onChangeForm: function (event) {
+            // summary:
+            //      Handler when form changes
+            console.log("form change: " + event.target);
+            viewWidget.saveButton.set('disabled', false);
         }
     };
 

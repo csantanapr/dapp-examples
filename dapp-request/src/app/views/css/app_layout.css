@@ -5,9 +5,13 @@
 }
 .requestItemDetailsEdit .saveButton {
     float: right;
+    position: relative;
+    margin: .5em;
 }
 .requestItemDetailsEdit .moreButton {
     float: right;
+    position: relative;
+    margin: .5em;
 }
 .dateOpener .doneButton {
     float: right;
